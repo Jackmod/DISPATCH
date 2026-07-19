@@ -25,6 +25,46 @@ dotnet test  Dispatch.slnx
 dotnet run   --project src/Dispatch.App
 ```
 
+### If `dotnet` is not recognised
+
+A terminal opened *before* the SDK was installed will not have it on PATH — the
+process captured its environment at launch and never re-reads it. Editors make
+this worse: VS Code hands every integrated terminal the environment it started
+with, so opening a new terminal panel does not help. **Restart the editor
+completely.**
+
+To fix the terminal you already have:
+
+```powershell
+$env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" +
+            [Environment]::GetEnvironmentVariable("Path","User")
+```
+
+Or skip the problem entirely — this resolves `dotnet` by looking for it rather
+than relying on PATH, and works from any shell:
+
+```powershell
+./tools/dispatch.ps1          # build
+./tools/dispatch.ps1 run
+./tools/dispatch.ps1 test
+./tools/dispatch.ps1 clean
+```
+
+### Loading screen images
+
+`src/Dispatch.UI/Assets/Loading/` is empty in the repository and the install
+screen falls back to a vector scene, so nothing is missing without it. To add
+stills, put them in a folder and run:
+
+```powershell
+./tools/Import-LoadingImages.ps1 -Source "$env:USERPROFILE\Downloads"
+```
+
+They are numbered in order and copied in. Because `Assets/**` is an
+`AvaloniaResource` wildcard they compile into `Dispatch.exe` on the next build,
+so a release carries them with no companion files. Read
+`src/Dispatch.UI/Assets/Loading/README.md` before committing anything there.
+
 ## Layout
 
 | Project | Purpose |
