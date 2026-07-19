@@ -1,0 +1,136 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    Entrance motion, as composable classes.
+
+    Apply `reveal` for the movement and one of `d1`..`d6` for the stagger step.
+    Siblings revealed 40ms apart read as one gesture arriving rather than six
+    things appearing at once, which is the difference between a screen that
+    feels composed and one that feels dumped.
+
+    FillMode="Backward" matters: without it, a delayed element renders at its
+    final state for the length of its delay and then jumps back to the start,
+    which is a visible flash on every staggered group.
+
+    These are one-shot entrance animations rather than ambient loops, so they
+    key off the duration tokens and collapse to nothing under reduced motion
+    along with everything else.
+  -->
+
+  <Style Selector=":is(Control).reveal">
+    <Style.Animations>
+      <Animation Duration="{DynamicResource PageDuration}"
+                 Easing="{DynamicResource PageEasing}"
+                 FillMode="Backward"
+                 IterationCount="1">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0" />
+          <Setter Property="TranslateTransform.Y" Value="14" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+          <Setter Property="TranslateTransform.Y" Value="0" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- Stagger steps, 40ms apart. -->
+  <Style Selector=":is(Control).reveal.d1">
+    <Style.Animations>
+      <Animation Duration="{DynamicResource PageDuration}" Delay="0:0:0.04"
+                 Easing="{DynamicResource PageEasing}" FillMode="Backward" IterationCount="1">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0" />
+          <Setter Property="TranslateTransform.Y" Value="14" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+          <Setter Property="TranslateTransform.Y" Value="0" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <Style Selector=":is(Control).reveal.d2">
+    <Style.Animations>
+      <Animation Duration="{DynamicResource PageDuration}" Delay="0:0:0.08"
+                 Easing="{DynamicResource PageEasing}" FillMode="Backward" IterationCount="1">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0" />
+          <Setter Property="TranslateTransform.Y" Value="14" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+          <Setter Property="TranslateTransform.Y" Value="0" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <Style Selector=":is(Control).reveal.d3">
+    <Style.Animations>
+      <Animation Duration="{DynamicResource PageDuration}" Delay="0:0:0.12"
+                 Easing="{DynamicResource PageEasing}" FillMode="Backward" IterationCount="1">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0" />
+          <Setter Property="TranslateTransform.Y" Value="14" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+          <Setter Property="TranslateTransform.Y" Value="0" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <Style Selector=":is(Control).reveal.d4">
+    <Style.Animations>
+      <Animation Duration="{DynamicResource PageDuration}" Delay="0:0:0.16"
+                 Easing="{DynamicResource PageEasing}" FillMode="Backward" IterationCount="1">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0" />
+          <Setter Property="TranslateTransform.Y" Value="14" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+          <Setter Property="TranslateTransform.Y" Value="0" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <Style Selector=":is(Control).reveal.d5">
+    <Style.Animations>
+      <Animation Duration="{DynamicResource PageDuration}" Delay="0:0:0.20"
+                 Easing="{DynamicResource PageEasing}" FillMode="Backward" IterationCount="1">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0" />
+          <Setter Property="TranslateTransform.Y" Value="14" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+          <Setter Property="TranslateTransform.Y" Value="0" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <Style Selector=":is(Control).reveal.d6">
+    <Style.Animations>
+      <Animation Duration="{DynamicResource PageDuration}" Delay="0:0:0.24"
+                 Easing="{DynamicResource PageEasing}" FillMode="Backward" IterationCount="1">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0" />
+          <Setter Property="TranslateTransform.Y" Value="14" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+          <Setter Property="TranslateTransform.Y" Value="0" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+</Styles>

@@ -27,4 +27,8 @@
   <sys:Double x:Key="PageSlideDistance">0</sys:Double>
   <sys:Double x:Key="CardLiftDistance">4</sys:Double>
 
+  <!-- Ambient loops stop entirely. The backdrop keeps its composition and
+       simply holds still. -->
+  <sys:Boolean x:Key="MotionEnabled">False</sys:Boolean>
+
 </ResourceDictionary>

@@ -11,11 +11,17 @@
     in its happy path gets caught.
   -->
 
-  <ScrollViewer>
+  <Panel>
+
+    <!-- The moving field everything sits on. Without it the glass has nothing
+         to refract and reads as grey plastic. -->
+    <c:AmbientBackdrop />
+
+    <ScrollViewer>
     <StackPanel Margin="48" Spacing="48" MaxWidth="1040" HorizontalAlignment="Center">
 
       <!-- ===== Header ============================================== -->
-      <StackPanel Spacing="8">
+      <StackPanel Spacing="8" Classes="reveal">
         <TextBlock Text="DESIGN SYSTEM" Classes="micro" />
         <TextBlock Text="Dispatch" Classes="display" />
         <TextBlock Text="Everything you need. Nothing you have to figure out."
@@ -29,8 +35,136 @@
         </StackPanel>
       </StackPanel>
 
+      <!-- ===== Install rail ======================================== -->
+      <c:Card Title="Install progress" Eyebrow="Motion" Classes="reveal d1">
+        <StackPanel Spacing="20">
+          <StackPanel Spacing="10">
+            <TextBlock Text="PLACING FILES · 4 OF 7" Classes="micro" />
+            <c:LightbarProgress SegmentCount="7" CompletedSegments="3" SegmentHeight="8" />
+            <TextBlock Text="Stop The Ped 8.5 — extracting" Classes="mono" />
+          </StackPanel>
+
+          <StackPanel Spacing="10">
+            <TextBlock Text="AS THE WIZARD RAIL" Classes="micro" />
+            <c:LightbarProgress SegmentCount="6" CompletedSegments="2" SegmentHeight="3" />
+          </StackPanel>
+
+          <StackPanel Spacing="10">
+            <TextBlock Text="COMPLETE" Classes="micro" />
+            <c:LightbarProgress SegmentCount="7" CompletedSegments="7" SegmentHeight="8" />
+          </StackPanel>
+        </StackPanel>
+      </c:Card>
+
+      <!-- ===== Scene art =========================================== -->
+      <c:Card Title="Scene art" Eyebrow="Original vector · nothing lifted" Classes="reveal d2">
+        <StackPanel Spacing="24">
+
+          <!-- The hero surface a preset card or the dashboard sits on. -->
+          <Border Height="240"
+                  CornerRadius="{DynamicResource RadiusCard}"
+                  ClipToBounds="True"
+                  BorderBrush="{DynamicResource GlassBorder}"
+                  BorderThickness="1">
+            <Panel>
+              <Panel Background="{DynamicResource NavyDeep}" />
+
+              <!-- City grid, receding -->
+              <Viewbox Stretch="UniformToFill" Opacity="0.5">
+                <Canvas Width="1200" Height="800">
+                  <Path Data="{StaticResource ArtStreetGrid}"
+                        Stroke="{DynamicResource StreetGrid}"
+                        StrokeThickness="1.4" />
+                  <Path Data="{StaticResource ArtCoastline}"
+                        Stroke="{DynamicResource Blue}"
+                        StrokeThickness="2"
+                        Opacity="0.35" />
+                </Canvas>
+              </Viewbox>
+
+              <!-- Patrol lighting wash -->
+              <Ellipse Width="520" Height="520"
+                       HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                       Margin="-160,0,0,-260"
+                       Fill="{DynamicResource OrbBlue}" />
+              <Ellipse Width="420" Height="420"
+                       HorizontalAlignment="Right" VerticalAlignment="Top"
+                       Margin="0,-190,-120,0"
+                       Fill="{DynamicResource OrbGold}" />
+
+              <!-- Cruiser silhouette -->
+              <Viewbox Width="420"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Bottom"
+                       Margin="0,0,32,28">
+                <Canvas Width="240" Height="88">
+                  <Path Data="{StaticResource ArtCruiser}"
+                        Stroke="{DynamicResource BlueBright}"
+                        StrokeThickness="2"
+                        StrokeLineCap="Round"
+                        StrokeJoin="Round"
+                        Opacity="0.85" />
+                </Canvas>
+              </Viewbox>
+
+              <!-- Badge -->
+              <Viewbox Height="120"
+                       HorizontalAlignment="Left"
+                       VerticalAlignment="Center"
+                       Margin="40,0,0,0">
+                <Canvas Width="120" Height="140">
+                  <Path Data="{StaticResource ArtBadge}"
+                        Stroke="{DynamicResource Gold}"
+                        StrokeThickness="2"
+                        StrokeLineCap="Round"
+                        StrokeJoin="Round" />
+                </Canvas>
+              </Viewbox>
+
+              <Border Background="{DynamicResource Vignette}" />
+
+              <StackPanel VerticalAlignment="Bottom"
+                          HorizontalAlignment="Left"
+                          Margin="180,0,0,28"
+                          Spacing="4">
+                <TextBlock Text="LOS SANTOS POLICE DEPARTMENT" Classes="micro" />
+                <TextBlock Text="1 ADAM 7" Classes="display" />
+              </StackPanel>
+            </Panel>
+          </Border>
+
+          <TextBlock Classes="small" TextWrapping="Wrap"
+                     Text="Drawn for this project from the subject's own geometry — a coastal grid on a bias, a patrol silhouette, a seven-point badge. Nothing here is Rockstar's or a mod author's artwork, so it ships without a licensing question attached." />
+
+          <StackPanel Orientation="Horizontal" Spacing="32">
+            <Viewbox Height="72">
+              <Canvas Width="120" Height="120">
+                <Path Data="{StaticResource ArtRadioWave}"
+                      Stroke="{DynamicResource Blue}" StrokeThickness="3"
+                      StrokeLineCap="Round" />
+              </Canvas>
+            </Viewbox>
+            <Viewbox Height="72">
+              <Canvas Width="120" Height="140">
+                <Path Data="{StaticResource ArtBadge}"
+                      Stroke="{DynamicResource Gold}" StrokeThickness="3"
+                      StrokeLineCap="Round" StrokeJoin="Round" />
+              </Canvas>
+            </Viewbox>
+            <Viewbox Height="72">
+              <Canvas Width="240" Height="88">
+                <Path Data="{StaticResource ArtCruiser}"
+                      Stroke="{DynamicResource TextMuted}" StrokeThickness="3"
+                      StrokeLineCap="Round" StrokeJoin="Round" />
+              </Canvas>
+            </Viewbox>
+          </StackPanel>
+
+        </StackPanel>
+      </c:Card>
+
       <!-- ===== Type scale ========================================== -->
-      <c:Card Title="Type scale" Eyebrow="Typography">
+      <c:Card Title="Type scale" Eyebrow="Typography" Classes="reveal d3">
         <StackPanel Spacing="16">
           <StackPanel Spacing="2">
             <TextBlock Text="display · 34 / 700 / -0.6" Classes="micro" />
@@ -254,6 +388,7 @@
       </c:Card>
 
     </StackPanel>
-  </ScrollViewer>
+    </ScrollViewer>
+  </Panel>
 
 </UserControl>

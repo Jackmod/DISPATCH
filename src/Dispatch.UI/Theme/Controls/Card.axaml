@@ -3,22 +3,29 @@
                     xmlns:controls="clr-namespace:Dispatch.UI.Controls">
 
   <!--
-    Navy surface, steel hairline, 10px radius, one elevation token.
+    Glass, not a filled panel.
 
-    Under the title sits a three-lozenge lightbar rather than a rule. It is a
-    12px echo of the motif that runs through the intro and the install progress
-    rail, and it is what makes a heading in this app look like it belongs to
-    this app.
+    Four things together make it read as glass rather than as a translucent
+    rectangle, and dropping any one of them collapses the effect:
 
-    Interactive cards lift by the shared CardLiftDistance and brighten their
-    border to gold. That treatment is opt-in via IsInteractive because a card
-    that lifts under the pointer and does nothing when clicked is worse than a
-    card that never moved.
+      1  a translucent surface, so the backdrop moves through it
+      2  a border that is bright along the top and fades toward the bottom,
+         the way light catches a real edge
+      3  a specular highlight on the top edge itself
+      4  a shadow underneath, so it sits above the field rather than in it
+
+    Under the title sits a three-lozenge lightbar rather than a rule — the
+    motif that runs through the intro, the install rail and every heading.
+
+    Interactive cards lift, brighten their border to gold, and sweep a sheen
+    across the surface. That treatment is opt-in via IsInteractive, because a
+    card that responds to the pointer and does nothing when clicked is worse
+    than one that never moved.
   -->
 
   <ControlTheme x:Key="{x:Type controls:Card}" TargetType="controls:Card">
-    <Setter Property="Background" Value="{DynamicResource Navy}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource Steel}" />
+    <Setter Property="Background" Value="{DynamicResource GlassSurface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource GlassBorder}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
     <Setter Property="Padding" Value="{DynamicResource Inset24}" />
@@ -27,44 +34,61 @@
 
     <Setter Property="Template">
       <ControlTemplate>
-        <Border Name="Surface"
-                Background="{TemplateBinding Background}"
-                BorderBrush="{TemplateBinding BorderBrush}"
-                BorderThickness="{TemplateBinding BorderThickness}"
-                CornerRadius="{TemplateBinding CornerRadius}"
-                BoxShadow="{DynamicResource ShadowRaised}"
-                Padding="{TemplateBinding Padding}">
+        <Panel>
+          <Border Name="Surface"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}"
+                  BoxShadow="{DynamicResource ShadowRaised}"
+                  ClipToBounds="True">
 
-          <DockPanel LastChildFill="True">
+            <Panel>
+              <!-- Sheen: parked off the left edge, swept across on hover. -->
+              <Border Name="Sheen"
+                      Width="150"
+                      HorizontalAlignment="Left"
+                      Background="{DynamicResource GlassHighlight}"
+                      Opacity="0" />
 
-            <StackPanel DockPanel.Dock="Top"
-                        Name="Header"
-                        Spacing="4"
-                        Margin="0,0,0,16"
-                        IsVisible="{TemplateBinding Title, Converter={x:Static ObjectConverters.IsNotNull}}">
+              <!-- Specular line along the top edge. -->
+              <Border Name="Specular"
+                      Height="1"
+                      VerticalAlignment="Top"
+                      Margin="12,0"
+                      Background="{DynamicResource GlassHighlight}" />
 
-              <TextBlock Text="{TemplateBinding Eyebrow}"
-                         Classes="micro"
-                         IsVisible="{TemplateBinding Eyebrow, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+              <DockPanel LastChildFill="True" Margin="{TemplateBinding Padding}">
 
-              <TextBlock Text="{TemplateBinding Title}" Classes="h2" />
+                <StackPanel DockPanel.Dock="Top"
+                            Name="Header"
+                            Spacing="4"
+                            Margin="0,0,0,16"
+                            IsVisible="{TemplateBinding Title, Converter={x:Static ObjectConverters.IsNotNull}}">
 
-              <!-- The motif, at heading scale: blue, gold, blue -->
-              <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,6,0,0">
-                <Border Width="14" Height="3" CornerRadius="1.5" Background="{DynamicResource Blue}" />
-                <Border Width="8" Height="3" CornerRadius="1.5" Background="{DynamicResource Gold}" />
-                <Border Width="14" Height="3" CornerRadius="1.5" Background="{DynamicResource Steel}" />
-              </StackPanel>
+                  <TextBlock Text="{TemplateBinding Eyebrow}"
+                             Classes="micro"
+                             IsVisible="{TemplateBinding Eyebrow, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
-            </StackPanel>
+                  <TextBlock Text="{TemplateBinding Title}" Classes="h2" />
 
-            <ContentPresenter Name="PART_ContentPresenter"
-                              Content="{TemplateBinding Content}"
-                              ContentTemplate="{TemplateBinding ContentTemplate}"
-                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
-                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
-          </DockPanel>
-        </Border>
+                  <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,6,0,0">
+                    <Border Width="14" Height="3" CornerRadius="1.5" Background="{DynamicResource Blue}" />
+                    <Border Width="8" Height="3" CornerRadius="1.5" Background="{DynamicResource Gold}" />
+                    <Border Width="14" Height="3" CornerRadius="1.5" Background="{DynamicResource Steel}" />
+                  </StackPanel>
+
+                </StackPanel>
+
+                <ContentPresenter Name="PART_ContentPresenter"
+                                  Content="{TemplateBinding Content}"
+                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+              </DockPanel>
+            </Panel>
+          </Border>
+        </Panel>
       </ControlTemplate>
     </Setter>
 
@@ -72,6 +96,7 @@
       <Setter Property="Transitions">
         <Transitions>
           <BrushTransition Property="BorderBrush" Duration="{DynamicResource StandardDuration}" />
+          <BrushTransition Property="Background" Duration="{DynamicResource StandardDuration}" />
         </Transitions>
       </Setter>
     </Style>
@@ -86,7 +111,6 @@
       </Setter>
     </Style>
 
-    <!-- Opt-in hover treatment. -->
     <Style Selector="^[IsInteractive=True]">
       <Setter Property="Cursor" Value="Hand" />
     </Style>
@@ -96,13 +120,40 @@
     </Style>
 
     <Style Selector="^[IsInteractive=True]:pointerover /template/ Border#Surface">
-      <Setter Property="BorderBrush" Value="{DynamicResource Gold}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderGold}" />
+      <Setter Property="Background" Value="{DynamicResource GlassSurfaceStrong}" />
     </Style>
 
-    <!-- Selected: gold border without the lift, for a chosen preset. -->
+    <!-- The sheen sweep. Runs once per hover, not on a loop. -->
+    <Style Selector="^[IsInteractive=True]:pointerover /template/ Border#Sheen">
+      <Style.Animations>
+        <Animation Duration="0:0:0.72" IterationCount="1" Easing="{DynamicResource StandardEasing}">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="TranslateTransform.X" Value="-200" />
+          </KeyFrame>
+          <KeyFrame Cue="30%">
+            <Setter Property="Opacity" Value="0.8" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="TranslateTransform.X" Value="560" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+
+    <!-- Selected: gold edge held, no lift. -->
     <Style Selector="^.selected /template/ Border#Surface">
-      <Setter Property="BorderBrush" Value="{DynamicResource Gold}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderGold}" />
       <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="Background" Value="{DynamicResource GlassSurfaceStrong}" />
+    </Style>
+
+    <!-- Solid: for the rare surface that must stay legible over busy art. -->
+    <Style Selector="^.solid /template/ Border#Surface">
+      <Setter Property="Background" Value="{DynamicResource Navy}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Steel}" />
     </Style>
 
   </ControlTheme>

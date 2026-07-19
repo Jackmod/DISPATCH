@@ -39,4 +39,14 @@
   <!-- Distance a card lifts on hover, in pixels. -->
   <sys:Double x:Key="CardLiftDistance">4</sys:Double>
 
+  <!--
+    Master switch for ambient loops — the backdrop, shimmers, pulses.
+
+    These need switching off rather than shortening. Collapsing a duration to
+    zero works for a transition, which then simply completes instantly, but an
+    infinite animation at zero duration is a busy loop that pins a core and
+    renders nothing. Anything that repeats forever binds to this instead.
+  -->
+  <sys:Boolean x:Key="MotionEnabled">True</sys:Boolean>
+
 </ResourceDictionary>

@@ -1,0 +1,61 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:Dispatch.UI.Controls">
+
+  <!--
+    Segment appearance for LightbarProgress.
+
+    Separate from the ControlTheme because the segments are generated in code
+    and a ControlTheme may not contain descendant selectors. Keeping them here
+    rather than assigning brushes in the control preserves the rule that the
+    theme owns every colour and the control owns none.
+
+    Completed segments are gold and fully lit. The current one pulses between
+    a dim gold and full gold, so progress stays visible while a slow download
+    makes the counter look stuck — which is exactly the moment people decide an
+    installer has hung.
+
+    Pending segments are steel at low opacity: present, so the length of the
+    run is legible from the first second, but clearly not yet done.
+  -->
+
+  <Style Selector="controls|LightbarProgress Rectangle">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Fill" Duration="{DynamicResource StandardDuration}" />
+        <DoubleTransition Property="Opacity" Duration="{DynamicResource StandardDuration}" />
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <Style Selector="controls|LightbarProgress Rectangle.pending">
+    <Setter Property="Fill" Value="{DynamicResource Steel}" />
+    <Setter Property="Opacity" Value="0.55" />
+  </Style>
+
+  <Style Selector="controls|LightbarProgress Rectangle.done">
+    <Setter Property="Fill" Value="{DynamicResource Gold}" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
+  <Style Selector="controls|LightbarProgress Rectangle.currentStill">
+    <Setter Property="Fill" Value="{DynamicResource Gold}" />
+    <Setter Property="Opacity" Value="0.75" />
+  </Style>
+
+  <Style Selector="controls|LightbarProgress Rectangle.current">
+    <Setter Property="Fill" Value="{DynamicResource Gold}" />
+    <Style.Animations>
+      <Animation Duration="0:0:1.3" IterationCount="INFINITE" PlaybackDirection="Alternate"
+                 Easing="SineEaseInOut">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0.32" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+</Styles>

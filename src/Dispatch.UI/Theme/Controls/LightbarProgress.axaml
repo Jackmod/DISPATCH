@@ -1,0 +1,25 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:Dispatch.UI.Controls">
+
+  <!--
+    Template only. The segments are built in code because their count is
+    data-driven, which puts them outside the template's namescope: a
+    `/template/` selector cannot reach them, and a ControlTheme is not allowed
+    to contain a descendant selector at all. Their appearance therefore lives
+    in LightbarProgressStyles.axaml, which is an application-level Styles file
+    and may use descendant selectors freely.
+  -->
+
+  <ControlTheme x:Key="{x:Type controls:LightbarProgress}" TargetType="controls:LightbarProgress">
+    <Setter Property="IsAnimated" Value="{DynamicResource MotionEnabled}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel Name="PART_Segments" />
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+
+</ResourceDictionary>

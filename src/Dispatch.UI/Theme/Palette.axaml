@@ -70,6 +70,80 @@
   <SolidColorBrush x:Key="Scrim" Color="{StaticResource InkColor}" Opacity="0.72" />
 
   <!--
+    Glass.
+
+    Surfaces are translucent white over the navy base rather than opaque fills,
+    so the animated backdrop reads through them. On a dark palette the tint has
+    to stay under about 8% or the "glass" turns into grey plastic.
+
+    The border is a gradient rather than a flat stroke: bright along the top
+    edge where light would catch, fading to almost nothing at the bottom. That
+    single detail is what separates glass from a semi-transparent rectangle.
+  -->
+  <LinearGradientBrush x:Key="GlassSurface" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#14FFFFFF" />
+    <GradientStop Offset="1" Color="#08FFFFFF" />
+  </LinearGradientBrush>
+
+  <LinearGradientBrush x:Key="GlassSurfaceStrong" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#1FFFFFFF" />
+    <GradientStop Offset="1" Color="#0DFFFFFF" />
+  </LinearGradientBrush>
+
+  <LinearGradientBrush x:Key="GlassBorder" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#38FFFFFF" />
+    <GradientStop Offset="0.5" Color="#16FFFFFF" />
+    <GradientStop Offset="1" Color="#0AFFFFFF" />
+  </LinearGradientBrush>
+
+  <LinearGradientBrush x:Key="GlassBorderGold" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#B3F5C866" />
+    <GradientStop Offset="1" Color="#40E8B44A" />
+  </LinearGradientBrush>
+
+  <!-- The specular line along the very top edge of a glass panel. -->
+  <LinearGradientBrush x:Key="GlassHighlight" StartPoint="0%,0%" EndPoint="100%,0%">
+    <GradientStop Offset="0" Color="#00FFFFFF" />
+    <GradientStop Offset="0.5" Color="#4DFFFFFF" />
+    <GradientStop Offset="1" Color="#00FFFFFF" />
+  </LinearGradientBrush>
+
+  <!-- Ambient light sources drifting behind the glass. -->
+  <RadialGradientBrush x:Key="OrbBlue" GradientOrigin="50%,50%" Center="50%,50%" RadiusX="50%" RadiusY="50%">
+    <GradientStop Offset="0" Color="#4C4C8DFF" />
+    <GradientStop Offset="0.55" Color="#1A4C8DFF" />
+    <GradientStop Offset="1" Color="#004C8DFF" />
+  </RadialGradientBrush>
+
+  <RadialGradientBrush x:Key="OrbGold" GradientOrigin="50%,50%" Center="50%,50%" RadiusX="50%" RadiusY="50%">
+    <GradientStop Offset="0" Color="#38E8B44A" />
+    <GradientStop Offset="0.55" Color="#12E8B44A" />
+    <GradientStop Offset="1" Color="#00E8B44A" />
+  </RadialGradientBrush>
+
+  <RadialGradientBrush x:Key="OrbCyan" GradientOrigin="50%,50%" Center="50%,50%" RadiusX="50%" RadiusY="50%">
+    <GradientStop Offset="0" Color="#337DB0FF" />
+    <GradientStop Offset="0.6" Color="#0F7DB0FF" />
+    <GradientStop Offset="1" Color="#007DB0FF" />
+  </RadialGradientBrush>
+
+  <!-- Corner falloff, so the composition sits in the frame rather than
+       running off the edges. -->
+  <RadialGradientBrush x:Key="Vignette" GradientOrigin="50%,45%" Center="50%,45%" RadiusX="75%" RadiusY="75%">
+    <GradientStop Offset="0.35" Color="#00060A12" />
+    <GradientStop Offset="1" Color="#CC060A12" />
+  </RadialGradientBrush>
+
+  <!-- The scan line that sweeps the backdrop, and the intro. -->
+  <LinearGradientBrush x:Key="ScanLine" StartPoint="0%,0%" EndPoint="100%,0%">
+    <GradientStop Offset="0" Color="#004C8DFF" />
+    <GradientStop Offset="0.5" Color="#664C8DFF" />
+    <GradientStop Offset="1" Color="#004C8DFF" />
+  </LinearGradientBrush>
+
+  <SolidColorBrush x:Key="StreetGrid" Color="#4C8DFF" Opacity="0.10" />
+
+  <!--
     Elevation. Two tokens, no more: one for raised surfaces, one for modals.
 
     These live here rather than in Spacing.axaml because BoxShadows can only be

@@ -118,6 +118,32 @@ public sealed class ThemeResourceTests
     }
 
     [AvaloniaFact]
+    public void Reduced_motion_switches_ambient_loops_off_rather_than_shortening_them()
+    {
+        // Infinite animations cannot be handled by collapsing their duration:
+        // a zero-duration infinite loop is a busy loop that pins a core and
+        // renders nothing. Anything that repeats forever binds to this flag,
+        // so it has to actually flip.
+        var app = (App)Application.Current!;
+
+        try
+        {
+            Resource("MotionEnabled").Should().Be(true);
+
+            app.SetReducedMotion(true);
+            Resource("MotionEnabled").Should().Be(
+                false,
+                "ambient loops must stop entirely, not run at zero duration");
+        }
+        finally
+        {
+            app.SetReducedMotion(false);
+        }
+
+        Resource("MotionEnabled").Should().Be(true);
+    }
+
+    [AvaloniaFact]
     public void Turning_reduced_motion_back_off_restores_the_timings()
     {
         var app = (App)Application.Current!;
