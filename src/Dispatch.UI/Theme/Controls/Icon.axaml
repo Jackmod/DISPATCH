@@ -1,0 +1,32 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:Dispatch.UI.Controls">
+
+  <!--
+    The glyph is authored on a 20x20 grid, so the template pins a Canvas to
+    exactly that box and lets a Viewbox scale it. Stretching the Path directly
+    would scale each glyph to its own ink bounds instead, and a set where a
+    chevron renders larger than a shield stops reading as one hand.
+  -->
+
+  <ControlTheme x:Key="{x:Type controls:Icon}" TargetType="controls:Icon">
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+    <Setter Property="Size" Value="{DynamicResource IconSize}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Viewbox Width="{TemplateBinding Size}"
+                 Height="{TemplateBinding Size}"
+                 Stretch="Uniform">
+          <Canvas Width="20" Height="20">
+            <Path Data="{TemplateBinding Data}"
+                  Stroke="{TemplateBinding Foreground}"
+                  StrokeThickness="{DynamicResource IconStrokeWidth}"
+                  StrokeLineCap="Round"
+                  StrokeJoin="Round" />
+          </Canvas>
+        </Viewbox>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+
+</ResourceDictionary>

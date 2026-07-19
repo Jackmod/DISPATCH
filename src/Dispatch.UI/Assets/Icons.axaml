@@ -1,0 +1,93 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    The icon set. One hand, one grid, one weight.
+
+    Every glyph is drawn on a 20x20 box with a 2px margin, so live area is
+    2..18. Strokes are open paths rendered at 1.5px by the Icon control, which
+    binds Stroke to Foreground so an icon inherits whatever colour its context
+    already establishes rather than shipping a copy per colour.
+
+    Curves stay on the half-pixel where they meet a straight, corners are
+    mitre-free, and nothing here is filled. The point of drawing these rather
+    than pulling a package is that a lightbar, a shield and a radio wave are
+    the subject's own geometry, and a generic icon library has none of them.
+  -->
+
+  <!-- ===== Identity and motifs ===================================== -->
+
+  <!-- Badge: seven-point shield, the app mark at small sizes -->
+  <StreamGeometry x:Key="IconShield">M10 2.4 L16.4 5.1 L16.4 9.6 C16.4 13.5 13.8 16.6 10 17.8 C6.2 16.6 3.6 13.5 3.6 9.6 L3.6 5.1 Z</StreamGeometry>
+
+  <!--
+    Lightbar: one stadium divided into three segments, the signature motif.
+
+    Drawn as a single housing rather than three separate lozenges on purpose.
+    Three independent lozenges need roughly 3px of height each at this size,
+    and a 1.5px stroke closes that gap entirely — they render as dots. The
+    housing-and-dividers reading survives at 20px and still says lightbar.
+  -->
+  <StreamGeometry x:Key="IconLightbar">M4.6 7.4 H15.4 A2.6 2.6 0 0 1 15.4 12.6 H4.6 A2.6 2.6 0 0 1 4.6 7.4 Z M7.3 7.4 V12.6 M12.7 7.4 V12.6</StreamGeometry>
+
+  <!-- Radio wave: concentric arcs, for loading and voice sections -->
+  <StreamGeometry x:Key="IconRadioWave">M10 11.6 A1.6 1.6 0 0 1 10 8.4 A1.6 1.6 0 0 1 10 11.6 Z M6.1 13.9 A5.5 5.5 0 0 1 6.1 6.1 M13.9 6.1 A5.5 5.5 0 0 1 13.9 13.9 M3.3 16.7 A9.5 9.5 0 0 1 3.3 3.3 M16.7 3.3 A9.5 9.5 0 0 1 16.7 16.7</StreamGeometry>
+
+  <!-- ===== Navigation ============================================== -->
+
+  <!-- Dashboard: four panes, unequal, so it reads as a layout not a grid -->
+  <StreamGeometry x:Key="IconDashboard">M3 3 H8.5 V9 H3 Z M11.5 3 H17 V6.5 H11.5 Z M11.5 9.5 H17 V17 H11.5 Z M3 12 H8.5 V17 H3 Z</StreamGeometry>
+
+  <!-- Mods: stacked plates, a package of parts -->
+  <StreamGeometry x:Key="IconMods">M10 2.6 L17 6.2 L10 9.8 L3 6.2 Z M3 10 L10 13.6 L17 10 M3 13.6 L10 17.2 L17 13.6</StreamGeometry>
+
+  <!-- Controls: a key cap, the thing this whole screen is about -->
+  <StreamGeometry x:Key="IconControls">M4.2 4.2 H15.8 A1.4 1.4 0 0 1 17.2 5.6 V14.4 A1.4 1.4 0 0 1 15.8 15.8 H4.2 A1.4 1.4 0 0 1 2.8 14.4 V5.6 A1.4 1.4 0 0 1 4.2 4.2 Z M6.2 7.6 H13.8 M6.2 10 H13.8 M6.2 12.4 H10.4</StreamGeometry>
+
+  <!-- Settings: a slider bank, not the thousandth gear -->
+  <StreamGeometry x:Key="IconSettings">M3 6 H8 M12 6 H17 M3 14 H10 M14 14 H17 M10 3.6 A2.4 2.4 0 0 1 10 8.4 A2.4 2.4 0 0 1 10 3.6 Z M12 11.6 A2.4 2.4 0 0 1 12 16.4 A2.4 2.4 0 0 1 12 11.6 Z</StreamGeometry>
+
+  <!-- ===== Actions ================================================= -->
+
+  <StreamGeometry x:Key="IconPlay">M6.6 3.8 L16 10 L6.6 16.2 Z</StreamGeometry>
+  <StreamGeometry x:Key="IconPause">M7 4 V16 M13 4 V16</StreamGeometry>
+  <StreamGeometry x:Key="IconDownload">M10 2.8 V12.4 M6.2 8.8 L10 12.6 L13.8 8.8 M3.4 15.4 V16.2 A1 1 0 0 0 4.4 17.2 H15.6 A1 1 0 0 0 16.6 16.2 V15.4</StreamGeometry>
+  <StreamGeometry x:Key="IconRefresh">M16.4 10 A6.4 6.4 0 1 1 14.2 5.2 M16.8 2.6 V6.2 H13.2</StreamGeometry>
+  <StreamGeometry x:Key="IconSearch">M8.8 3.4 A5.4 5.4 0 1 1 8.8 14.2 A5.4 5.4 0 1 1 8.8 3.4 Z M12.8 12.8 L17 17</StreamGeometry>
+  <StreamGeometry x:Key="IconPlus">M10 4 V16 M4 10 H16</StreamGeometry>
+  <StreamGeometry x:Key="IconClose">M5 5 L15 15 M15 5 L5 15</StreamGeometry>
+  <StreamGeometry x:Key="IconTrash">M3.6 5.6 H16.4 M8 5.6 V3.8 A0.8 0.8 0 0 1 8.8 3 H11.2 A0.8 0.8 0 0 1 12 3.8 V5.6 M5.2 5.6 L6 16.2 A1 1 0 0 0 7 17.1 H13 A1 1 0 0 0 14 16.2 L14.8 5.6 M8.4 8.6 V14.2 M11.6 8.6 V14.2</StreamGeometry>
+
+  <!-- Clean: a brush sweeping, for the folder cleaner -->
+  <StreamGeometry x:Key="IconClean">M12.6 2.8 L17.2 7.4 M14.4 5 L7.2 12.2 L5 17 L9.8 14.8 L17 7.6 M3 17 H7</StreamGeometry>
+
+  <!-- ===== Status ================================================== -->
+
+  <StreamGeometry x:Key="IconCheck">M4.2 10.4 L8.2 14.4 L15.8 6</StreamGeometry>
+  <StreamGeometry x:Key="IconAlert">M10 3 L17.6 16.4 A0.9 0.9 0 0 1 16.8 17.8 H3.2 A0.9 0.9 0 0 1 2.4 16.4 Z M10 7.8 V11.8 M10 14.6 V14.7</StreamGeometry>
+  <StreamGeometry x:Key="IconInfo">M10 2.8 A7.2 7.2 0 1 1 10 17.2 A7.2 7.2 0 1 1 10 2.8 Z M10 9 V13.8 M10 6.4 V6.5</StreamGeometry>
+  <StreamGeometry x:Key="IconLock">M5.6 8.8 H14.4 A1 1 0 0 1 15.4 9.8 V16 A1 1 0 0 1 14.4 17 H5.6 A1 1 0 0 1 4.6 16 V9.8 A1 1 0 0 1 5.6 8.8 Z M6.8 8.8 V6.4 A3.2 3.2 0 0 1 13.2 6.4 V8.8</StreamGeometry>
+
+  <!-- ===== Files and navigation chevrons =========================== -->
+
+  <StreamGeometry x:Key="IconFolder">M2.8 5.4 A1 1 0 0 1 3.8 4.4 H8 L10 6.6 H16.2 A1 1 0 0 1 17.2 7.6 V15.2 A1 1 0 0 1 16.2 16.2 H3.8 A1 1 0 0 1 2.8 15.2 Z</StreamGeometry>
+  <StreamGeometry x:Key="IconFile">M5 2.8 H11.6 L15.6 6.8 V16.4 A0.8 0.8 0 0 1 14.8 17.2 H5 A0.8 0.8 0 0 1 4.2 16.4 V3.6 A0.8 0.8 0 0 1 5 2.8 Z M11.4 2.9 V7 H15.5</StreamGeometry>
+  <StreamGeometry x:Key="IconExternal">M15.6 11.2 V16 A1.2 1.2 0 0 1 14.4 17.2 H4.4 A1.2 1.2 0 0 1 3.2 16 V6 A1.2 1.2 0 0 1 4.4 4.8 H9.2 M12.4 2.8 H17.2 V7.6 M17.2 2.8 L9.6 10.4</StreamGeometry>
+
+  <StreamGeometry x:Key="IconChevronRight">M8 4.6 L13.4 10 L8 15.4</StreamGeometry>
+  <StreamGeometry x:Key="IconChevronDown">M4.6 8 L10 13.4 L15.4 8</StreamGeometry>
+  <StreamGeometry x:Key="IconChevronLeft">M12 4.6 L6.6 10 L12 15.4</StreamGeometry>
+  <StreamGeometry x:Key="IconArrowRight">M3.4 10 H16 M11.2 5.2 L16 10 L11.2 14.8</StreamGeometry>
+
+  <!-- ===== Input devices =========================================== -->
+
+  <!-- Keyboard: kept inside the 2..18 live area like everything else -->
+  <StreamGeometry x:Key="IconKeyboard">M3 5.6 H17 A1 1 0 0 1 18 6.6 V13.4 A1 1 0 0 1 17 14.4 H3 A1 1 0 0 1 2 13.4 V6.6 A1 1 0 0 1 3 5.6 Z M5 8.6 V8.7 M7.6 8.6 V8.7 M10.2 8.6 V8.7 M12.8 8.6 V8.7 M15.4 8.6 V8.7 M6.6 11.6 H13.4</StreamGeometry>
+  <!-- Gamepad: the grip-and-flare outline collapses to a blob at 20px, so
+       this is the housing with a d-pad and two face buttons instead. -->
+  <StreamGeometry x:Key="IconGamepad">M4.4 6.8 H15.6 A2.4 2.4 0 0 1 18 9.2 V12.8 A2.4 2.4 0 0 1 15.6 15.2 H4.4 A2.4 2.4 0 0 1 2 12.8 V9.2 A2.4 2.4 0 0 1 4.4 6.8 Z M6.6 9.4 V12.6 M5 11 H8.2 M13.4 10.2 V10.3 M15.4 12 V12.1</StreamGeometry>
+
+  <!-- Key: a single bind, used in lists and on the map legend -->
+  <StreamGeometry x:Key="IconKey">M10.4 10 A3.7 3.7 0 1 1 3 10 A3.7 3.7 0 1 1 10.4 10 Z M10.4 10 H17.4 M14.2 10 V13.2 M16.6 10 V12.6</StreamGeometry>
+
+</ResourceDictionary>

@@ -1,50 +1,21 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:gallery="clr-namespace:Dispatch.UI.Gallery"
         x:Class="Dispatch.UI.Shell.MainWindow"
         Title="Dispatch"
         Width="1240"
-        Height="820"
+        Height="880"
         MinWidth="1040"
         MinHeight="700"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource Ink}"
-        TransparencyLevelHint="None">
+        Background="{DynamicResource Ink}">
 
   <!--
-    Placeholder shell. Replaced by the real navigation chrome once the theme
-    and intro are in; it exists now so the composition root has something to
-    resolve and the skeleton is provably runnable.
+    Currently hosting the gallery. Replaced by the real navigation chrome and
+    routing once the intro and shell land; the gallery then moves behind a
+    development-only route rather than being deleted.
   -->
 
-  <Panel>
-    <StackPanel HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Spacing="16">
-
-      <TextBlock Text="DISPATCH"
-                 FontSize="34"
-                 FontWeight="Bold"
-                 Foreground="{StaticResource Text}"
-                 HorizontalAlignment="Center" />
-
-      <TextBlock Text="Everything you need. Nothing you have to figure out."
-                 FontSize="13.5"
-                 Foreground="{StaticResource TextMuted}"
-                 HorizontalAlignment="Center" />
-
-      <!-- The signature motif, in its simplest form: blue, blue, gold, blue, blue -->
-      <StackPanel Orientation="Horizontal"
-                  Spacing="4"
-                  HorizontalAlignment="Center"
-                  Margin="0,8,0,0">
-        <Border Width="28" Height="8" CornerRadius="4" Background="{StaticResource Blue}" />
-        <Border Width="28" Height="8" CornerRadius="4" Background="{StaticResource Blue}" />
-        <Border Width="28" Height="8" CornerRadius="4" Background="{StaticResource Gold}" />
-        <Border Width="28" Height="8" CornerRadius="4" Background="{StaticResource Blue}" />
-        <Border Width="28" Height="8" CornerRadius="4" Background="{StaticResource Blue}" />
-      </StackPanel>
-
-    </StackPanel>
-  </Panel>
+  <gallery:GalleryView />
 
 </Window>

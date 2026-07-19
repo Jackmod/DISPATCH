@@ -1,0 +1,259 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Dispatch.UI.Controls"
+             x:Class="Dispatch.UI.Gallery.GalleryView"
+             Background="{DynamicResource Ink}">
+
+  <!--
+    The design system, on one screen, in every state. Kept in the solution as a
+    development tool rather than deleted once the real screens exist: it is
+    where a token change gets judged, and where a control that only looks right
+    in its happy path gets caught.
+  -->
+
+  <ScrollViewer>
+    <StackPanel Margin="48" Spacing="48" MaxWidth="1040" HorizontalAlignment="Center">
+
+      <!-- ===== Header ============================================== -->
+      <StackPanel Spacing="8">
+        <TextBlock Text="DESIGN SYSTEM" Classes="micro" />
+        <TextBlock Text="Dispatch" Classes="display" />
+        <TextBlock Text="Everything you need. Nothing you have to figure out."
+                   Classes="body muted" />
+        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,8,0,0">
+          <Border Width="34" Height="6" CornerRadius="3" Background="{DynamicResource Blue}" />
+          <Border Width="34" Height="6" CornerRadius="3" Background="{DynamicResource Blue}" />
+          <Border Width="34" Height="6" CornerRadius="3" Background="{DynamicResource Gold}" />
+          <Border Width="34" Height="6" CornerRadius="3" Background="{DynamicResource Blue}" />
+          <Border Width="34" Height="6" CornerRadius="3" Background="{DynamicResource Blue}" />
+        </StackPanel>
+      </StackPanel>
+
+      <!-- ===== Type scale ========================================== -->
+      <c:Card Title="Type scale" Eyebrow="Typography">
+        <StackPanel Spacing="16">
+          <StackPanel Spacing="2">
+            <TextBlock Text="display · 34 / 700 / -0.6" Classes="micro" />
+            <TextBlock Text="On duty in minutes" Classes="display" />
+          </StackPanel>
+          <StackPanel Spacing="2">
+            <TextBlock Text="h1 · 24 / 700 / -0.3" Classes="micro" />
+            <TextBlock Text="Choose a setup" Classes="h1" />
+          </StackPanel>
+          <StackPanel Spacing="2">
+            <TextBlock Text="h2 · 17 / 650 / -0.1" Classes="micro" />
+            <TextBlock Text="Core components" Classes="h2" />
+          </StackPanel>
+          <StackPanel Spacing="2">
+            <TextBlock Text="body · 13.5 / 450" Classes="micro" />
+            <TextBlock Classes="body"
+                       TextWrapping="Wrap"
+                       Text="LSPDFR turns GTA V into a police simulator. You go on duty, respond to callouts, run traffic stops and make arrests." />
+          </StackPanel>
+          <StackPanel Spacing="2">
+            <TextBlock Text="small · 12 / 500 / 0.1" Classes="micro" />
+            <TextBlock Text="Numpad binds need Num Lock on." Classes="small" />
+          </StackPanel>
+          <StackPanel Spacing="2">
+            <TextBlock Text="micro · 10.5 / 700 / 1.4" Classes="micro" />
+            <TextBlock Text="NEEDS ATTENTION" Classes="micro" />
+          </StackPanel>
+          <StackPanel Spacing="2">
+            <TextBlock Text="mono · 12 / 450" Classes="micro" />
+            <TextBlock Text="C:\Program Files\Rockstar Games\Grand Theft Auto V" Classes="mono" />
+            <TextBlock Text="build 1.0.3725 · ScriptHookV 1.0.3521.0" Classes="mono" />
+          </StackPanel>
+        </StackPanel>
+      </c:Card>
+
+      <!-- ===== Palette ============================================= -->
+      <c:Card Title="Palette" Eyebrow="Colour">
+        <StackPanel Spacing="16">
+
+          <TextBlock Text="SURFACES" Classes="micro" />
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <Border Width="96" Height="56" CornerRadius="6" Background="{DynamicResource Ink}" BorderBrush="{DynamicResource Steel}" BorderThickness="1" />
+            <Border Width="96" Height="56" CornerRadius="6" Background="{DynamicResource NavyDeep}" BorderBrush="{DynamicResource Steel}" BorderThickness="1" />
+            <Border Width="96" Height="56" CornerRadius="6" Background="{DynamicResource Navy}" BorderBrush="{DynamicResource Steel}" BorderThickness="1" />
+            <Border Width="96" Height="56" CornerRadius="6" Background="{DynamicResource NavyRaised}" BorderBrush="{DynamicResource Steel}" BorderThickness="1" />
+            <Border Width="96" Height="56" CornerRadius="6" Background="{DynamicResource Steel}" />
+            <Border Width="96" Height="56" CornerRadius="6" Background="{DynamicResource SteelLight}" />
+          </StackPanel>
+
+          <TextBlock Text="INTERACTIVE AND ACTION" Classes="micro" />
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <Border Width="96" Height="56" CornerRadius="6" Background="{DynamicResource Blue}" />
+            <Border Width="96" Height="56" CornerRadius="6" Background="{DynamicResource BlueBright}" />
+            <Border Width="96" Height="56" CornerRadius="6" Background="{DynamicResource BlueDim}" />
+            <Border Width="96" Height="56" CornerRadius="6" Background="{DynamicResource Gold}" />
+            <Border Width="96" Height="56" CornerRadius="6" Background="{DynamicResource GoldBright}" />
+            <Border Width="96" Height="56" CornerRadius="6" Background="{DynamicResource GoldDim}" />
+          </StackPanel>
+
+          <TextBlock Text="STATUS" Classes="micro" />
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <Border Width="96" Height="56" CornerRadius="6" Background="{DynamicResource Green}" />
+            <Border Width="96" Height="56" CornerRadius="6" Background="{DynamicResource Amber}" />
+            <Border Width="96" Height="56" CornerRadius="6" Background="{DynamicResource Red}" />
+          </StackPanel>
+
+        </StackPanel>
+      </c:Card>
+
+      <!-- ===== Buttons ============================================= -->
+      <c:Card Title="Buttons" Eyebrow="Controls">
+        <StackPanel Spacing="20">
+
+          <StackPanel Spacing="8">
+            <TextBlock Text="DEFAULT" Classes="micro" />
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <Button Classes="primary" Content="Go on duty" />
+              <Button Classes="secondary" Content="Run audit" />
+              <Button Classes="ghost" Content="Show activity" />
+              <Button Classes="danger" Content="Remove mod" />
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel Spacing="8">
+            <TextBlock Text="DISABLED" Classes="micro" />
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <Button Classes="primary" Content="Go on duty" IsEnabled="False" />
+              <Button Classes="secondary" Content="Run audit" IsEnabled="False" />
+              <Button Classes="ghost" Content="Show activity" IsEnabled="False" />
+              <Button Classes="danger" Content="Remove mod" IsEnabled="False" />
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel Spacing="8">
+            <TextBlock Text="WITH ICON" Classes="micro" />
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <Button Classes="primary">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <c:Icon Data="{StaticResource IconPlay}" Foreground="{DynamicResource Ink}" Size="16" />
+                  <TextBlock Text="Go on duty" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <Button Classes="secondary">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <c:Icon Data="{StaticResource IconClean}" Size="16" />
+                  <TextBlock Text="Clean GTA folder" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </StackPanel>
+
+        </StackPanel>
+      </c:Card>
+
+      <!-- ===== Status pills ======================================== -->
+      <c:Card Title="Status pills" Eyebrow="Controls">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <c:StatusPill Text="VERIFIED" Tone="Good" />
+            <c:StatusPill Text="UPDATE AVAILABLE" Tone="Warning" />
+            <c:StatusPill Text="2 CONFLICTS" Tone="Bad" />
+            <c:StatusPill Text="INSTALLING" Tone="Active" />
+            <c:StatusPill Text="NOT INSTALLED" Tone="Neutral" />
+          </StackPanel>
+          <TextBlock Classes="small"
+                     Text="The label always states the meaning. Colour and the dot are reinforcement, never the only carrier." />
+        </StackPanel>
+      </c:Card>
+
+      <!-- ===== Icons =============================================== -->
+      <c:Card Title="Icon set" Eyebrow="20px · 1.5px stroke">
+        <StackPanel Spacing="16">
+          <WrapPanel>
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconShield}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconLightbar}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconRadioWave}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconDashboard}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconMods}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconControls}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconSettings}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconPlay}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconPause}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconDownload}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconRefresh}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconSearch}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconPlus}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconClose}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconTrash}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconClean}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconCheck}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconAlert}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconInfo}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconLock}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconFolder}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconFile}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconExternal}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconChevronRight}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconChevronDown}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconChevronLeft}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconArrowRight}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconKeyboard}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconGamepad}" />
+            <c:Icon Margin="0,0,24,16" Data="{StaticResource IconKey}" />
+          </WrapPanel>
+
+          <TextBlock Text="INHERITS COLOUR FROM CONTEXT" Classes="micro" />
+          <StackPanel Orientation="Horizontal" Spacing="24">
+            <c:Icon Data="{StaticResource IconShield}" Foreground="{DynamicResource Gold}" Size="28" />
+            <c:Icon Data="{StaticResource IconCheck}" Foreground="{DynamicResource Green}" Size="28" />
+            <c:Icon Data="{StaticResource IconAlert}" Foreground="{DynamicResource Amber}" Size="28" />
+            <c:Icon Data="{StaticResource IconClose}" Foreground="{DynamicResource Red}" Size="28" />
+            <c:Icon Data="{StaticResource IconRadioWave}" Foreground="{DynamicResource Blue}" Size="28" />
+          </StackPanel>
+        </StackPanel>
+      </c:Card>
+
+      <!-- ===== Cards =============================================== -->
+      <StackPanel Spacing="16">
+        <TextBlock Text="Cards" Classes="h1" />
+        <StackPanel Orientation="Horizontal" Spacing="16">
+
+          <c:Card Title="Standard Issue" Eyebrow="~6 files · 2 min" Width="290" IsInteractive="True">
+            <TextBlock Classes="body muted" TextWrapping="Wrap"
+                       Text="LSPDFR and its dependencies only. Go on duty, take callouts, make arrests. Nothing else changes." />
+          </c:Card>
+
+          <c:Card Title="Full Duty" Eyebrow="~41 mods · 15 min" Width="290" Classes="selected" IsInteractive="True">
+            <StackPanel Spacing="12">
+              <TextBlock Classes="body muted" TextWrapping="Wrap"
+                         Text="Everything in the guide. MDT traffic stops, voice dispatch, ELS lighting, backup, K9, dash cam, radar." />
+              <c:StatusPill Text="RECOMMENDED" Tone="Active" />
+            </StackPanel>
+          </c:Card>
+
+          <c:Card Title="Realism" Eyebrow="Most complete" Width="290" IsInteractive="True">
+            <StackPanel Spacing="12">
+              <TextBlock Classes="body muted" TextWrapping="Wrap"
+                         Text="Everything in Full Duty plus an extended realism layer." />
+              <c:StatusPill Text="COMING SOON" Tone="Neutral" />
+            </StackPanel>
+          </c:Card>
+
+        </StackPanel>
+      </StackPanel>
+
+      <!-- ===== Spacing ============================================= -->
+      <c:Card Title="Spacing scale" Eyebrow="4px base unit">
+        <StackPanel Spacing="8">
+          <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Border Width="4" Height="24" Background="{DynamicResource Blue}" />
+            <Border Width="8" Height="24" Background="{DynamicResource Blue}" />
+            <Border Width="12" Height="24" Background="{DynamicResource Blue}" />
+            <Border Width="16" Height="24" Background="{DynamicResource Blue}" />
+            <Border Width="24" Height="24" Background="{DynamicResource Blue}" />
+            <Border Width="32" Height="24" Background="{DynamicResource Blue}" />
+            <Border Width="48" Height="24" Background="{DynamicResource Blue}" />
+            <Border Width="64" Height="24" Background="{DynamicResource Blue}" />
+          </StackPanel>
+          <TextBlock Text="4 · 8 · 12 · 16 · 24 · 32 · 48 · 64 — and nothing between" Classes="small" />
+        </StackPanel>
+      </c:Card>
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

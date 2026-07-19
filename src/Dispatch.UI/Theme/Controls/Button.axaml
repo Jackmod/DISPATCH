@@ -1,0 +1,168 @@
+﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    Three button weights and no more.
+
+      Primary    gold. The one thing this screen wants you to do. At most one
+                 per screen; a second gold button means the screen has not
+                 decided what it is for.
+      Secondary  steel outline. Real alternatives to the primary action.
+      Ghost      no chrome until hover. Tertiary and destructive-adjacent
+                 actions that should not compete.
+
+    Gold on navy is the deliberate risk in this palette. It reads as badge
+    metal rather than as a warning, which is why it can carry every call to
+    action without ever resorting to a red-and-blue lightbar cliche.
+
+    Focus is a gold ring on all three, drawn outside the fill so it stays
+    visible on the gold button itself. Accessibility is specced as
+    non-negotiable, so the ring is part of the theme rather than a later pass.
+  -->
+
+  <ControlTheme x:Key="{x:Type Button}" TargetType="Button">
+    <Setter Property="FontFamily" Value="{DynamicResource BodyFont}" />
+    <Setter Property="FontSize" Value="13.5" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Padding" Value="16,10" />
+    <Setter Property="MinHeight" Value="38" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Background" Value="{DynamicResource NavyRaised}" />
+    <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Steel}" />
+    <Setter Property="BorderThickness" Value="1" />
+
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel>
+          <!-- Focus ring sits outside the fill so it survives on gold. -->
+          <Border Name="FocusRing"
+                  Margin="-3"
+                  CornerRadius="9"
+                  BorderThickness="2"
+                  BorderBrush="{DynamicResource Gold}"
+                  Opacity="0" />
+
+          <Border Name="Fill"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}">
+            <ContentPresenter Name="PART_ContentPresenter"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Padding="{TemplateBinding Padding}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+          </Border>
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+
+    <!-- Transitions read their duration from the motion tokens, so the
+         reduced-motion swap collapses them along with everything else. -->
+    <Style Selector="^ /template/ Border#Fill">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="{DynamicResource MicroDuration}" />
+          <BrushTransition Property="BorderBrush" Duration="{DynamicResource MicroDuration}" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="^ /template/ Border#FocusRing">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MicroDuration}" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="^:pointerover /template/ Border#Fill">
+      <Setter Property="Background" Value="{DynamicResource Steel}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SteelLight}" />
+    </Style>
+
+    <Style Selector="^:pressed /template/ Border#Fill">
+      <Setter Property="Background" Value="{DynamicResource NavyRaised}" />
+    </Style>
+
+    <Style Selector="^:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.985)" />
+    </Style>
+
+    <Style Selector="^:focus-visible /template/ Border#FocusRing">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <Style Selector="^:disabled">
+      <Setter Property="Cursor" Value="Arrow" />
+      <Setter Property="Opacity" Value="0.45" />
+    </Style>
+
+    <!-- ===== Primary: gold ========================================= -->
+    <Style Selector="^.primary">
+      <Setter Property="Background" Value="{DynamicResource Gold}" />
+      <Setter Property="Foreground" Value="{DynamicResource Ink}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Gold}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="^.primary /template/ Border#Fill">
+      <Setter Property="Background" Value="{DynamicResource Gold}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Gold}" />
+    </Style>
+    <Style Selector="^.primary:pointerover /template/ Border#Fill">
+      <Setter Property="Background" Value="{DynamicResource GoldBright}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource GoldBright}" />
+    </Style>
+    <Style Selector="^.primary:pressed /template/ Border#Fill">
+      <Setter Property="Background" Value="{DynamicResource Gold}" />
+    </Style>
+
+    <!-- ===== Secondary: steel outline ============================== -->
+    <Style Selector="^.secondary /template/ Border#Fill">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SteelLight}" />
+    </Style>
+    <Style Selector="^.secondary:pointerover /template/ Border#Fill">
+      <Setter Property="Background" Value="{DynamicResource NavyRaised}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Blue}" />
+    </Style>
+
+    <!-- ===== Ghost: no chrome until hover ========================== -->
+    <Style Selector="^.ghost">
+      <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+    </Style>
+    <Style Selector="^.ghost /template/ Border#Fill">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="^.ghost:pointerover /template/ Border#Fill">
+      <Setter Property="Background" Value="{DynamicResource NavyRaised}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="^.ghost:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    </Style>
+
+    <!-- ===== Danger: destructive confirmation ====================== -->
+    <Style Selector="^.danger">
+      <Setter Property="Foreground" Value="{DynamicResource Red}" />
+    </Style>
+    <Style Selector="^.danger /template/ Border#Fill">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Red}" />
+    </Style>
+    <Style Selector="^.danger:pointerover /template/ Border#Fill">
+      <Setter Property="Background" Value="{DynamicResource Red}" />
+    </Style>
+    <Style Selector="^.danger:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    </Style>
+
+  </ControlTheme>
+
+</ResourceDictionary>

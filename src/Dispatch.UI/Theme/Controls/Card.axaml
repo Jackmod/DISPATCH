@@ -1,0 +1,110 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:Dispatch.UI.Controls">
+
+  <!--
+    Navy surface, steel hairline, 10px radius, one elevation token.
+
+    Under the title sits a three-lozenge lightbar rather than a rule. It is a
+    12px echo of the motif that runs through the intro and the install progress
+    rail, and it is what makes a heading in this app look like it belongs to
+    this app.
+
+    Interactive cards lift by the shared CardLiftDistance and brighten their
+    border to gold. That treatment is opt-in via IsInteractive because a card
+    that lifts under the pointer and does nothing when clicked is worse than a
+    card that never moved.
+  -->
+
+  <ControlTheme x:Key="{x:Type controls:Card}" TargetType="controls:Card">
+    <Setter Property="Background" Value="{DynamicResource Navy}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Steel}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+    <Setter Property="Padding" Value="{DynamicResource Inset24}" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Surface"
+                Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="{TemplateBinding CornerRadius}"
+                BoxShadow="{DynamicResource ShadowRaised}"
+                Padding="{TemplateBinding Padding}">
+
+          <DockPanel LastChildFill="True">
+
+            <StackPanel DockPanel.Dock="Top"
+                        Name="Header"
+                        Spacing="4"
+                        Margin="0,0,0,16"
+                        IsVisible="{TemplateBinding Title, Converter={x:Static ObjectConverters.IsNotNull}}">
+
+              <TextBlock Text="{TemplateBinding Eyebrow}"
+                         Classes="micro"
+                         IsVisible="{TemplateBinding Eyebrow, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+              <TextBlock Text="{TemplateBinding Title}" Classes="h2" />
+
+              <!-- The motif, at heading scale: blue, gold, blue -->
+              <StackPanel Orientation="Horizontal" Spacing="3" Margin="0,6,0,0">
+                <Border Width="14" Height="3" CornerRadius="1.5" Background="{DynamicResource Blue}" />
+                <Border Width="8" Height="3" CornerRadius="1.5" Background="{DynamicResource Gold}" />
+                <Border Width="14" Height="3" CornerRadius="1.5" Background="{DynamicResource Steel}" />
+              </StackPanel>
+
+            </StackPanel>
+
+            <ContentPresenter Name="PART_ContentPresenter"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+          </DockPanel>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^ /template/ Border#Surface">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="BorderBrush" Duration="{DynamicResource StandardDuration}" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="^">
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform"
+                                         Duration="{DynamicResource StandardDuration}"
+                                         Easing="{DynamicResource StandardEasing}" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <!-- Opt-in hover treatment. -->
+    <Style Selector="^[IsInteractive=True]">
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <Style Selector="^[IsInteractive=True]:pointerover">
+      <Setter Property="RenderTransform" Value="translateY(-4px)" />
+    </Style>
+
+    <Style Selector="^[IsInteractive=True]:pointerover /template/ Border#Surface">
+      <Setter Property="BorderBrush" Value="{DynamicResource Gold}" />
+    </Style>
+
+    <!-- Selected: gold border without the lift, for a chosen preset. -->
+    <Style Selector="^.selected /template/ Border#Surface">
+      <Setter Property="BorderBrush" Value="{DynamicResource Gold}" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+
+  </ControlTheme>
+
+</ResourceDictionary>

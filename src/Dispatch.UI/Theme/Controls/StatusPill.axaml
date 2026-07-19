@@ -1,0 +1,80 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:Dispatch.UI.Controls">
+
+  <!--
+    Tinted fill, matching border, matching dot. Each tone uses its own dim tint
+    rather than a flat grey chip, so a row of pills reads as status at a
+    glance without any one of them shouting.
+
+    The label always states the meaning in words. The dot and the colour are
+    redundant reinforcement, never the sole carrier — colour-blind users get
+    the same information as everyone else.
+  -->
+
+  <ControlTheme x:Key="{x:Type controls:StatusPill}" TargetType="controls:StatusPill">
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusPill}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="8,3" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+    <Setter Property="Background" Value="{DynamicResource NavyRaised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Steel}" />
+
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}">
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <Ellipse Name="Dot"
+                     Width="6"
+                     Height="6"
+                     VerticalAlignment="Center"
+                     Fill="{TemplateBinding Foreground}"
+                     IsVisible="{TemplateBinding ShowDot}" />
+            <TextBlock Text="{TemplateBinding Text}"
+                       Classes="micro"
+                       Foreground="{TemplateBinding Foreground}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^.neutral">
+      <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+      <Setter Property="Background" Value="{DynamicResource NavyRaised}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Steel}" />
+    </Style>
+
+    <Style Selector="^.good">
+      <Setter Property="Foreground" Value="{DynamicResource Green}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Green}" />
+    </Style>
+
+    <Style Selector="^.warning">
+      <Setter Property="Foreground" Value="{DynamicResource Amber}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Amber}" />
+    </Style>
+
+    <Style Selector="^.bad">
+      <Setter Property="Foreground" Value="{DynamicResource Red}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Red}" />
+    </Style>
+
+    <Style Selector="^.active">
+      <Setter Property="Foreground" Value="{DynamicResource Gold}" />
+      <Setter Property="Background" Value="{DynamicResource GoldDim}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Gold}" />
+    </Style>
+
+  </ControlTheme>
+
+</ResourceDictionary>

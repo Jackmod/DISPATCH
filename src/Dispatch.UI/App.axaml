@@ -23,6 +23,15 @@
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Palette.axaml" />
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Spacing.axaml" />
+        <ResourceInclude Source="avares://Dispatch.UI/Assets/Icons.axaml" />
+
+        <!-- One ControlTheme per control. -->
+        <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/Icon.axaml" />
+        <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/Button.axaml" />
+        <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/Card.axaml" />
+        <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/StatusPill.axaml" />
+
+        <!-- Motion stays last: SetReducedMotion layers its override after it. -->
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Motion.axaml" />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
