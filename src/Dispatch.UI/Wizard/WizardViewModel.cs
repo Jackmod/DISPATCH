@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using Dispatch.Core.Imagery;
+using Dispatch.Core.Installation;
 using Dispatch.UI.Wizard.Steps;
 
 namespace Dispatch.UI.Wizard;
@@ -27,17 +29,26 @@ public sealed partial class WizardViewModel : ObservableObject
     /// Resolves optional user-supplied background images. Null falls back to
     /// the original vector scenes everywhere.
     /// </param>
-    public WizardViewModel(IUserBackgrounds? backgrounds = null)
+    public WizardViewModel(IInstallRunner? runner = null, IUserBackgrounds? backgrounds = null)
     {
+        var install = new InstallStep(runner ?? new SimulatedInstallRunner());
+
         Steps =
         [
             new WelcomeStep(),
             new WhatThisIsStep(),
             new LocateGameStep(),
             new ChoosePresetStep(backgrounds),
-            new InstallStep(),
+            install,
             new OfficerStep(),
         ];
+
+        // Subscribed after Steps exists, since the handler reads it. The
+        // install screen hides its own navigation, so it advances the wizard
+        // itself rather than leaving the user on a finished run with no way
+        // forward.
+        var installIndex = Steps.IndexOf(install);
+        install.Finished += (_, _) => Dispatcher.UIThread.Post(() => GoTo(installIndex + 1));
 
         _currentStep = Steps[0];
         _currentStep.OnEntered();
@@ -53,17 +64,39 @@ public sealed partial class WizardViewModel : ObservableObject
     /// <summary>True when there is a screen before this one.</summary>
     public bool CanGoBack => CurrentIndex > 0;
 
-    /// <summary>True when the current screen is satisfied and one follows it.</summary>
-    public bool CanGoNext => CurrentIndex < Steps.Count - 1 && CurrentStep.CanAdvance;
+    /// <summary>True when this is the last screen, whose action finishes the flow.</summary>
+    public bool IsLastStep => CurrentIndex == Steps.Count - 1;
 
-    /// <summary>Moves to the next screen.</summary>
+    /// <summary>
+    /// True when the current screen is satisfied.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately not conditioned on a next screen existing. The final screen
+    /// is not a dead end — its action is Finish — and requiring a successor
+    /// left the button permanently disabled with the flow complete and no way
+    /// out of it.
+    /// </remarks>
+    public bool CanGoNext => CurrentStep.CanAdvance;
+
+    /// <summary>Raised when the last screen's action is taken.</summary>
+    public event EventHandler? Completed;
+
+    /// <summary>Advances, or finishes if this is the last screen.</summary>
     [RelayCommand]
     private void Next()
     {
-        if (CanGoNext)
+        if (!CanGoNext)
         {
-            GoTo(CurrentIndex + 1);
+            return;
         }
+
+        if (IsLastStep)
+        {
+            Completed?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+
+        GoTo(CurrentIndex + 1);
     }
 
     /// <summary>Moves to the previous screen, preserving everything entered.</summary>
@@ -120,6 +153,7 @@ public sealed partial class WizardViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(CanGoBack));
         OnPropertyChanged(nameof(CanGoNext));
+        OnPropertyChanged(nameof(IsLastStep));
         NextCommand.NotifyCanExecuteChanged();
         BackCommand.NotifyCanExecuteChanged();
     }

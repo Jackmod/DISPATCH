@@ -79,6 +79,14 @@ public sealed class NumberDial : TemplatedControl
     {
         base.OnKeyDown(e);
 
+        // A modified arrow belongs to whoever owns that chord — Ctrl+Arrow is
+        // a navigation shortcut, and stepping the dial as well means one press
+        // does two unrelated things.
+        if (e.Handled || e.KeyModifiers != KeyModifiers.None)
+        {
+            return;
+        }
+
         switch (e.Key)
         {
             case Key.Up or Key.Right:
