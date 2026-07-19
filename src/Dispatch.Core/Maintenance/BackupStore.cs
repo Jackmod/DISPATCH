@@ -85,14 +85,37 @@ public sealed class BackupStore : IBackupStore
             return null;
         }
 
-        var backupPath = Path.Combine(_root, runId, normalised.Replace('/', Path.DirectorySeparatorChar));
-        Directory.CreateDirectory(Path.GetDirectoryName(backupPath)!);
+        var mirrorPath = Path.Combine(_root, runId, normalised.Replace('/', Path.DirectorySeparatorChar));
+        Directory.CreateDirectory(Path.GetDirectoryName(mirrorPath)!);
+
+        // The mirror path is disambiguated if it is already taken. A single run
+        // can back up the same file more than once — Search Items Reborn and
+        // Ultimate Backup deliberately replace Stop The Ped files that an
+        // earlier mod placed — and a second backup landing on the first would
+        // overwrite it, losing the original and making a full rollback restore
+        // the wrong version. Each distinct path is recorded in the journal, so
+        // a rollback still restores exactly the right one.
+        var backupPath = mirrorPath;
+        var suffix = 2;
+        while (File.Exists(backupPath))
+        {
+            backupPath = $"{mirrorPath}.{suffix++}";
+        }
 
         // Copy, not move: the original has to stay in place until the moment the
         // installer actually overwrites it, or a crash between backup and write
         // leaves the game folder missing the file entirely. On a background
         // thread because a backed-up file can be hundreds of megabytes.
-        await Task.Run(() => File.Copy(source, backupPath, overwrite: true), cancellationToken).ConfigureAwait(false);
+        await Task.Run(() => File.Copy(source, backupPath, overwrite: false), cancellationToken).ConfigureAwait(false);
+
+        // File.Copy carries the read-only attribute across. A read-only backup
+        // is an internal artifact this store has to be able to prune and
+        // restore over, so the attribute is cleared on the copy.
+        var attributes = File.GetAttributes(backupPath);
+        if (attributes.HasFlag(FileAttributes.ReadOnly))
+        {
+            File.SetAttributes(backupPath, attributes & ~FileAttributes.ReadOnly);
+        }
 
         _logger.LogDebug("Backed up {Path} for run {Run}", normalised, runId);
         return backupPath;
