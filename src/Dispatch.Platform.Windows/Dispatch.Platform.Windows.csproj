@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Everything P/Invoke or Windows-only. Implements interfaces declared in
+    Dispatch.Core so the domain stays portable.
+  -->
+
+  <PropertyGroup>
+    <!-- Windows 10 1809 is the floor: it is the oldest build WebView2's
+         evergreen runtime supports, and below it the Defender cmdlets this
+         project relies on are not present either. -->
+    <TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <RootNamespace>Dispatch.Platform.Windows</RootNamespace>
+    <AssemblyName>Dispatch.Platform.Windows</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Dispatch.Core\Dispatch.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+</Project>

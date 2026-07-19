@@ -1,0 +1,61 @@
+<Project>
+
+  <!--
+    Central package management: every version in the repository is declared
+    here exactly once. Project files reference packages without a Version.
+
+    Two version choices are deliberate and worth not "fixing" later:
+
+    Avalonia 11.3.x rather than 12.x
+      Avalonia.Svg.Skia has no stable 12.x release, and Avalonia does not keep
+      binary compatibility across major versions. The SVG illustration pipeline
+      is a spec requirement, so the UI framework follows the package that gates
+      it. Revisit when Svg.Skia ships a 12.x stable.
+
+    FluentAssertions 7.x rather than 8.x
+      Version 8 moved to a paid Xceed licence for commercial use. 7.2.2 is the
+      final Apache-2.0 release and is functionally sufficient here.
+  -->
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup Label="Avalonia">
+    <PackageVersion Include="Avalonia" Version="11.3.18" />
+    <PackageVersion Include="Avalonia.Desktop" Version="11.3.18" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.18" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.18" />
+    <PackageVersion Include="Avalonia.Headless.XUnit" Version="11.3.18" />
+    <PackageVersion Include="Avalonia.Svg.Skia" Version="11.3.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="MVVM and composition">
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+
+  <ItemGroup Label="Logging">
+    <PackageVersion Include="Serilog" Version="4.4.0" />
+    <PackageVersion Include="Serilog.Extensions.Hosting" Version="8.0.0" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Archives and platform">
+    <PackageVersion Include="SharpCompress" Version="1.0.0" />
+    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.4078.44" />
+  </ItemGroup>
+
+  <ItemGroup Label="Testing">
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="FluentAssertions" Version="7.2.2" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.2" />
+  </ItemGroup>
+
+</Project>

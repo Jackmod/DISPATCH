@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Dispatch.App/Dispatch.App.csproj" />
+    <Project Path="src/Dispatch.Core/Dispatch.Core.csproj" />
+    <Project Path="src/Dispatch.Platform.Windows/Dispatch.Platform.Windows.csproj" />
+    <Project Path="src/Dispatch.UI/Dispatch.UI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Dispatch.Core.Tests/Dispatch.Core.Tests.csproj" />
+    <Project Path="tests/Dispatch.E2E.Tests/Dispatch.E2E.Tests.csproj" />
+    <Project Path="tests/Dispatch.UI.Tests/Dispatch.UI.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,72 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    The single source of colour for the entire application. No literal colour
+    appears in any other file.
+
+    Midnight navy base, cool blue for structure, warm gold for anything that
+    demands action. The gold is the deliberate risk: it reads as badge metal
+    against the navy, makes every call to action unmistakable, and sidesteps
+    the red-and-blue lightbar cliche entirely.
+
+    Each entry is declared twice, as a Color and as a SolidColorBrush.
+    Animations and gradients need the Color; everything else takes the Brush.
+  -->
+
+  <!-- Surfaces, deepest to most raised -->
+  <Color x:Key="InkColor">#060A12</Color>
+  <Color x:Key="NavyDeepColor">#0B1220</Color>
+  <Color x:Key="NavyColor">#111B2E</Color>
+  <Color x:Key="NavyRaisedColor">#18263F</Color>
+  <Color x:Key="SteelColor">#24365A</Color>
+  <Color x:Key="SteelLightColor">#334973</Color>
+
+  <SolidColorBrush x:Key="Ink" Color="{StaticResource InkColor}" />
+  <SolidColorBrush x:Key="NavyDeep" Color="{StaticResource NavyDeepColor}" />
+  <SolidColorBrush x:Key="Navy" Color="{StaticResource NavyColor}" />
+  <SolidColorBrush x:Key="NavyRaised" Color="{StaticResource NavyRaisedColor}" />
+  <SolidColorBrush x:Key="Steel" Color="{StaticResource SteelColor}" />
+  <SolidColorBrush x:Key="SteelLight" Color="{StaticResource SteelLightColor}" />
+
+  <!-- Interactive -->
+  <Color x:Key="BlueColor">#4C8DFF</Color>
+  <Color x:Key="BlueBrightColor">#7DB0FF</Color>
+  <Color x:Key="BlueDimColor">#1B3A6B</Color>
+
+  <SolidColorBrush x:Key="Blue" Color="{StaticResource BlueColor}" />
+  <SolidColorBrush x:Key="BlueBright" Color="{StaticResource BlueBrightColor}" />
+  <SolidColorBrush x:Key="BlueDim" Color="{StaticResource BlueDimColor}" />
+
+  <!-- Action, focus, key highlight -->
+  <Color x:Key="GoldColor">#E8B44A</Color>
+  <Color x:Key="GoldBrightColor">#F5C866</Color>
+  <Color x:Key="GoldDimColor">#4A3A1C</Color>
+
+  <SolidColorBrush x:Key="Gold" Color="{StaticResource GoldColor}" />
+  <SolidColorBrush x:Key="GoldBright" Color="{StaticResource GoldBrightColor}" />
+  <SolidColorBrush x:Key="GoldDim" Color="{StaticResource GoldDimColor}" />
+
+  <!-- Status -->
+  <Color x:Key="GreenColor">#3ECF8E</Color>
+  <Color x:Key="AmberColor">#F5A524</Color>
+  <Color x:Key="RedColor">#F0555A</Color>
+
+  <SolidColorBrush x:Key="Green" Color="{StaticResource GreenColor}" />
+  <SolidColorBrush x:Key="Amber" Color="{StaticResource AmberColor}" />
+  <SolidColorBrush x:Key="Red" Color="{StaticResource RedColor}" />
+
+  <!-- Text. Body sits at 4.5:1 or better against Navy; Faint is for
+       disabled and tertiary only, never for anything that must be read. -->
+  <Color x:Key="TextColor">#E9EFF9</Color>
+  <Color x:Key="TextMutedColor">#93A6C4</Color>
+  <Color x:Key="TextFaintColor">#5C7096</Color>
+
+  <SolidColorBrush x:Key="Text" Color="{StaticResource TextColor}" />
+  <SolidColorBrush x:Key="TextMuted" Color="{StaticResource TextMutedColor}" />
+  <SolidColorBrush x:Key="TextFaint" Color="{StaticResource TextFaintColor}" />
+
+  <!-- Transparent scrim for modals, derived from Ink rather than pure black -->
+  <SolidColorBrush x:Key="Scrim" Color="{StaticResource InkColor}" Opacity="0.72" />
+
+</ResourceDictionary>
