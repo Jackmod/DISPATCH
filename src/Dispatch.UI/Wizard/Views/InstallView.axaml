@@ -6,57 +6,93 @@
              x:DataType="steps:InstallStep">
 
   <!--
-    The screen goes quiet and focused. Current phase only, one detail line, a
-    counter, and the rail carrying progress.
+    A loading screen in the style the genre established: full-bleed stills
+    crossfading behind the readout, with a tip along the bottom.
 
-    The log is collapsed by default and always will be. A wall of scrolling
-    text makes an install feel fragile, and the people who want it will open it.
+    The stills come from Assets/Loading and are compiled into the executable,
+    so a downloaded release has them. When that folder is empty — which it is
+    in the repository, because no game or mod artwork is bundled — the vector
+    scene takes over and the screen is complete either way.
+
+    The readout stays quiet regardless: current phase only, one detail line, a
+    counter. The log is collapsed by default and always will be; a wall of
+    scrolling text makes an install feel fragile.
   -->
 
-  <Grid RowDefinitions="*,Auto" Margin="64,40,64,32">
+  <Panel>
 
-    <StackPanel Grid.Row="0" VerticalAlignment="Center" Spacing="32" MaxWidth="760">
+    <!-- ===== Backdrop ========================================== -->
+    <c:LoadingSlideshow Name="Slideshow" Interval="0:0:9" />
 
-      <StackPanel Spacing="12">
-        <TextBlock Text="INSTALLING" Classes="micro" />
-        <TextBlock Text="{Binding Phase}" Classes="display" />
-        <TextBlock Text="{Binding Detail}" Classes="mono" />
+    <!-- Fallback for a build with no stills present. -->
+    <Panel IsVisible="{Binding !#Slideshow.HasImages}">
+      <Panel Background="{DynamicResource NavyDeep}" />
+      <Viewbox Stretch="UniformToFill" Opacity="0.30">
+        <Canvas Width="1200" Height="800">
+          <Path Data="{StaticResource ArtStreetGrid}"
+                Stroke="{DynamicResource StreetGrid}"
+                StrokeThickness="1.6" />
+        </Canvas>
+      </Viewbox>
+      <Ellipse Width="620" Height="620"
+               HorizontalAlignment="Left" VerticalAlignment="Bottom"
+               Margin="-200,0,0,-260"
+               Fill="{DynamicResource PatrolRed}"
+               Opacity="0.5" />
+      <Ellipse Width="620" Height="620"
+               HorizontalAlignment="Right" VerticalAlignment="Top"
+               Margin="0,-260,-200,0"
+               Fill="{DynamicResource PatrolBlue}"
+               Opacity="0.5" />
+      <Viewbox Width="520" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.5">
+        <Canvas Width="240" Height="88">
+          <Path Data="{StaticResource ArtCruiser}"
+                Stroke="{DynamicResource BlueBright}"
+                StrokeThickness="2"
+                StrokeLineCap="Round"
+                StrokeJoin="Round" />
+        </Canvas>
+      </Viewbox>
+      <Border Background="{DynamicResource Vignette}" />
+    </Panel>
+
+    <!-- ===== Readout ========================================== -->
+    <Grid RowDefinitions="*,Auto" Margin="64,40,64,32">
+
+      <!-- Width rather than MaxWidth: a left-aligned StackPanel shrinks to its
+           content, which stunts the progress rail and collapses the spacer
+           column so the counter collides with the note beside it. -->
+      <StackPanel Grid.Row="0" VerticalAlignment="Bottom" Spacing="28" Width="880" HorizontalAlignment="Left">
+
+        <StackPanel Spacing="10">
+          <TextBlock Text="INSTALLING" Classes="micro" />
+          <TextBlock Text="{Binding Phase}" Classes="display" />
+          <TextBlock Text="{Binding Detail}" Classes="mono" />
+        </StackPanel>
+
+        <StackPanel Spacing="12">
+          <c:LightbarProgress SegmentCount="7"
+                              CompletedSegments="{Binding PhaseIndex}"
+                              SegmentHeight="10" />
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <TextBlock Grid.Column="0" Text="{Binding Counter}" Classes="mono" />
+            <TextBlock Grid.Column="2"
+                       Classes="small"
+                       Text="Nothing blocks. A failed mod is reported at the end." />
+          </Grid>
+        </StackPanel>
+
+        <Expander IsExpanded="{Binding IsLogExpanded}" Header="Show detailed log" HorizontalAlignment="Left">
+          <TextBlock Classes="mono"
+                     TextWrapping="Wrap"
+                     Text="04:19:22  placed  plugins/StopThePed.dll&#10;04:19:22  backup   plugins/StopThePed.dll -&gt; backups/run-7f3a&#10;04:19:23  verify   sha256 match&#10;04:19:24  extract  SearchItemsReborn.zip -&gt; staging/" />
+        </Expander>
+
       </StackPanel>
 
-      <StackPanel Spacing="12">
-        <c:LightbarProgress SegmentCount="7"
-                            CompletedSegments="{Binding PhaseIndex}"
-                            SegmentHeight="10" />
-        <Grid ColumnDefinitions="Auto,*,Auto">
-          <TextBlock Grid.Column="0" Text="{Binding Counter}" Classes="mono" />
-          <TextBlock Grid.Column="2" Text="Nothing blocks. A failed mod is reported at the end."
-                     Classes="small" />
-        </Grid>
-      </StackPanel>
+      <c:TipRail Grid.Row="1" Interval="0:0:8" Margin="0,28,0,0" />
 
-      <Expander IsExpanded="{Binding IsLogExpanded}" Header="Show detailed log">
-        <TextBlock Classes="mono"
-                   TextWrapping="Wrap"
-                   Text="04:19:22  placed  plugins/StopThePed.dll&#10;04:19:22  backup   plugins/StopThePed.dll -> backups/run-7f3a&#10;04:19:23  verify   sha256 match&#10;04:19:24  extract  SearchItemsReborn.zip -> staging/" />
-      </Expander>
-
-    </StackPanel>
-
-    <!-- ===== Tip rail ======================================== -->
-    <Border Grid.Row="1"
-            Padding="20,14"
-            CornerRadius="{DynamicResource RadiusPill}"
-            Background="{DynamicResource GlassSurface}"
-            BorderBrush="{DynamicResource GlassBorder}"
-            BorderThickness="1">
-      <StackPanel Orientation="Horizontal" Spacing="14">
-        <c:Icon Data="{StaticResource IconInfo}" Foreground="{DynamicResource Gold}" Size="18" />
-        <TextBlock Classes="small"
-                   VerticalAlignment="Center"
-                   Text="Numpad binds need Num Lock on. This will waste ten minutes of your life at least once." />
-      </StackPanel>
-    </Border>
-
-  </Grid>
+    </Grid>
+  </Panel>
 
 </UserControl>

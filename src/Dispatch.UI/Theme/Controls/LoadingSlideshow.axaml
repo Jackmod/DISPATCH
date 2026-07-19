@@ -1,0 +1,52 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:Dispatch.UI.Controls">
+
+  <!--
+    Two image layers that alternate, over the ink base, under a scrim.
+
+    The scrim is not optional. These stills are bright daylight scenes and the
+    install readout sits on top of them; without it the phase name and counter
+    become unreadable the moment a pale frame comes up. It is a vertical
+    gradient rather than a flat wash so the top of the frame stays visible
+    while the text at the bottom always has something dark behind it.
+  -->
+
+  <ControlTheme x:Key="{x:Type controls:LoadingSlideshow}" TargetType="controls:LoadingSlideshow">
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="ClipToBounds" Value="True" />
+
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel Background="{DynamicResource Ink}">
+
+          <Image Name="PART_LayerA"
+                 Stretch="UniformToFill"
+                 Opacity="0"
+                 RenderTransformOrigin="50%,50%" />
+
+          <Image Name="PART_LayerB"
+                 Stretch="UniformToFill"
+                 Opacity="0"
+                 RenderTransformOrigin="50%,50%" />
+
+          <!-- Legibility scrim -->
+          <Border>
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                <GradientStop Offset="0" Color="#B3060A12" />
+                <GradientStop Offset="0.45" Color="#8C060A12" />
+                <GradientStop Offset="1" Color="#F2060A12" />
+              </LinearGradientBrush>
+            </Border.Background>
+          </Border>
+
+          <!-- Keeps the palette present over photographic material. -->
+          <Border Background="{DynamicResource Vignette}" />
+
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+
+</ResourceDictionary>

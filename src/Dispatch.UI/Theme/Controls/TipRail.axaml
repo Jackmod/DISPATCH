@@ -1,0 +1,28 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:Dispatch.UI.Controls">
+
+  <ControlTheme x:Key="{x:Type controls:TipRail}" TargetType="controls:TipRail">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{DynamicResource GlassSurface}"
+                BorderBrush="{DynamicResource GlassBorder}"
+                BorderThickness="1"
+                CornerRadius="{DynamicResource RadiusPill}"
+                Padding="20,14">
+          <StackPanel Orientation="Horizontal" Spacing="14">
+            <controls:Icon Data="{DynamicResource IconInfo}"
+                           Foreground="{DynamicResource Gold}"
+                           Size="18"
+                           VerticalAlignment="Center" />
+            <TextBlock Name="PART_Tip"
+                       Classes="small"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+
+</ResourceDictionary>

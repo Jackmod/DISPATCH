@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
@@ -67,8 +67,6 @@ public partial class IntroView : UserControl
 
     private async Task PlayAsync(CancellationToken token)
     {
-        var width = Bounds.Width > 0 ? Bounds.Width : 1240;
-
         // The glow comes up under everything so the field is never flat black.
         var glow = Animate(GlowFadeIn(), Glow, token);
 
@@ -76,14 +74,10 @@ public partial class IntroView : UserControl
         var redLight = Animate(PatrolFlash(TimeSpan.Zero), PatrolRedLight, token);
         var blueLight = Animate(PatrolFlash(TimeSpan.FromMilliseconds(190)), PatrolBlueLight, token);
 
-        // 0-560ms: the scan line crosses.
-        var scan = Animate(ScanSweep(width), Scan, token);
-        var scanOpacity = Animate(ScanOpacity(), Scan, token);
-
         // 120-980ms: letters draw on, 60ms apart.
         var letters = DrawLettersAsync(token);
 
-        await Task.WhenAll(glow, scan, scanOpacity, letters);
+        await Task.WhenAll(glow, letters);
         token.ThrowIfCancellationRequested();
 
         // The lights are on their own long loop; they end with the fade rather
@@ -133,7 +127,7 @@ public partial class IntroView : UserControl
     /// <remarks>
     /// RunAsync takes a Visual, not an Animatable, so a TranslateTransform
     /// cannot be animated directly. Transform sub-properties are set on the
-    /// control instead — the same mechanism Reveal.axaml uses in XAML — and
+    /// control instead â€” the same mechanism Reveal.axaml uses in XAML â€” and
     /// Avalonia builds the transform behind the scenes.
     /// </remarks>
     private static Task Animate(Animation animation, Visual target, CancellationToken token) =>
@@ -161,7 +155,7 @@ public partial class IntroView : UserControl
     /// <remarks>
     /// The floor is 0.18 rather than near-zero. A real bar is dark for most of
     /// its cycle, but at 1.4s total that produced isolated flickers against
-    /// black rather than a lit scene — the eye never got long enough to read it
+    /// black rather than a lit scene â€” the eye never got long enough to read it
     /// as patrol lighting. Keeping a standing wash under the flashes reads
     /// correctly and still leaves the double-tap obvious.
     /// </remarks>
@@ -182,30 +176,7 @@ public partial class IntroView : UserControl
         },
     };
 
-    private static Animation ScanSweep(double width) => new()
-    {
-        Duration = TimeSpan.FromMilliseconds(560),
-        Easing = new CubicEaseInOut(),
-        FillMode = FillMode.Forward,
-        Children =
-        {
-            Frame(0d, (TranslateTransform.XProperty, 0d)),
-            Frame(1d, (TranslateTransform.XProperty, width)),
-        },
-    };
 
-    private static Animation ScanOpacity() => new()
-    {
-        Duration = TimeSpan.FromMilliseconds(560),
-        FillMode = FillMode.Forward,
-        Children =
-        {
-            Frame(0d, (OpacityProperty, 0d)),
-            Frame(0.12d, (OpacityProperty, 0.9d)),
-            Frame(0.82d, (OpacityProperty, 0.9d)),
-            Frame(1d, (OpacityProperty, 0d)),
-        },
-    };
 
     private static Animation LetterDraw(TimeSpan delay) => new()
     {

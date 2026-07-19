@@ -117,13 +117,6 @@
       </StackPanel>
     </Panel>
 
-    <!-- ===== Scan line ========================================== -->
-    <Border Name="Scan"
-            Width="2"
-            HorizontalAlignment="Left"
-            Background="{DynamicResource Blue}"
-            Opacity="0" />
-
     <TextBlock Name="SkipHint"
                Text="PRESS ANY KEY TO SKIP"
                Classes="micro"

@@ -36,6 +36,8 @@
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/StatusPill.axaml" />
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/AmbientBackdrop.axaml" />
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/LightbarProgress.axaml" />
+        <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/LoadingSlideshow.axaml" />
+        <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/TipRail.axaml" />
 
         <!-- Motion stays last: SetReducedMotion layers its override after it. -->
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Motion.axaml" />
