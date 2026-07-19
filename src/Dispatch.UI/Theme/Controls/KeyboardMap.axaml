@@ -1,0 +1,19 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:Dispatch.UI.Controls">
+
+  <ControlTheme x:Key="{x:Type controls:KeyboardMap}" TargetType="controls:KeyboardMap">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{DynamicResource NavyDeep}"
+                BorderBrush="{DynamicResource Steel}"
+                BorderThickness="1"
+                CornerRadius="{DynamicResource RadiusCard}"
+                Padding="12">
+          <Canvas Name="PART_Surface" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+
+</ResourceDictionary>

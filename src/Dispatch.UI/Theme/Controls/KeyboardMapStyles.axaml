@@ -1,0 +1,92 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:Dispatch.UI.Controls">
+
+  <!--
+    Key cap appearance.
+
+    Application-level rather than inside the ControlTheme because the caps are
+    built in code and a ControlTheme may not contain descendant selectors.
+    Keeping the brushes here rather than assigning them in the control means
+    the theme still owns every colour.
+
+    Free keys are dark and recede. Bound keys are blue. Conflicts are red on
+    both sides, never just one, so the pair reads as a relationship rather than
+    as one key being at fault. Reserved is gold-edged and locked.
+  -->
+
+  <Style Selector="controls|KeyboardMap Border.key">
+    <Setter Property="Background" Value="{DynamicResource NavyRaised}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Steel}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="{DynamicResource StandardDuration}" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource StandardDuration}" />
+        <DoubleTransition Property="Opacity" Duration="{DynamicResource StandardDuration}" />
+        <TransformOperationsTransition Property="RenderTransform"
+                                       Duration="{DynamicResource MicroDuration}"
+                                       Easing="{DynamicResource MicroEasing}" />
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <Style Selector="controls|KeyboardMap Border.key TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource BodyFont}" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{DynamicResource TextFaint}" />
+  </Style>
+
+  <!-- ===== States ================================================= -->
+
+  <Style Selector="controls|KeyboardMap Border.key.free">
+    <Setter Property="Background" Value="{DynamicResource NavyRaised}" />
+  </Style>
+
+  <Style Selector="controls|KeyboardMap Border.key.bound">
+    <Setter Property="Background" Value="{DynamicResource BlueDim}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Blue}" />
+  </Style>
+
+  <Style Selector="controls|KeyboardMap Border.key.bound TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Text}" />
+  </Style>
+
+  <Style Selector="controls|KeyboardMap Border.key.conflict">
+    <Setter Property="Background" Value="{DynamicResource Red}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Red}" />
+  </Style>
+
+  <Style Selector="controls|KeyboardMap Border.key.conflict TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+
+  <Style Selector="controls|KeyboardMap Border.key.reserved">
+    <Setter Property="Background" Value="{DynamicResource GoldDim}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Gold}" />
+  </Style>
+
+  <Style Selector="controls|KeyboardMap Border.key.reserved TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Gold}" />
+  </Style>
+
+  <!-- ===== Interaction =========================================== -->
+
+  <Style Selector="controls|KeyboardMap Border.key:pointerover">
+    <Setter Property="RenderTransform" Value="translateY(-2px)" />
+    <Setter Property="BorderBrush" Value="{DynamicResource GoldBright}" />
+  </Style>
+
+  <Style Selector="controls|KeyboardMap Border.key.selected">
+    <Setter Property="BorderBrush" Value="{DynamicResource Gold}" />
+    <Setter Property="BorderThickness" Value="2" />
+  </Style>
+
+  <!-- Free-keys-only recedes the taken ones rather than hiding them, so the
+       shape of the board stays readable. -->
+  <Style Selector="controls|KeyboardMap Border.key.dimmed">
+    <Setter Property="Opacity" Value="0.18" />
+  </Style>
+
+</Styles>

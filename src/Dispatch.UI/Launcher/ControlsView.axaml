@@ -1,0 +1,214 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Dispatch.UI.Controls"
+             xmlns:vm="clr-namespace:Dispatch.UI.Launcher"
+             xmlns:core="clr-namespace:Dispatch.Core.Controls;assembly=Dispatch.Core"
+             x:Class="Dispatch.UI.Launcher.ControlsView"
+             x:DataType="vm:ControlsViewModel">
+
+  <!--
+    The map answers "what is on this key?", the list answers "where is this
+    action?", and clicking either filters the other. Edits stage rather than
+    write, and the pending bar only appears once there is something to apply.
+  -->
+
+  <Panel>
+    <c:AmbientBackdrop Intensity="0.6" />
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="32,24,32,0">
+
+      <!-- ===== Header ========================================== -->
+      <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+        <StackPanel Grid.Column="0" Spacing="6">
+          <TextBlock Text="CONTROLS" Classes="micro" />
+          <TextBlock Text="Keybindings" Classes="display" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+          <c:StatusPill Text="{Binding ConflictSummary}"
+                        Tone="Bad"
+                        IsVisible="{Binding !IsClean}" />
+          <c:StatusPill Text="NO CONFLICTS"
+                        Tone="Good"
+                        IsVisible="{Binding IsClean}" />
+          <!-- ItemsSource of strings, not ComboBoxItem children: SelectedItem
+               binds to a string, and item elements never match it. -->
+          <ComboBox ItemsSource="{Binding ProfileNames}"
+                    SelectedItem="{Binding ProfileName}"
+                    Width="160" />
+        </StackPanel>
+      </Grid>
+
+      <!-- ===== Map ============================================= -->
+      <StackPanel Grid.Row="1" Spacing="12" Margin="0,0,0,20">
+
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <!-- Layers are essential, not decorative: Left Shift + X and a bare
+               X are different bindings and must not share a surface. -->
+          <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+            <RadioButton GroupName="Layer" Content="Base" IsChecked="True"
+                         Command="{Binding $parent[UserControl].((vm:ControlsViewModel)DataContext).SetLayerCommand}"
+                         CommandParameter="{x:Static core:KeyModifier.None}" />
+            <RadioButton GroupName="Layer" Content="⇧ Shift"
+                         Command="{Binding $parent[UserControl].((vm:ControlsViewModel)DataContext).SetLayerCommand}"
+                         CommandParameter="{x:Static core:KeyModifier.Shift}" />
+            <RadioButton GroupName="Layer" Content="⌃ Ctrl"
+                         Command="{Binding $parent[UserControl].((vm:ControlsViewModel)DataContext).SetLayerCommand}"
+                         CommandParameter="{x:Static core:KeyModifier.Control}" />
+            <RadioButton GroupName="Layer" Content="⌥ Alt"
+                         Command="{Binding $parent[UserControl].((vm:ControlsViewModel)DataContext).SetLayerCommand}"
+                         CommandParameter="{x:Static core:KeyModifier.Alt}" />
+          </StackPanel>
+
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16">
+            <CheckBox Content="Free keys only" IsChecked="{Binding FreeKeysOnly}" />
+            <CheckBox Content="Conflicts only" IsChecked="{Binding ConflictsOnly}" />
+          </StackPanel>
+        </Grid>
+
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+          <c:KeyboardMap Bindings="{Binding AllBindings}"
+                         Layer="{Binding Layer}"
+                         SelectedKey="{Binding SelectedKey}"
+                         FreeKeysOnly="{Binding FreeKeysOnly}"
+                         HorizontalAlignment="Left" />
+        </ScrollViewer>
+
+        <StackPanel Orientation="Horizontal" Spacing="20">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Border Width="12" Height="12" CornerRadius="3" Background="{DynamicResource BlueDim}"
+                    BorderBrush="{DynamicResource Blue}" BorderThickness="1" VerticalAlignment="Center" />
+            <TextBlock Text="Bound" Classes="small" VerticalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Border Width="12" Height="12" CornerRadius="3" Background="{DynamicResource Red}" VerticalAlignment="Center" />
+            <TextBlock Text="Conflict" Classes="small" VerticalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Border Width="12" Height="12" CornerRadius="3" Background="{DynamicResource GoldDim}"
+                    BorderBrush="{DynamicResource Gold}" BorderThickness="1" VerticalAlignment="Center" />
+            <TextBlock Text="Reserved — F4 opens the RagePluginHook console" Classes="small" VerticalAlignment="Center" />
+          </StackPanel>
+        </StackPanel>
+      </StackPanel>
+
+      <!-- ===== Action list ===================================== -->
+      <Grid Grid.Row="2" RowDefinitions="Auto,*">
+
+        <TextBox Grid.Row="0"
+                 Name="SearchBox"
+                 Text="{Binding Search}"
+                 Watermark="Search actions, plugins, or a key — typing F9 finds what is on F9"
+                 Margin="0,0,0,12" />
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding Rows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:BindingRow">
+                <Border Margin="0,0,0,8"
+                        Padding="16,12"
+                        CornerRadius="{DynamicResource RadiusCard}"
+                        Background="{DynamicResource GlassSurface}"
+                        BorderBrush="{DynamicResource GlassBorder}"
+                        BorderThickness="1">
+                  <Grid ColumnDefinitions="*,Auto,Auto">
+
+                    <StackPanel Grid.Column="0" Spacing="3">
+                      <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="{Binding Action.Name}" Classes="h2" />
+                        <c:StatusPill Text="CHANGED" Tone="Active" IsVisible="{Binding IsChanged}" />
+                        <c:StatusPill Text="CONFLICT" Tone="Bad" IsVisible="{Binding IsConflicted}" />
+                      </StackPanel>
+                      <TextBlock Text="{Binding Action.Description}" Classes="small" TextWrapping="Wrap" />
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="{Binding Action.Plugin}" Classes="micro" />
+                        <TextBlock Text="·" Classes="micro" />
+                        <TextBlock Text="{Binding Action.ConfigFile}" Classes="mono" />
+                      </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4" Margin="16,0">
+                      <Border Padding="14,8"
+                              MinWidth="150"
+                              CornerRadius="{DynamicResource RadiusInput}"
+                              Background="{DynamicResource NavyDeep}"
+                              BorderBrush="{DynamicResource Steel}"
+                              BorderThickness="1">
+                        <TextBlock Text="{Binding BindingDisplay}"
+                                   Classes="mono"
+                                   TextAlignment="Center"
+                                   Foreground="{DynamicResource Text}" />
+                      </Border>
+                      <TextBlock Text="Needs Num Lock on" Classes="micro"
+                                 HorizontalAlignment="Center"
+                                 Foreground="{DynamicResource Amber}"
+                                 IsVisible="{Binding NeedsNumLock}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                      <Button Classes="secondary"
+                              Content="Rebind"
+                              Command="{Binding $parent[ItemsControl].((vm:ControlsViewModel)DataContext).BeginCaptureCommand}"
+                              CommandParameter="{Binding}" />
+                      <Button Classes="ghost"
+                              Content="Clear"
+                              Command="{Binding $parent[ItemsControl].((vm:ControlsViewModel)DataContext).UnbindCommand}"
+                              CommandParameter="{Binding}" />
+                    </StackPanel>
+
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Grid>
+
+      <!-- ===== Pending bar ===================================== -->
+      <Border Grid.Row="3"
+              IsVisible="{Binding HasPending}"
+              Margin="0,16,0,16"
+              Padding="20,14"
+              CornerRadius="{DynamicResource RadiusCard}"
+              Background="{DynamicResource GoldDim}"
+              BorderBrush="{DynamicResource Gold}"
+              BorderThickness="1">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+          <c:Icon Grid.Column="0" Data="{StaticResource IconInfo}"
+                  Foreground="{DynamicResource Gold}" VerticalAlignment="Center" />
+          <TextBlock Grid.Column="1"
+                     Classes="body"
+                     Margin="14,0"
+                     VerticalAlignment="Center"
+                     Text="{Binding PendingCount, StringFormat='{}{0} change(s) staged. Nothing is written until you apply.'}" />
+          <Button Grid.Column="2" Classes="ghost" Content="Discard"
+                  Command="{Binding DiscardCommand}" Margin="0,0,10,0" />
+          <Button Grid.Column="3" Classes="primary" Content="Apply"
+                  Command="{Binding ApplyCommand}" />
+        </Grid>
+      </Border>
+
+    </Grid>
+
+    <!-- ===== Capture overlay ================================== -->
+    <Border IsVisible="{Binding Capturing, Converter={x:Static ObjectConverters.IsNotNull}}"
+            Background="{DynamicResource Scrim}">
+      <Border VerticalAlignment="Center" HorizontalAlignment="Center"
+              Padding="48,40"
+              CornerRadius="{DynamicResource RadiusModal}"
+              Background="{DynamicResource Navy}"
+              BorderBrush="{DynamicResource Gold}"
+              BorderThickness="2"
+              BoxShadow="{DynamicResource ShadowModal}">
+        <StackPanel Spacing="16" HorizontalAlignment="Center">
+          <TextBlock Text="PRESS A KEY" Classes="micro" HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding Capturing.Action.Name}" Classes="h1" HorizontalAlignment="Center" />
+          <TextBlock Classes="small" HorizontalAlignment="Center"
+                     Text="Hold Shift, Ctrl or Alt to bind a chord.  Esc cancels.  Delete unbinds." />
+        </StackPanel>
+      </Border>
+    </Border>
+
+  </Panel>
+
+</UserControl>

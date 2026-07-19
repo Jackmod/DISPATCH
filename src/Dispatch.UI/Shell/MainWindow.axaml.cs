@@ -1,8 +1,9 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Dispatch.UI.Launcher;
 using Dispatch.UI.Wizard;
 
 namespace Dispatch.UI.Shell;
@@ -32,7 +33,7 @@ public partial class MainWindow : Window
 
         // Tunnelling, not bubbling: Avalonia's directional focus navigation
         // consumes arrow keys on the way down, so a bubbling handler never
-        // sees Ctrl+Arrow — focus just moves instead.
+        // sees Ctrl+Arrow â€” focus just moves instead.
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
     }
 
@@ -46,8 +47,8 @@ public partial class MainWindow : Window
     /// <para>
     /// Ctrl+Right and Ctrl+Left step the wizard regardless of whether the
     /// current screen is satisfied. Without this the install screen is a
-    /// dead end — it hides its own navigation by design, and nothing advances
-    /// it until InstallRunner exists — so the last screen would be unreachable
+    /// dead end â€” it hides its own navigation by design, and nothing advances
+    /// it until InstallRunner exists â€” so the last screen would be unreachable
     /// and untestable.
     /// </para>
     /// </remarks>
@@ -57,7 +58,20 @@ public partial class MainWindow : Window
         if (e.Key == Key.F12)
         {
             Gallery.IsVisible = !Gallery.IsVisible;
+            Controls.IsVisible = false;
             Wizard.IsVisible = !Gallery.IsVisible;
+            e.Handled = true;
+            return;
+        }
+
+        // F11 jumps to the controls screen, which has no navigation to it yet
+        // because the launcher shell does not exist.
+        if (e.Key == Key.F11)
+        {
+            Controls.IsVisible = !Controls.IsVisible;
+            Controls.DataContext ??= new ControlsViewModel();
+            Gallery.IsVisible = false;
+            Wizard.IsVisible = !Controls.IsVisible;
             e.Handled = true;
             return;
         }

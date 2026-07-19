@@ -3,6 +3,7 @@
         xmlns:gallery="clr-namespace:Dispatch.UI.Gallery"
         xmlns:intro="clr-namespace:Dispatch.UI.Intro"
         xmlns:wizard="clr-namespace:Dispatch.UI.Wizard"
+        xmlns:launcher="clr-namespace:Dispatch.UI.Launcher"
         x:Class="Dispatch.UI.Shell.MainWindow"
         Title="Dispatch"
         Width="1280"
@@ -25,6 +26,7 @@
     <Panel Name="ShellHost" Opacity="0">
       <wizard:WizardShellView Name="Wizard" />
       <gallery:GalleryView Name="Gallery" IsVisible="False" />
+      <launcher:ControlsView Name="Controls" IsVisible="False" />
     </Panel>
 
     <intro:IntroView Name="Intro" />

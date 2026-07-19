@@ -1,4 +1,4 @@
-<Application xmlns="https://github.com/avaloniaui"
+﻿<Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Dispatch.UI.App"
              RequestedThemeVariant="Dark">
@@ -18,6 +18,7 @@
     <StyleInclude Source="avares://Dispatch.UI/Theme/Typography.axaml" />
     <StyleInclude Source="avares://Dispatch.UI/Theme/Reveal.axaml" />
     <StyleInclude Source="avares://Dispatch.UI/Theme/Controls/LightbarProgressStyles.axaml" />
+    <StyleInclude Source="avares://Dispatch.UI/Theme/Controls/KeyboardMapStyles.axaml" />
   </Application.Styles>
 
   <Application.Resources>
@@ -42,6 +43,7 @@
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/Expander.axaml" />
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/NumberDial.axaml" />
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/ProgressBarSolid.axaml" />
+        <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/KeyboardMap.axaml" />
 
         <!-- Motion stays last: SetReducedMotion layers its override after it. -->
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Motion.axaml" />
