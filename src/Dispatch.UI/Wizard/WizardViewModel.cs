@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using Dispatch.Core.Audio;
+using Dispatch.Core.Detection;
 using Dispatch.Core.Imagery;
 using Dispatch.Core.Installation;
 using Dispatch.Core.Profiles;
@@ -38,7 +39,9 @@ public sealed partial class WizardViewModel : ObservableObject
         IInstallRunner? runner = null,
         IUserBackgrounds? backgrounds = null,
         ICallsignVoice? voice = null,
-        IProfileStore? profiles = null)
+        IProfileStore? profiles = null,
+        IGameLocator? locator = null,
+        IVersionReader? versions = null)
     {
         _profiles = profiles;
 
@@ -48,7 +51,7 @@ public sealed partial class WizardViewModel : ObservableObject
         [
             new WelcomeStep(),
             new WhatThisIsStep(),
-            new LocateGameStep(),
+            new LocateGameStep(locator, versions),
             new ChoosePresetStep(backgrounds),
             install,
             new OfficerStep(voice),

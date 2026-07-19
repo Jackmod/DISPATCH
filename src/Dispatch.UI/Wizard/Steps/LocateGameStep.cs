@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Dispatch.Core.Detection;
 using Dispatch.UI.Controls;
 
 namespace Dispatch.UI.Wizard.Steps;
@@ -44,27 +45,62 @@ public sealed partial class LocateGameStep : WizardStep
     [ObservableProperty]
     private GameCandidate? _selected;
 
-    /// <summary>Constructs the screen with detection results.</summary>
-    public LocateGameStep()
+    /// <summary>Constructs the screen, running real detection when available.</summary>
+    /// <param name="locator">Finds installs. Null falls back to representative data.</param>
+    /// <param name="versions">Reads builds and mod state. Null falls back too.</param>
+    public LocateGameStep(IGameLocator? locator = null, IVersionReader? versions = null)
     {
-        Candidates =
-        [
-            new GameCandidate(
-                "Steam",
-                @"C:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V",
-                "1.0.3725",
-                GameCandidateState.Verified,
-                "GTA5.exe found, build read, no mod files present."),
-            new GameCandidate(
-                "Epic Games",
-                @"D:\Epic\GTAV",
-                "1.0.3407",
-                GameCandidateState.AlreadyModified,
-                "Found dinput8.dll, ScriptHookV.dll and a plugins folder from an earlier attempt."),
-        ];
+        var detected = Detect(locator, versions);
 
-        _selected = Candidates[0];
+        // With nothing detected — the common case on a dev machine — the screen
+        // still shows representative cards so the wizard is demonstrable end to
+        // end rather than dead-ending on an empty list.
+        Candidates = detected.Count > 0 ? new ObservableCollection<GameCandidate>(detected) : Mock();
+        _selected = Candidates.FirstOrDefault(c => c.State != GameCandidateState.Invalid) ?? Candidates[0];
     }
+
+    private static IReadOnlyList<GameCandidate> Detect(IGameLocator? locator, IVersionReader? versions)
+    {
+        if (locator is null)
+        {
+            return [];
+        }
+
+        var result = new List<GameCandidate>();
+
+        foreach (var install in locator.Locate())
+        {
+            var read = versions?.Read(install.Path);
+            var build = read?.GameBuild ?? "unknown";
+            var modded = read?.HasModFiles ?? false;
+
+            var (state, detail) = modded
+                ? (GameCandidateState.AlreadyModified,
+                    "Mod files are already here from an earlier attempt. Installing over them causes the most confusing failures in this ecosystem.")
+                : (GameCandidateState.Verified,
+                    "GTA5.exe found, build read, no mod files present.");
+
+            result.Add(new GameCandidate(install.Platform.ToString(), install.Path, build, state, detail));
+        }
+
+        return result;
+    }
+
+    private static ObservableCollection<GameCandidate> Mock() =>
+    [
+        new GameCandidate(
+            "Steam",
+            @"C:\Program Files (x86)\Steam\steamapps\common\Grand Theft Auto V",
+            "1.0.3725",
+            GameCandidateState.Verified,
+            "GTA5.exe found, build read, no mod files present."),
+        new GameCandidate(
+            "Epic Games",
+            @"D:\Epic\GTAV",
+            "1.0.3407",
+            GameCandidateState.AlreadyModified,
+            "Found dinput8.dll, ScriptHookV.dll and a plugins folder from an earlier attempt."),
+    ];
 
     /// <summary>Everything detection turned up. All of them are shown, never one silently.</summary>
     public ObservableCollection<GameCandidate> Candidates { get; }

@@ -11,7 +11,7 @@
 <br>
 
 [![Build](https://img.shields.io/github/actions/workflow/status/Jackmod/dispatch/ci.yml?branch=main&style=for-the-badge&labelColor=0B1220&color=E8B44A&label=BUILD)](../../actions)
-[![Tests](https://img.shields.io/badge/TESTS-205%20passing-3ECF8E?style=for-the-badge&labelColor=0B1220)](../../actions)
+[![Tests](https://img.shields.io/badge/TESTS-279%20passing-3ECF8E?style=for-the-badge&labelColor=0B1220)](../../actions)
 [![.NET](https://img.shields.io/badge/.NET-8.0-4C8DFF?style=for-the-badge&labelColor=0B1220)](https://dotnet.microsoft.com)
 [![Platform](https://img.shields.io/badge/WINDOWS-10%2F11-93A6C4?style=for-the-badge&labelColor=0B1220)](#)
 
@@ -82,12 +82,15 @@ Then it stays on as the launcher and control panel for the setup it built.
 | Profiles + persistence | âœ… | Atomic writes, schema migration, corrupt-file quarantine |
 | Key translation | âœ… | Per-mod dialects, both directions |
 | Conflict detection | âœ… | Modifier layers, per-device, free-key suggestions |
-| Folder cleaner â€” scanner | âœ… | Allowlist, three tiers, protected paths |
-| Folder cleaner â€” UI + quarantine | â¬œ | Dry-run tree, backup, restore |
-| Controls screen | â¬œ | Keyboard map, capture, staged diffs |
-| Resilience layer | â¬œ | Journal, staging, preflight, retry |
-| Acquisition | â¬œ | GitHub, direct HTTP, embedded browser |
-| Real installer | â¬œ | Placement, OpenIV, Defender |
+| Config engine | ✅ | Comment-preserving ini, byte-exact round trips |
+| Controls screen | ✅ | Keyboard map, capture, conflict resolution, staged diffs |
+| Launcher | ✅ | Nav rail, dashboard, command palette, empty states |
+| Game detection | ✅ | Steam VDF, Epic manifests, version reader |
+| Folder cleaner — scanner | ✅ | Allowlist, three tiers, protected paths |
+| Folder cleaner — UI + quarantine | ⬜ | Dry-run tree, backup, restore |
+| Resilience layer | ⬜ | Journal, staging, preflight, retry |
+| Acquisition | ⬜ | GitHub, direct HTTP, embedded browser |
+| Real installer | ⬜ | Placement, OpenIV, Defender |
 
 ---
 
@@ -276,7 +279,7 @@ nothing looks missing â€” images are an enhancement, not a dependency.
 ./tools/dispatch.ps1 test
 ```
 
-205 tests. The ones worth knowing about:
+279 tests. The ones worth knowing about:
 
 - **Font resolution** â€” each type style is asserted to land on the *genuinely
   drawn* weight. Avalonia resolves an unmatched weight to the nearest one

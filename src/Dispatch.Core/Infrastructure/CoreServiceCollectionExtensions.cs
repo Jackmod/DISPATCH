@@ -24,6 +24,9 @@ public static class CoreServiceCollectionExtensions
         // Speech is Windows-only; the platform project overrides this with the
         // real implementation. Registered here so Core alone is still usable.
         services.TryAddSingleton<Audio.ICallsignVoice, Audio.SilentCallsignVoice>();
+        services.TryAddSingleton<Detection.IFileSystemProbe, Detection.RealFileSystemProbe>();
+        services.TryAddSingleton<Detection.IGameLocator, Detection.GameLocator>();
+        services.TryAddSingleton<Detection.IVersionReader, Detection.VersionReader>();
 
         return services;
     }
