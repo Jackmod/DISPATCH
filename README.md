@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
 
 <br>
 
@@ -6,12 +6,12 @@
 
 ### Everything you need. Nothing you have to figure out.
 
-**A complete LSPDFR police setup for GTA V — installed in one unattended run,<br>then managed from the same app.**
+**A complete LSPDFR police setup for GTA V â€” installed in one unattended run,<br>then managed from the same app.**
 
 <br>
 
 [![Build](https://img.shields.io/github/actions/workflow/status/Jackmod/dispatch/ci.yml?branch=main&style=for-the-badge&labelColor=0B1220&color=E8B44A&label=BUILD)](../../actions)
-[![Tests](https://img.shields.io/badge/TESTS-90%20passing-3ECF8E?style=for-the-badge&labelColor=0B1220)](../../actions)
+[![Tests](https://img.shields.io/badge/TESTS-205%20passing-3ECF8E?style=for-the-badge&labelColor=0B1220)](../../actions)
 [![.NET](https://img.shields.io/badge/.NET-8.0-4C8DFF?style=for-the-badge&labelColor=0B1220)](https://dotnet.microsoft.com)
 [![Platform](https://img.shields.io/badge/WINDOWS-10%2F11-93A6C4?style=for-the-badge&labelColor=0B1220)](#)
 
@@ -27,7 +27,7 @@ Installing LSPDFR properly means **forty mods from thirty different sites**, fil
 dragged into precise folders, and **thirty config files hand-edited**. Any single
 typo breaks it silently.
 
-Nothing tells you which step went wrong. That's why people give up — not
+Nothing tells you which step went wrong. That's why people give up â€” not
 difficulty, just forty small things failing quietly.
 
 ## What Dispatch does
@@ -51,7 +51,7 @@ your game folder.
 <td width="33%" valign="top">
 
 ### Configures
-Thirty config files written **in place** — comments, ordering and formatting
+Thirty config files written **in place** â€” comments, ordering and formatting
 preserved. Never regenerated.
 
 </td>
@@ -66,7 +66,7 @@ Then it stays on as the launcher and control panel for the setup it built.
 
 > [!IMPORTANT]
 > **Dispatch does not write to your game folder yet.** The install runs as a
-> full simulation — every phase, every progress update, the complete report —
+> full simulation â€” every phase, every progress update, the complete report â€”
 > against a clock rather than a filesystem. That is deliberate: the spec puts
 > the resilience layer (journal, staging, rollback, preflight) *before* any
 > file-writing code, and that layer isn't built. It is safe to run today, and
@@ -74,17 +74,20 @@ Then it stays on as the launcher and control panel for the setup it built.
 
 | Stage | | |
 |---|---|---|
-| Solution, DI, logging | ✅ | Four projects, Serilog, warnings-as-errors |
-| Design system | ✅ | Palette, type scale, motion, 30 hand-drawn icons, gallery |
-| Intro animation | ✅ | Scan sweep, wordmark draw-on, patrol lights |
-| Wizard | ✅ | Six full-bleed screens, end to end |
-| Install simulation | ✅ | Seven phases, live log, completion report |
-| Core model | 🚧 | Catalogue, profiles, persistence |
-| Controls screen | ⬜ | Keyboard map, conflict detection |
-| Folder cleaner | ⬜ | Allowlist, quarantine, dry-run |
-| Resilience layer | ⬜ | Journal, staging, preflight, retry |
-| Acquisition | ⬜ | GitHub, direct HTTP, embedded browser |
-| Real installer | ⬜ | Placement, OpenIV, Defender |
+| Solution, DI, logging | âœ… | Four projects, Serilog, warnings-as-errors |
+| Design system | âœ… | Palette, type scale, motion, 30 hand-drawn icons, gallery |
+| Intro animation | âœ… | Scan sweep, wordmark draw-on, patrol lights |
+| Wizard | âœ… | Six full-bleed screens, end to end |
+| Install simulation | âœ… | Seven phases, live log, completion report |
+| Profiles + persistence | âœ… | Atomic writes, schema migration, corrupt-file quarantine |
+| Key translation | âœ… | Per-mod dialects, both directions |
+| Conflict detection | âœ… | Modifier layers, per-device, free-key suggestions |
+| Folder cleaner â€” scanner | âœ… | Allowlist, three tiers, protected paths |
+| Folder cleaner â€” UI + quarantine | â¬œ | Dry-run tree, backup, restore |
+| Controls screen | â¬œ | Keyboard map, capture, staged diffs |
+| Resilience layer | â¬œ | Journal, staging, preflight, retry |
+| Acquisition | â¬œ | GitHub, direct HTTP, embedded browser |
+| Real installer | â¬œ | Placement, OpenIV, Defender |
 
 ---
 
@@ -106,7 +109,7 @@ takes `build`, `test`, `run`, `watch` or `clean`.
 <br>
 
 A terminal opened *before* the SDK was installed never re-reads its
-environment. VS Code makes it worse — every integrated terminal inherits the
+environment. VS Code makes it worse â€” every integrated terminal inherits the
 environment the editor launched with, so opening a new panel doesn't help.
 **Restart the editor.** Or fix the shell you're in:
 
@@ -127,8 +130,8 @@ Or just use `./tools/dispatch.ps1`, which resolves `dotnet` by looking for it.
 | Key | Does |
 |---|---|
 | `F12` | Toggle the design-system gallery |
-| `Ctrl` `→` | Step the wizard forward, ignoring validation |
-| `Ctrl` `←` | Step backward |
+| `Ctrl` `â†’` | Step the wizard forward, ignoring validation |
+| `Ctrl` `â†` | Step backward |
 | any key | Skip the intro |
 
 Debug builds only. Nothing in the shipped navigation reaches them.
@@ -142,19 +145,19 @@ Debug builds only. Nothing in the shipped navigation reaches them.
 Midnight navy, cool blue for structure, **warm gold for anything that demands
 action**. The gold is the deliberate risk: it reads as badge metal against the
 navy and makes every call to action unmistakable, which is what lets the whole
-app avoid the red-and-blue lightbar cliché.
+app avoid the red-and-blue lightbar clichÃ©.
 
-That cliché appears in exactly one place — the intro — because there it *is*
+That clichÃ© appears in exactly one place â€” the intro â€” because there it *is*
 the point. Nothing says police faster; anywhere else it would be wallpaper
 inside a day.
 
 ```
-Ink       #060A12   ·   Navy      #111B2E   ·   Steel     #24365A
-Blue      #4C8DFF   ·   Gold      #E8B44A   ·   Green     #3ECF8E
+Ink       #060A12   Â·   Navy      #111B2E   Â·   Steel     #24365A
+Blue      #4C8DFF   Â·   Gold      #E8B44A   Â·   Green     #3ECF8E
 ```
 
 **Archivo Narrow** for display, **Inter** for body, **IBM Plex Mono** for paths
-and versions — bundled, so it renders identically everywhere rather than
+and versions â€” bundled, so it renders identically everywhere rather than
 falling back to Segoe UI.
 
 Every graphic is original vector: a seven-point badge, a lightbar that doubles
@@ -170,7 +173,7 @@ hand made it.
 - Body and muted text are **asserted** at 4.5:1 against the card surface by a test
 - Gold focus rings drawn *outside* the fill, so they survive on the gold button
 - Reduced motion collapses every duration to zero **and** switches ambient loops
-  off — an infinite animation at zero duration is a busy loop, not a still image
+  off â€” an infinite animation at zero duration is a busy loop, not a still image
 - Status is never carried by colour alone; every pill states its meaning in words
 
 </details>
@@ -181,14 +184,14 @@ hand made it.
 
 ```
 src/
-├── Dispatch.Core/              the domain — no UI, no Windows API, builds on macOS
-├── Dispatch.Platform.Windows/  everything P/Invoke, behind Core interfaces
-├── Dispatch.UI/                Avalonia: theme, controls, views, view models
-└── Dispatch.App/               composition root, the shipped executable
+â”œâ”€â”€ Dispatch.Core/              the domain â€” no UI, no Windows API, builds on macOS
+â”œâ”€â”€ Dispatch.Platform.Windows/  everything P/Invoke, behind Core interfaces
+â”œâ”€â”€ Dispatch.UI/                Avalonia: theme, controls, views, view models
+â””â”€â”€ Dispatch.App/               composition root, the shipped executable
 tests/
-├── Dispatch.Core.Tests/        unit
-├── Dispatch.UI.Tests/          headless Avalonia
-└── Dispatch.E2E.Tests/         against a fixture game folder
+â”œâ”€â”€ Dispatch.Core.Tests/        unit
+â”œâ”€â”€ Dispatch.UI.Tests/          headless Avalonia
+â””â”€â”€ Dispatch.E2E.Tests/         against a fixture game folder
 ```
 
 `Dispatch.Core` references no UI assembly and no Windows-only API. Anything
@@ -232,14 +235,14 @@ registration, not a UI change.
 
 Each compiles fine and fails only at runtime:
 
-1. **Keyframes cannot animate `RenderTransform`** — no animator is registered
+1. **Keyframes cannot animate `RenderTransform`** â€” no animator is registered
    and the style throws as it attaches. Per-transform properties work;
    transitions are a separate path that handles it normally.
 2. **A `ControlTheme` may not contain descendant selectors**, only `/template/`
    ones. Controls that build children in code are reachable by neither, so
    their styling belongs in an application-level Styles file.
 3. **Fluent's `ListBoxItem` paints its own `ContentPresenter` background** on
-   hover and selection. Setting `Background` on the item does nothing — the row
+   hover and selection. Setting `Background` on the item does nothing â€” the row
    fills solid with the accent and any glass beneath it vanishes.
 
 </details>
@@ -256,7 +259,7 @@ Each compiles fine and fails only at runtime:
 ```
 
 With the folder empty the install screen falls back to a vector scene and
-nothing looks missing — images are an enhancement, not a dependency.
+nothing looks missing â€” images are an enhancement, not a dependency.
 
 > [!WARNING]
 > Screenshots of GTA V belong to Rockstar and screenshots of mods belong to
@@ -273,15 +276,15 @@ nothing looks missing — images are an enhancement, not a dependency.
 ./tools/dispatch.ps1 test
 ```
 
-90 tests. The ones worth knowing about:
+205 tests. The ones worth knowing about:
 
-- **Font resolution** — each type style is asserted to land on the *genuinely
+- **Font resolution** â€” each type style is asserted to land on the *genuinely
   drawn* weight. Avalonia resolves an unmatched weight to the nearest one
   silently, so a missing file would otherwise render slightly wrong forever
-- **Contrast** — WCAG ratios computed and asserted, not eyeballed
-- **Reduced motion** — asserts durations actually reach zero. The first
+- **Contrast** â€” WCAG ratios computed and asserted, not eyeballed
+- **Reduced motion** â€” asserts durations actually reach zero. The first
   implementation looked correct and changed nothing; only the test caught it
-- **Radio phrasing** — `10 ADAM 24` must speak as *one zero adam two four*, not
+- **Radio phrasing** â€” `10 ADAM 24` must speak as *one zero adam two four*, not
   the "twenty-four" a synthesiser produces on its own
 
 ---
@@ -291,7 +294,7 @@ nothing looks missing — images are an enhancement, not a dependency.
 Code under [MIT](LICENSE).
 
 Bundled fonts are SIL OFL 1.1 with their licences alongside them. No game or
-mod artwork is bundled by this repository — see the note above if you add any.
+mod artwork is bundled by this repository â€” see the note above if you add any.
 
 Dispatch is an unofficial fan project. Not affiliated with Rockstar Games,
 Take-Two, or the authors of any mod it installs.

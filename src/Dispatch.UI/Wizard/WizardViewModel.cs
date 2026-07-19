@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Dispatch.Core.Audio;
 using Dispatch.Core.Imagery;
 using Dispatch.Core.Installation;
+using Dispatch.Core.Profiles;
 using Dispatch.UI.Wizard.Steps;
 
 namespace Dispatch.UI.Wizard;
@@ -30,11 +31,17 @@ public sealed partial class WizardViewModel : ObservableObject
     /// Resolves optional user-supplied background images. Null falls back to
     /// the original vector scenes everywhere.
     /// </param>
+    private readonly IProfileStore? _profiles;
+
+    /// <summary>Constructs the flow with its six screens.</summary>
     public WizardViewModel(
         IInstallRunner? runner = null,
         IUserBackgrounds? backgrounds = null,
-        ICallsignVoice? voice = null)
+        ICallsignVoice? voice = null,
+        IProfileStore? profiles = null)
     {
+        _profiles = profiles;
+
         var install = new InstallStep(runner ?? new SimulatedInstallRunner());
 
         Steps =
@@ -99,6 +106,9 @@ public sealed partial class WizardViewModel : ObservableObject
 
         if (IsLastStep)
         {
+            // Fire and forget: the flow should not stall on disk, and a failed
+            // write is logged by the store rather than blocking the finish.
+            _ = PersistAsync();
             Completed?.Invoke(this, EventArgs.Empty);
             return;
         }
@@ -115,6 +125,54 @@ public sealed partial class WizardViewModel : ObservableObject
             GoTo(CurrentIndex - 1);
         }
     }
+
+    /// <summary>
+    /// Writes what the wizard collected to the profile store.
+    /// </summary>
+    /// <remarks>
+    /// Assembled here rather than in the screens: each screen owns its own
+    /// presentation state, and the wizard is the only thing that can see all
+    /// of it at once. Without a store injected this is a no-op, which is what
+    /// keeps the flow testable without touching a disk.
+    /// </remarks>
+    public async Task PersistAsync(CancellationToken cancellationToken = default)
+    {
+        if (_profiles is null)
+        {
+            return;
+        }
+
+        var officerStep = Steps.OfType<OfficerStep>().FirstOrDefault();
+        var locateStep = Steps.OfType<LocateGameStep>().FirstOrDefault();
+
+        if (officerStep is null || string.IsNullOrWhiteSpace(officerStep.OfficerName))
+        {
+            return;
+        }
+
+        var existing = await _profiles.LoadAsync(cancellationToken).ConfigureAwait(false);
+
+        var officer = OfficerProfile.Create(officerStep.OfficerName.Trim()) with
+        {
+            Agency = ParseAgency(officerStep.Agency),
+            CallsignDivision = officerStep.CallsignDivision,
+            CallsignPhonetic = officerStep.CallsignPhonetic,
+            CallsignBeat = officerStep.CallsignBeat,
+            DepartmentName = officerStep.DepartmentName,
+            AirUnitCallsign = officerStep.AirUnitCallsign,
+            ControlProfile = officerStep.ControlProfile,
+        };
+
+        var updated = existing.WithOfficer(officer) with
+        {
+            GamePath = locateStep?.Selected?.Path ?? existing.GamePath,
+        };
+
+        await _profiles.SaveAsync(updated, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static Agency ParseAgency(string agency) =>
+        Enum.TryParse<Agency>(agency, ignoreCase: true, out var parsed) ? parsed : Agency.Lspd;
 
     /// <summary>
     /// Jumps to a screen by index. Used by the rail and by the install screen,
