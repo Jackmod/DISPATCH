@@ -38,6 +38,9 @@
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/LightbarProgress.axaml" />
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/LoadingSlideshow.axaml" />
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/TipRail.axaml" />
+        <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/Inputs.axaml" />
+        <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/Expander.axaml" />
+        <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/NumberDial.axaml" />
 
         <!-- Motion stays last: SetReducedMotion layers its override after it. -->
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Motion.axaml" />

@@ -1,0 +1,120 @@
+﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    Used for the install log, which is collapsed by default and always will be.
+
+    Fluent's Expander paints an opaque card with its own chrome, which over the
+    loading backdrop reads as a black box punched through the screen. This is a
+    glass header with a rotating chevron and nothing else: the point is that it
+    disappears until someone wants it.
+  -->
+
+  <!-- The header behaves like a ghost button rather than a panel header. -->
+  <ControlTheme x:Key="ExpanderToggleTheme" TargetType="ToggleButton">
+    <Setter Property="FontFamily" Value="{DynamicResource BodyFont}" />
+    <Setter Property="FontSize" Value="13.5" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Steel}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusPill}" />
+    <Setter Property="Padding" Value="16,9" />
+    <Setter Property="Cursor" Value="Hand" />
+
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Chrome"
+                Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}">
+          <ContentPresenter Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^ /template/ Border#Chrome">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="{DynamicResource MicroDuration}" />
+          <BrushTransition Property="BorderBrush" Duration="{DynamicResource MicroDuration}" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="^:pointerover /template/ Border#Chrome">
+      <Setter Property="Background" Value="{DynamicResource GlassSurfaceStrong}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SteelLight}" />
+    </Style>
+
+    <Style Selector="^:checked /template/ Border#Chrome">
+      <Setter Property="BorderBrush" Value="{DynamicResource Blue}" />
+    </Style>
+  </ControlTheme>
+
+  <ControlTheme x:Key="{x:Type Expander}" TargetType="Expander">
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+
+    <Setter Property="Template">
+      <ControlTemplate>
+        <StackPanel Spacing="10">
+
+          <ToggleButton Name="PART_toggle"
+                        IsChecked="{TemplateBinding IsExpanded, Mode=TwoWay}"
+                        Theme="{StaticResource ExpanderToggleTheme}"
+                        HorizontalAlignment="Left">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <ContentPresenter Content="{TemplateBinding Header}"
+                                ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                VerticalAlignment="Center" />
+              <Path Name="Chevron"
+                    Data="{DynamicResource IconChevronDown}"
+                    Stroke="{DynamicResource TextMuted}"
+                    StrokeThickness="1.5"
+                    StrokeLineCap="Round"
+                    StrokeJoin="Round"
+                    Width="14" Height="14"
+                    Stretch="Uniform"
+                    VerticalAlignment="Center"
+                    RenderTransformOrigin="50%,50%" />
+            </StackPanel>
+          </ToggleButton>
+
+          <Border Name="Body"
+                  IsVisible="{TemplateBinding IsExpanded}"
+                  Background="{DynamicResource NavyDeep}"
+                  BorderBrush="{DynamicResource Steel}"
+                  BorderThickness="1"
+                  CornerRadius="{DynamicResource RadiusInput}"
+                  Padding="16">
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}" />
+          </Border>
+
+        </StackPanel>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^ /template/ Path#Chevron">
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform"
+                                         Duration="{DynamicResource StandardDuration}"
+                                         Easing="{DynamicResource StandardEasing}" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="^:expanded /template/ Path#Chevron">
+      <Setter Property="RenderTransform" Value="rotate(180deg)" />
+    </Style>
+  </ControlTheme>
+
+
+
+</ResourceDictionary>

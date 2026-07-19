@@ -1,0 +1,123 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:Dispatch.UI.Controls">
+
+  <!-- Step buttons: square, quiet, and only lit under the pointer. -->
+  <ControlTheme x:Key="DialStepTheme" TargetType="Button">
+    <Setter Property="Width" Value="28" />
+    <Setter Property="Height" Value="28" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Chrome"
+                Background="{TemplateBinding Background}"
+                CornerRadius="{TemplateBinding CornerRadius}">
+          <ContentPresenter Content="{TemplateBinding Content}"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^ /template/ Border#Chrome">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="{DynamicResource MicroDuration}" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="^:pointerover /template/ Border#Chrome">
+      <Setter Property="Background" Value="{DynamicResource NavyRaised}" />
+    </Style>
+
+    <Style Selector="^:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource Gold}" />
+    </Style>
+  </ControlTheme>
+
+  <!--
+    The value carries the display face at full size. This is the number a
+    player hears on the radio all night, so it is typeset rather than shown in
+    a text field.
+  -->
+  <ControlTheme x:Key="{x:Type controls:NumberDial}" TargetType="controls:NumberDial">
+    <Setter Property="Focusable" Value="True" />
+    <Setter Property="Background" Value="{DynamicResource GlassSurface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Steel}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
+    <Setter Property="MinHeight" Value="38" />
+
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Field"
+                Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="4">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+
+            <Button Grid.Column="0"
+                    Name="PART_Down"
+                    Theme="{StaticResource DialStepTheme}">
+              <Path Data="{DynamicResource IconChevronLeft}"
+                    Stroke="{Binding $parent[Button].Foreground}"
+                    StrokeThickness="1.5"
+                    StrokeLineCap="Round"
+                    StrokeJoin="Round"
+                    Width="14" Height="14"
+                    Stretch="Uniform" />
+            </Button>
+
+            <TextBlock Grid.Column="1"
+                       Name="PART_Value"
+                       Text="{TemplateBinding Value}"
+                       Classes="h1"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+
+            <Button Grid.Column="2"
+                    Name="PART_Up"
+                    Theme="{StaticResource DialStepTheme}">
+              <Path Data="{DynamicResource IconChevronRight}"
+                    Stroke="{Binding $parent[Button].Foreground}"
+                    StrokeThickness="1.5"
+                    StrokeLineCap="Round"
+                    StrokeJoin="Round"
+                    Width="14" Height="14"
+                    Stretch="Uniform" />
+            </Button>
+
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^ /template/ Border#Field">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="BorderBrush" Duration="{DynamicResource MicroDuration}" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="^:pointerover /template/ Border#Field">
+      <Setter Property="BorderBrush" Value="{DynamicResource SteelLight}" />
+    </Style>
+
+    <Style Selector="^:focus-within /template/ Border#Field">
+      <Setter Property="BorderBrush" Value="{DynamicResource Gold}" />
+    </Style>
+
+  </ControlTheme>
+
+</ResourceDictionary>

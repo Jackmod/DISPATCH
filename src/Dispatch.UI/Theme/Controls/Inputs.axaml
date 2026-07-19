@@ -1,0 +1,231 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    Text and choice inputs.
+
+    All of them share one shape: a translucent field on the glass, a hairline
+    border that warms to blue on hover and gold on focus, 6px radius, 38px
+    minimum height. That consistency is what makes a form read as one surface
+    rather than a stack of controls from different eras.
+
+    Fluent's defaults are replaced rather than tweaked. Its inputs paint opaque
+    backgrounds and their own accent chrome, which over glass reads as a black
+    box punched through the panel.
+  -->
+
+  <!-- ===== TextBox ============================================== -->
+  <ControlTheme x:Key="{x:Type TextBox}" TargetType="TextBox">
+    <Setter Property="FontFamily" Value="{DynamicResource BodyFont}" />
+    <Setter Property="FontSize" Value="13.5" />
+    <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    <Setter Property="CaretBrush" Value="{DynamicResource Gold}" />
+    <Setter Property="SelectionBrush" Value="{DynamicResource BlueDim}" />
+    <Setter Property="SelectionForegroundBrush" Value="{DynamicResource Text}" />
+    <Setter Property="Background" Value="{DynamicResource GlassSurface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Steel}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
+    <Setter Property="Padding" Value="12,9" />
+    <Setter Property="MinHeight" Value="38" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Field"
+                Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="{TemplateBinding CornerRadius}">
+          <Panel>
+            <TextBlock Name="PART_Watermark"
+                       Text="{TemplateBinding Watermark}"
+                       Foreground="{DynamicResource TextFaint}"
+                       FontFamily="{DynamicResource BodyFont}"
+                       FontSize="13.5"
+                       Margin="{TemplateBinding Padding}"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding !!$parent[TextBox].Text.Length, Converter={x:Static BoolConverters.Not}}" />
+
+            <ScrollViewer HorizontalScrollBarVisibility="Hidden"
+                          VerticalScrollBarVisibility="Hidden">
+              <TextPresenter Name="PART_TextPresenter"
+                             Text="{TemplateBinding Text, Mode=TwoWay}"
+                             CaretBrush="{TemplateBinding CaretBrush}"
+                             SelectionBrush="{TemplateBinding SelectionBrush}"
+                             SelectionForegroundBrush="{TemplateBinding SelectionForegroundBrush}"
+                             SelectionStart="{TemplateBinding SelectionStart}"
+                             SelectionEnd="{TemplateBinding SelectionEnd}"
+                             CaretIndex="{TemplateBinding CaretIndex}"
+                             PasswordChar="{TemplateBinding PasswordChar}"
+                             RevealPassword="{TemplateBinding RevealPassword}"
+                             TextAlignment="{TemplateBinding TextAlignment}"
+                             TextWrapping="{TemplateBinding TextWrapping}"
+                             Margin="{TemplateBinding Padding}"
+                             VerticalAlignment="Center" />
+            </ScrollViewer>
+          </Panel>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^ /template/ Border#Field">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="BorderBrush" Duration="{DynamicResource MicroDuration}" />
+          <BrushTransition Property="Background" Duration="{DynamicResource MicroDuration}" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="^:pointerover /template/ Border#Field">
+      <Setter Property="BorderBrush" Value="{DynamicResource SteelLight}" />
+      <Setter Property="Background" Value="{DynamicResource GlassSurfaceStrong}" />
+    </Style>
+
+    <Style Selector="^:focus /template/ Border#Field">
+      <Setter Property="BorderBrush" Value="{DynamicResource Gold}" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="Background" Value="{DynamicResource GlassSurfaceStrong}" />
+    </Style>
+
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.45" />
+    </Style>
+  </ControlTheme>
+
+  <!-- ===== ComboBox ============================================= -->
+  <ControlTheme x:Key="{x:Type ComboBox}" TargetType="ComboBox">
+    <Setter Property="FontFamily" Value="{DynamicResource BodyFont}" />
+    <Setter Property="FontSize" Value="13.5" />
+    <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    <Setter Property="Background" Value="{DynamicResource GlassSurface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Steel}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
+    <Setter Property="Padding" Value="12,9" />
+    <Setter Property="MinHeight" Value="38" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="PlaceholderForeground" Value="{DynamicResource TextFaint}" />
+
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Field"
+                Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="{TemplateBinding CornerRadius}">
+          <Grid ColumnDefinitions="*,Auto" Margin="{TemplateBinding Padding}">
+
+            <TextBlock Grid.Column="0"
+                       Name="PlaceholderTextBlock"
+                       Text="{TemplateBinding PlaceholderText}"
+                       Foreground="{TemplateBinding PlaceholderForeground}"
+                       VerticalAlignment="Center"
+                       IsVisible="{TemplateBinding SelectionBoxItem, Converter={x:Static ObjectConverters.IsNull}}" />
+
+            <ContentPresenter Grid.Column="0"
+                              Name="ContentPresenter"
+                              Content="{TemplateBinding SelectionBoxItem}"
+                              ContentTemplate="{TemplateBinding ItemTemplate}"
+                              VerticalAlignment="Center" />
+
+            <Path Grid.Column="1"
+                  Name="Chevron"
+                  Data="{DynamicResource IconChevronDown}"
+                  Stroke="{DynamicResource TextMuted}"
+                  StrokeThickness="1.5"
+                  StrokeLineCap="Round"
+                  StrokeJoin="Round"
+                  Width="16" Height="16"
+                  Stretch="Uniform"
+                  Margin="10,0,0,0"
+                  VerticalAlignment="Center" />
+
+            <Popup Name="PART_Popup"
+                   Grid.Column="0"
+                   WindowManagerAddShadowHint="False"
+                   IsOpen="{TemplateBinding IsDropDownOpen, Mode=TwoWay}"
+                   PlacementTarget="{TemplateBinding}"
+                   Placement="BottomEdgeAlignedLeft"
+                   IsLightDismissEnabled="True">
+              <Border Background="{DynamicResource Navy}"
+                      BorderBrush="{DynamicResource SteelLight}"
+                      BorderThickness="1"
+                      CornerRadius="{DynamicResource RadiusInput}"
+                      Padding="4"
+                      MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                      BoxShadow="{DynamicResource ShadowModal}">
+                <ScrollViewer>
+                  <ItemsPresenter Name="PART_ItemsPresenter"
+                                  ItemsPanel="{TemplateBinding ItemsPanel}" />
+                </ScrollViewer>
+              </Border>
+            </Popup>
+
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^ /template/ Border#Field">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="BorderBrush" Duration="{DynamicResource MicroDuration}" />
+          <BrushTransition Property="Background" Duration="{DynamicResource MicroDuration}" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="^:pointerover /template/ Border#Field">
+      <Setter Property="BorderBrush" Value="{DynamicResource SteelLight}" />
+      <Setter Property="Background" Value="{DynamicResource GlassSurfaceStrong}" />
+    </Style>
+
+    <Style Selector="^:focus-visible /template/ Border#Field">
+      <Setter Property="BorderBrush" Value="{DynamicResource Gold}" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+
+    <Style Selector="^:dropdownopen /template/ Border#Field">
+      <Setter Property="BorderBrush" Value="{DynamicResource Blue}" />
+    </Style>
+
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.45" />
+    </Style>
+  </ControlTheme>
+
+  <!-- ===== ComboBoxItem ========================================= -->
+  <ControlTheme x:Key="{x:Type ComboBoxItem}" TargetType="ComboBoxItem">
+    <Setter Property="FontFamily" Value="{DynamicResource BodyFont}" />
+    <Setter Property="FontSize" Value="13.5" />
+    <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
+    <Setter Property="Cursor" Value="Hand" />
+
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Row"
+                Background="{TemplateBinding Background}"
+                CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}">
+          <ContentPresenter Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            VerticalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^:pointerover /template/ Border#Row">
+      <Setter Property="Background" Value="{DynamicResource NavyRaised}" />
+    </Style>
+
+    <Style Selector="^:selected /template/ Border#Row">
+      <Setter Property="Background" Value="{DynamicResource BlueDim}" />
+    </Style>
+  </ControlTheme>
+
+</ResourceDictionary>
