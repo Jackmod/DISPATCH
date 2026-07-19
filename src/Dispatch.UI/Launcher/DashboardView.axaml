@@ -1,0 +1,90 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Dispatch.UI.Controls"
+             xmlns:vm="clr-namespace:Dispatch.UI.Launcher"
+             x:Class="Dispatch.UI.Launcher.DashboardView"
+             x:DataType="vm:DashboardViewModel">
+
+  <Panel>
+    <c:AmbientBackdrop Intensity="0.6" />
+
+    <ScrollViewer>
+      <StackPanel Margin="40,32,40,32" Spacing="28" MaxWidth="1100" HorizontalAlignment="Left">
+
+        <!-- ===== Hero ========================================== -->
+        <Border Height="220"
+                CornerRadius="{DynamicResource RadiusCard}"
+                ClipToBounds="True"
+                BorderBrush="{DynamicResource GlassBorder}"
+                BorderThickness="1"
+                Classes="reveal">
+          <Panel>
+            <Panel Background="{DynamicResource NavyDeep}" />
+            <Image Source="{Binding Hero}" Stretch="UniformToFill"
+                   IsVisible="{Binding HasHero}" />
+            <Border>
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                  <GradientStop Offset="0" Color="#E6060A12" />
+                  <GradientStop Offset="0.7" Color="#99060A12" />
+                  <GradientStop Offset="1" Color="#40060A12" />
+                </LinearGradientBrush>
+              </Border.Background>
+            </Border>
+
+            <Grid ColumnDefinitions="*,Auto" Margin="32,0">
+              <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="6">
+                <TextBlock Text="ON DUTY" Classes="micro" />
+                <TextBlock Text="{Binding OfficerName}" Classes="display" />
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <c:StatusPill Text="{Binding Agency}" Tone="Active" />
+                  <TextBlock Text="{Binding Callsign}" Classes="mono gold" VerticalAlignment="Center" />
+                </StackPanel>
+              </StackPanel>
+
+              <Button Grid.Column="1" Classes="primary" VerticalAlignment="Center" Padding="24,14">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <c:Icon Data="{StaticResource IconPlay}" Foreground="{DynamicResource Ink}" />
+                  <TextBlock Text="Go on duty" VerticalAlignment="Center" FontSize="15" />
+                </StackPanel>
+              </Button>
+            </Grid>
+          </Panel>
+        </Border>
+
+        <!-- ===== Status grid =================================== -->
+        <ItemsControl ItemsSource="{Binding Tiles}" Classes="reveal d1">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:StatusTile">
+              <Border Width="252" Height="104" Margin="0,0,16,16"
+                      Padding="18,16"
+                      CornerRadius="{DynamicResource RadiusCard}"
+                      Background="{DynamicResource GlassSurface}"
+                      BorderBrush="{DynamicResource GlassBorder}"
+                      BorderThickness="1">
+                <Grid RowDefinitions="Auto,*,Auto">
+                  <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8">
+                    <Ellipse Width="7" Height="7" VerticalAlignment="Center"
+                             Fill="{Binding Tone, Converter={StaticResource ToneToBrush}}" />
+                    <TextBlock Text="{Binding Eyebrow}" Classes="micro" />
+                  </StackPanel>
+                  <TextBlock Grid.Row="1" Text="{Binding Value}" Classes="h1"
+                             VerticalAlignment="Center" />
+                  <TextBlock Grid.Row="2" Text="{Binding Detail}" Classes="small"
+                             TextTrimming="CharacterEllipsis" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+      </StackPanel>
+    </ScrollViewer>
+  </Panel>
+
+</UserControl>

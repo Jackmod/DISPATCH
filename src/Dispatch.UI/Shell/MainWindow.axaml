@@ -27,6 +27,7 @@
       <wizard:WizardShellView Name="Wizard" />
       <gallery:GalleryView Name="Gallery" IsVisible="False" />
       <launcher:ControlsView Name="Controls" IsVisible="False" />
+      <launcher:LauncherView Name="LauncherShell" IsVisible="False" />
     </Panel>
 
     <intro:IntroView Name="Intro" />

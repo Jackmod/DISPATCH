@@ -1,0 +1,128 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Dispatch.UI.Controls"
+             xmlns:vm="clr-namespace:Dispatch.UI.Launcher"
+             x:Class="Dispatch.UI.Launcher.LauncherView"
+             x:DataType="vm:LauncherViewModel">
+
+  <!--
+    The launcher proper: a 240px rail on the left, the active section on the
+    right. Routing is one property; a TransitioningContentControl turns it into
+    a page transition, so adding a section is a nav item and a template.
+  -->
+
+  <UserControl.DataTemplates>
+    <DataTemplate DataType="vm:DashboardViewModel">
+      <vm:DashboardView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:ControlsViewModel">
+      <vm:ControlsView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:ModsViewModel">
+      <vm:ModsView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:SettingsViewModel">
+      <vm:SettingsView />
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <UserControl.Styles>
+    <Style Selector="ListBox.rail">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="ListBox.rail ListBoxItem">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="12,2" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="ListBox.rail ListBoxItem /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBox.rail ListBoxItem:pointerover Border#Row">
+      <Setter Property="Background" Value="{DynamicResource NavyRaised}" />
+    </Style>
+    <Style Selector="ListBox.rail ListBoxItem:selected Border#Row">
+      <Setter Property="Background" Value="{DynamicResource BlueDim}" />
+    </Style>
+    <Style Selector="ListBox.rail ListBoxItem:selected Border#Accent">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid ColumnDefinitions="240,*">
+
+    <!-- ===== Rail ============================================ -->
+    <Border Grid.Column="0" Background="{DynamicResource NavyDeep}"
+            BorderBrush="{DynamicResource Steel}" BorderThickness="0,0,1,0">
+      <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- Badge + officer -->
+        <StackPanel Grid.Row="0" Margin="20,28,20,24" Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <Viewbox Width="34" Height="40">
+              <Canvas Width="120" Height="140">
+                <Path Data="{StaticResource ArtBadge}"
+                      Stroke="{DynamicResource Gold}" StrokeThickness="5"
+                      StrokeLineCap="Round" StrokeJoin="Round" />
+              </Canvas>
+            </Viewbox>
+            <TextBlock Text="DISPATCH" Classes="micro" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <Border Height="1" Background="{DynamicResource Steel}" />
+
+          <StackPanel Spacing="2">
+            <TextBlock Text="{Binding OfficerName}" Classes="h2" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{Binding CallsignLabel}" Classes="mono gold" />
+          </StackPanel>
+        </StackPanel>
+
+        <!-- Sections -->
+        <ListBox Grid.Row="1" Classes="rail"
+                 ItemsSource="{Binding Items}"
+                 SelectedItem="{Binding Current}"
+                 SelectionChanged="OnSectionChanged">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:NavItem">
+              <Border Name="Row" CornerRadius="{DynamicResource RadiusInput}" Padding="14,11">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <Border Name="Accent" Grid.Column="0" Width="3" Height="18"
+                          CornerRadius="2" Background="{DynamicResource Gold}"
+                          Opacity="0" Margin="0,0,12,0" VerticalAlignment="Center" />
+                  <c:Icon Grid.Column="1" Data="{Binding Icon}"
+                          HorizontalAlignment="Left" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" Text="{Binding Label}" Classes="body"
+                             HorizontalAlignment="Right" VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Go on duty -->
+        <StackPanel Grid.Row="2" Margin="16,16,16,20" Spacing="10">
+          <Button Classes="primary" HorizontalAlignment="Stretch">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+              <c:Icon Data="{StaticResource IconPlay}" Size="16" Foreground="{DynamicResource Ink}" />
+              <TextBlock Text="Go on duty" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <TextBlock Text="⌘K for the command palette" Classes="micro" HorizontalAlignment="Center" />
+        </StackPanel>
+
+      </Grid>
+    </Border>
+
+    <!-- ===== Section ======================================== -->
+    <TransitioningContentControl Grid.Column="1" Content="{Binding CurrentContent}">
+      <TransitioningContentControl.PageTransition>
+        <CrossFade Duration="0:0:0.22" />
+      </TransitioningContentControl.PageTransition>
+    </TransitioningContentControl>
+
+  </Grid>
+
+</UserControl>

@@ -1,5 +1,6 @@
 ﻿<Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:Dispatch.UI"
              x:Class="Dispatch.UI.App"
              RequestedThemeVariant="Dark">
 
@@ -23,6 +24,7 @@
 
   <Application.Resources>
     <ResourceDictionary>
+      <ui:ToneToBrushConverter x:Key="ToneToBrush" />
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Palette.axaml" />
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Spacing.axaml" />

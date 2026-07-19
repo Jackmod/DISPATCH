@@ -1,0 +1,59 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Dispatch.UI.Controls"
+             xmlns:vm="clr-namespace:Dispatch.UI.Launcher"
+             x:Class="Dispatch.UI.Launcher.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+
+  <Panel>
+    <c:AmbientBackdrop Intensity="0.5" />
+
+    <ScrollViewer>
+      <StackPanel Margin="40,32,40,32" Spacing="20" MaxWidth="720" HorizontalAlignment="Left">
+
+        <StackPanel Spacing="6" Classes="reveal">
+          <TextBlock Text="SETTINGS" Classes="micro" />
+          <TextBlock Text="Appearance and behaviour" Classes="display" />
+        </StackPanel>
+
+        <c:Card Title="Appearance" Eyebrow="HOW IT LOOKS" Classes="reveal d1">
+          <StackPanel Spacing="16">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Grid.Column="0" Spacing="2">
+                <TextBlock Text="Reduced motion" Classes="body" />
+                <TextBlock Text="Collapses every animation and skips the intro." Classes="small" />
+              </StackPanel>
+              <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" />
+            </Grid>
+            <Border Height="1" Background="{DynamicResource Steel}" />
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Grid.Column="0" Spacing="2">
+                <TextBlock Text="Sound" Classes="body" />
+                <TextBlock Text="A soft radio click on primary actions. Off by default." Classes="small" />
+              </StackPanel>
+              <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" />
+            </Grid>
+            <Border Height="1" Background="{DynamicResource Steel}" />
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Grid.Column="0" Spacing="2">
+                <TextBlock Text="Discord Rich Presence" Classes="body" />
+                <TextBlock Text="Show &quot;On duty · Los Santos · 1 ADAM 7&quot;. Off by default." Classes="small" />
+              </StackPanel>
+              <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" />
+            </Grid>
+          </StackPanel>
+        </c:Card>
+
+        <c:Card Title="About" Eyebrow="DISPATCH" Classes="reveal d2">
+          <StackPanel Spacing="10">
+            <TextBlock Classes="body muted" TextWrapping="Wrap"
+                       Text="Dispatch is an unofficial fan project. Not affiliated with Rockstar Games, Take-Two, or the authors of any mod it installs." />
+            <TextBlock Text="Version 0.1.0 · MIT licensed" Classes="mono" />
+          </StackPanel>
+        </c:Card>
+
+      </StackPanel>
+    </ScrollViewer>
+  </Panel>
+
+</UserControl>

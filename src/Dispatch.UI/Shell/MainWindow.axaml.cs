@@ -64,14 +64,27 @@ public partial class MainWindow : Window
             return;
         }
 
-        // F11 jumps to the controls screen, which has no navigation to it yet
-        // because the launcher shell does not exist.
+        // F11 jumps straight to the controls screen; F10 opens the launcher
+        // shell. Both are development shortcuts until the wizard's Finish hands
+        // off to the launcher on its own.
         if (e.Key == Key.F11)
         {
             Controls.IsVisible = !Controls.IsVisible;
             Controls.DataContext ??= new ControlsViewModel();
             Gallery.IsVisible = false;
+            LauncherShell.IsVisible = false;
             Wizard.IsVisible = !Controls.IsVisible;
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.F10)
+        {
+            LauncherShell.IsVisible = !LauncherShell.IsVisible;
+            LauncherShell.DataContext ??= new LauncherViewModel();
+            Gallery.IsVisible = false;
+            Controls.IsVisible = false;
+            Wizard.IsVisible = !LauncherShell.IsVisible;
             e.Handled = true;
             return;
         }
