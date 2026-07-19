@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="clr-namespace:Dispatch.UI.Controls"
              xmlns:vm="clr-namespace:Dispatch.UI.Launcher"
+             xmlns:palette="clr-namespace:Dispatch.Core.Palette;assembly=Dispatch.Core"
              x:Class="Dispatch.UI.Launcher.LauncherView"
              x:DataType="vm:LauncherViewModel">
 
@@ -50,8 +51,31 @@
     <Style Selector="ListBox.rail ListBoxItem:selected Border#Accent">
       <Setter Property="Opacity" Value="1" />
     </Style>
+
+    <!-- Palette results -->
+    <Style Selector="ListBox.palette">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="ListBox.palette ListBoxItem">
+      <Setter Property="Padding" Value="14,10" />
+      <Setter Property="Margin" Value="0,1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="ListBox.palette ListBoxItem /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBox.palette ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource NavyRaised}" />
+    </Style>
+    <Style Selector="ListBox.palette ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource BlueDim}" />
+    </Style>
   </UserControl.Styles>
 
+  <Panel>
   <Grid ColumnDefinitions="240,*">
 
     <!-- ===== Rail ============================================ -->
@@ -124,5 +148,64 @@
     </TransitioningContentControl>
 
   </Grid>
+
+  <!-- ===== Command palette ================================= -->
+  <Border Name="PaletteOverlay"
+          IsVisible="{Binding Palette.IsOpen}"
+          Background="{DynamicResource Scrim}">
+    <Border VerticalAlignment="Top" HorizontalAlignment="Center"
+            Width="620" Margin="0,120,0,0"
+            CornerRadius="{DynamicResource RadiusModal}"
+            Background="{DynamicResource Navy}"
+            BorderBrush="{DynamicResource SteelLight}"
+            BorderThickness="1"
+            BoxShadow="{DynamicResource ShadowModal}"
+            ClipToBounds="True">
+      <StackPanel>
+        <Grid ColumnDefinitions="Auto,*" Margin="20,16">
+          <c:Icon Grid.Column="0" Data="{StaticResource IconSearch}" VerticalAlignment="Center" />
+          <TextBox Grid.Column="1"
+                   Name="PaletteInput"
+                   Text="{Binding Palette.Query}"
+                   Watermark="Jump to a screen, action, or keybind…"
+                   Margin="12,0,0,0"
+                   BorderThickness="0"
+                   Background="Transparent" />
+        </Grid>
+
+        <Border Height="1" Background="{DynamicResource Steel}" />
+
+        <ListBox Name="PaletteResults"
+                 MaxHeight="380"
+                 Classes="palette"
+                 ItemsSource="{Binding Palette.Results}"
+                 SelectedItem="{Binding Palette.Selected}"
+                 Margin="8">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="palette:PaletteEntry">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="1">
+                  <TextBlock Text="{Binding Title}" Classes="body" />
+                  <TextBlock Text="{Binding Subtitle}" Classes="small" />
+                </StackPanel>
+                <Border Grid.Column="1" VerticalAlignment="Center"
+                        Padding="8,3"
+                        CornerRadius="{DynamicResource RadiusPill}"
+                        Background="{DynamicResource NavyRaised}">
+                  <TextBlock Text="{Binding Group}" Classes="micro" />
+                </Border>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Border Height="1" Background="{DynamicResource Steel}" />
+        <TextBlock Classes="micro" Margin="20,10"
+                   Text="↑↓ TO MOVE · ENTER TO SELECT · ESC TO CLOSE" />
+      </StackPanel>
+    </Border>
+  </Border>
+
+  </Panel>
 
 </UserControl>

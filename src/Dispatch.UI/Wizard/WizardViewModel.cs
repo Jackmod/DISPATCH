@@ -106,9 +106,9 @@ public sealed partial class WizardViewModel : ObservableObject
 
         if (IsLastStep)
         {
-            // Fire and forget: the flow should not stall on disk, and a failed
-            // write is logged by the store rather than blocking the finish.
-            _ = PersistAsync();
+            // The window handles Completed by building the officer and opening
+            // the launcher, which persists on the way; nothing to do here but
+            // raise it.
             Completed?.Invoke(this, EventArgs.Empty);
             return;
         }
@@ -135,22 +135,27 @@ public sealed partial class WizardViewModel : ObservableObject
     /// of it at once. Without a store injected this is a no-op, which is what
     /// keeps the flow testable without touching a disk.
     /// </remarks>
-    public async Task PersistAsync(CancellationToken cancellationToken = default)
-    {
-        if (_profiles is null)
-        {
-            return;
-        }
+    public async Task PersistAsync(CancellationToken cancellationToken = default) =>
+        await BuildOfficerAsync(cancellationToken).ConfigureAwait(false);
 
+    /// <summary>
+    /// Assembles the officer from what the wizard collected, persists it, and
+    /// returns it so the launcher can open on the right identity.
+    /// </summary>
+    /// <remarks>
+    /// Returns null when there is nothing to build — no officer name entered —
+    /// so a caller opening the launcher gets the placeholder identity rather
+    /// than a half-filled one.
+    /// </remarks>
+    public async Task<OfficerProfile?> BuildOfficerAsync(CancellationToken cancellationToken = default)
+    {
         var officerStep = Steps.OfType<OfficerStep>().FirstOrDefault();
         var locateStep = Steps.OfType<LocateGameStep>().FirstOrDefault();
 
         if (officerStep is null || string.IsNullOrWhiteSpace(officerStep.OfficerName))
         {
-            return;
+            return null;
         }
-
-        var existing = await _profiles.LoadAsync(cancellationToken).ConfigureAwait(false);
 
         var officer = OfficerProfile.Create(officerStep.OfficerName.Trim()) with
         {
@@ -163,12 +168,20 @@ public sealed partial class WizardViewModel : ObservableObject
             ControlProfile = officerStep.ControlProfile,
         };
 
-        var updated = existing.WithOfficer(officer) with
+        // No store injected during a test still yields the officer, so the
+        // handoff is exercisable without a disk.
+        if (_profiles is not null)
         {
-            GamePath = locateStep?.Selected?.Path ?? existing.GamePath,
-        };
+            var existing = await _profiles.LoadAsync(cancellationToken).ConfigureAwait(false);
+            var updated = existing.WithOfficer(officer) with
+            {
+                GamePath = locateStep?.Selected?.Path ?? existing.GamePath,
+            };
 
-        await _profiles.SaveAsync(updated, cancellationToken).ConfigureAwait(false);
+            await _profiles.SaveAsync(updated, cancellationToken).ConfigureAwait(false);
+        }
+
+        return officer;
     }
 
     private static Agency ParseAgency(string agency) =>

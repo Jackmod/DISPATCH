@@ -61,6 +61,9 @@ public sealed partial class LauncherViewModel : ObservableObject
         _mods = new ModsViewModel();
         _settings = new SettingsViewModel();
 
+        Palette = new CommandPaletteViewModel();
+        Palette.Chosen += OnPaletteChosen;
+
         Items =
         [
             new NavItem("dashboard", "Dashboard", "IconDashboard"),
@@ -75,6 +78,9 @@ public sealed partial class LauncherViewModel : ObservableObject
 
     /// <summary>The rail destinations, in order.</summary>
     public IReadOnlyList<NavItem> Items { get; }
+
+    /// <summary>The Ctrl+K command palette.</summary>
+    public CommandPaletteViewModel Palette { get; }
 
     /// <summary>The officer callsign shown under the badge, or a placeholder.</summary>
     public string CallsignLabel => Officer?.Callsign ?? "No officer";
@@ -104,6 +110,32 @@ public sealed partial class LauncherViewModel : ObservableObject
 
     /// <summary>Jumps to a section by key, for the command palette.</summary>
     public void GoTo(string key) => Navigate(Items.FirstOrDefault(i => i.Key == key));
+
+    private void OnPaletteChosen(object? sender, Dispatch.Core.Palette.PaletteEntry entry)
+    {
+        switch (entry.Action)
+        {
+            case Dispatch.Core.Palette.PaletteAction.Navigate:
+                GoTo(entry.Target);
+                break;
+
+            case Dispatch.Core.Palette.PaletteAction.EditBinding:
+                // Land on the controls screen with that action searched, so the
+                // palette drops the user exactly on the row they named.
+                GoTo("controls");
+                _controls.Search = entry.Title;
+                break;
+
+            case Dispatch.Core.Palette.PaletteAction.Run when entry.Target == "controls":
+                GoTo("controls");
+                break;
+
+            // Other commands (clean, audit, on duty) hang off features not yet
+            // built; navigating is the safe no-op until they are.
+            default:
+                break;
+        }
+    }
 
     partial void OnOfficerChanged(OfficerProfile? value)
     {

@@ -31,10 +31,25 @@ public partial class MainWindow : Window
 
         Wizard.DataContext = wizard;
 
+        // Finishing the wizard drops into the launcher, which is the real
+        // handoff rather than the F10 development shortcut.
+        wizard.Completed += OnWizardCompleted;
+
         // Tunnelling, not bubbling: Avalonia's directional focus navigation
         // consumes arrow keys on the way down, so a bubbling handler never
         // sees Ctrl+Arrow â€” focus just moves instead.
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
+    }
+
+    private async void OnWizardCompleted(object? sender, EventArgs e)
+    {
+        var officer = sender is WizardViewModel wizard
+            ? await wizard.BuildOfficerAsync().ConfigureAwait(true)
+            : null;
+
+        LauncherShell.DataContext = new LauncherViewModel(officer);
+        LauncherShell.IsVisible = true;
+        Wizard.IsVisible = false;
     }
 
     /// <summary>
