@@ -19,6 +19,9 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="Avalonia.Headless.XUnit" />
+    <!-- Headless drawing reports no real typefaces; Skia gives the font tests
+         a genuine font manager to resolve the bundled families against. -->
+    <PackageReference Include="Avalonia.Skia" />
     <PackageReference Include="coverlet.collector" />
   </ItemGroup>
 

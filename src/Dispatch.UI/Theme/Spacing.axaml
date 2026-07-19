@@ -1,0 +1,54 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+  <!--
+    4px base unit. The scale is 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64 and nothing
+    between. If a layout seems to need 20px, the answer is 16 or 24, not a new
+    token.
+
+    Each step exists as a Double (for Spacing, Width, StackPanel gaps) and as a
+    uniform Thickness (for Margin and Padding). Directional thicknesses are
+    written inline at the point of use, composed from these numbers.
+  -->
+
+  <sys:Double x:Key="Space4">4</sys:Double>
+  <sys:Double x:Key="Space8">8</sys:Double>
+  <sys:Double x:Key="Space12">12</sys:Double>
+  <sys:Double x:Key="Space16">16</sys:Double>
+  <sys:Double x:Key="Space24">24</sys:Double>
+  <sys:Double x:Key="Space32">32</sys:Double>
+  <sys:Double x:Key="Space48">48</sys:Double>
+  <sys:Double x:Key="Space64">64</sys:Double>
+
+  <Thickness x:Key="Inset4">4</Thickness>
+  <Thickness x:Key="Inset8">8</Thickness>
+  <Thickness x:Key="Inset12">12</Thickness>
+  <Thickness x:Key="Inset16">16</Thickness>
+  <Thickness x:Key="Inset24">24</Thickness>
+  <Thickness x:Key="Inset32">32</Thickness>
+  <Thickness x:Key="Inset48">48</Thickness>
+  <Thickness x:Key="Inset64">64</Thickness>
+
+  <!--
+    Shape. Four radii, tied to the kind of thing being drawn rather than to its
+    size, so a small card and a large card still read as the same material.
+  -->
+  <CornerRadius x:Key="RadiusInput">6</CornerRadius>
+  <CornerRadius x:Key="RadiusCard">10</CornerRadius>
+  <CornerRadius x:Key="RadiusModal">14</CornerRadius>
+  <CornerRadius x:Key="RadiusPill">999</CornerRadius>
+
+  <!-- Border weights. Hairlines everywhere; 2px only for focus and selection. -->
+  <Thickness x:Key="BorderHairline">1</Thickness>
+  <Thickness x:Key="BorderStrong">2</Thickness>
+
+  <!--
+    Fixed dimensions that more than one screen depends on agreeing about.
+  -->
+  <sys:Double x:Key="NavRailWidth">240</sys:Double>
+  <sys:Double x:Key="LightbarRailHeight">3</sys:Double>
+  <sys:Double x:Key="IconSize">20</sys:Double>
+  <sys:Double x:Key="IconStrokeWidth">1.5</sys:Double>
+
+</ResourceDictionary>

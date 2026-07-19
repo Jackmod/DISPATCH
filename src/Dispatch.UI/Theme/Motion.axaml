@@ -1,0 +1,42 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+  <!--
+    Every duration and easing in the application. Nothing sets a timing inline.
+
+    Motion here is meant to read as engineered rather than decorative: things
+    move because something changed state, at a speed that says how big the
+    change was. Nothing exceeds 400ms except the intro, which is a one-off.
+
+    MotionReduced.axaml declares this exact set of keys with every duration at
+    zero. The composition root merges one file or the other at startup, so the
+    reduced-motion setting is a resource swap rather than a condition checked in
+    forty places.
+  -->
+
+  <!-- Hover, press, toggle. Fast enough to feel like a direct response. -->
+  <sys:TimeSpan x:Key="MicroDuration">0:0:0.120</sys:TimeSpan>
+  <CubicEaseInOut x:Key="MicroEasing" />
+
+  <!-- Reveals, expands, layer crossfades. -->
+  <sys:TimeSpan x:Key="StandardDuration">0:0:0.220</sys:TimeSpan>
+  <SplineEasing x:Key="StandardEasing" X1="0.22" Y1="1" X2="0.36" Y2="1" />
+
+  <!-- Screen transitions. -->
+  <sys:TimeSpan x:Key="PageDuration">0:0:0.380</sys:TimeSpan>
+  <SplineEasing x:Key="PageEasing" X1="0.22" Y1="1" X2="0.36" Y2="1" />
+
+  <!-- Delay between siblings in a staggered reveal. -->
+  <sys:TimeSpan x:Key="StaggerStep">0:0:0.040</sys:TimeSpan>
+
+  <!-- The intro is the single exception to the 400ms ceiling. -->
+  <sys:TimeSpan x:Key="IntroDuration">0:0:1.400</sys:TimeSpan>
+
+  <!-- Distance a screen travels during a page transition, in pixels. -->
+  <sys:Double x:Key="PageSlideDistance">24</sys:Double>
+
+  <!-- Distance a card lifts on hover, in pixels. -->
+  <sys:Double x:Key="CardLiftDistance">4</sys:Double>
+
+</ResourceDictionary>

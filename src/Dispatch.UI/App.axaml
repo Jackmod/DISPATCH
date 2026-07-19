@@ -4,18 +4,26 @@
              RequestedThemeVariant="Dark">
 
   <!--
-    Dispatch is a single considered dark palette, not a themeable surface, so
-    the theme variant is pinned rather than following the OS.
+    Dispatch is one considered dark palette rather than a themeable surface, so
+    the variant is pinned instead of following the OS.
+
+    Motion.axaml is merged last on purpose: SetReducedMotion swaps that entry
+    for MotionReduced.axaml at startup, which is how the reduced-motion setting
+    reaches every animation in the application without a single condition being
+    checked at an animation site.
   -->
 
   <Application.Styles>
     <FluentTheme />
+    <StyleInclude Source="avares://Dispatch.UI/Theme/Typography.axaml" />
   </Application.Styles>
 
   <Application.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Palette.axaml" />
+        <ResourceInclude Source="avares://Dispatch.UI/Theme/Spacing.axaml" />
+        <ResourceInclude Source="avares://Dispatch.UI/Theme/Motion.axaml" />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>

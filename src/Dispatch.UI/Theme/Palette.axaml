@@ -69,4 +69,16 @@
   <!-- Transparent scrim for modals, derived from Ink rather than pure black -->
   <SolidColorBrush x:Key="Scrim" Color="{StaticResource InkColor}" Opacity="0.72" />
 
+  <!--
+    Elevation. Two tokens, no more: one for raised surfaces, one for modals.
+
+    These live here rather than in Spacing.axaml because BoxShadows can only be
+    parsed from a string literal, so they necessarily embed a colour. Keeping
+    them in this file preserves the rule that no colour literal appears outside
+    Palette.axaml. Both are Ink at partial alpha, so shadows read as the page
+    base deepening rather than as grey haze over navy.
+  -->
+  <BoxShadows x:Key="ShadowRaised">0 2 10 0 #59060A12</BoxShadows>
+  <BoxShadows x:Key="ShadowModal">0 18 48 0 #A6060A12</BoxShadows>
+
 </ResourceDictionary>

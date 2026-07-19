@@ -1,0 +1,30 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+  <!--
+    The reduced-motion counterpart to Motion.axaml. Identical keys, every
+    duration collapsed to zero. The composition root merges this instead of
+    Motion.axaml when the setting is on, and the intro is skipped entirely.
+
+    Distances stay non-zero on purpose. A card that still offsets by 4px on
+    hover gives the same affordance without any movement over time, because the
+    transition that would have animated it now completes instantly.
+  -->
+
+  <sys:TimeSpan x:Key="MicroDuration">0:0:0</sys:TimeSpan>
+  <CubicEaseInOut x:Key="MicroEasing" />
+
+  <sys:TimeSpan x:Key="StandardDuration">0:0:0</sys:TimeSpan>
+  <SplineEasing x:Key="StandardEasing" X1="0.22" Y1="1" X2="0.36" Y2="1" />
+
+  <sys:TimeSpan x:Key="PageDuration">0:0:0</sys:TimeSpan>
+  <SplineEasing x:Key="PageEasing" X1="0.22" Y1="1" X2="0.36" Y2="1" />
+
+  <sys:TimeSpan x:Key="StaggerStep">0:0:0</sys:TimeSpan>
+  <sys:TimeSpan x:Key="IntroDuration">0:0:0</sys:TimeSpan>
+
+  <sys:Double x:Key="PageSlideDistance">0</sys:Double>
+  <sys:Double x:Key="CardLiftDistance">4</sys:Double>
+
+</ResourceDictionary>

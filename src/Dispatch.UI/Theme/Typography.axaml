@@ -1,0 +1,142 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    The type system. Seven styles, applied as classes, and nothing outside this
+    file sets FontSize, FontFamily or FontWeight.
+
+    Display face and body face differ on purpose:
+
+      Archivo Narrow  a condensed grotesque in the American gothic line,
+                      DIN-adjacent, with numerals that hold their authority at
+                      34px. It carries institutional weight without tipping
+                      into stencil pastiche.
+
+      Inter           the most legible neutral sans at 13.5px, which is where
+                      most of this application actually lives.
+
+      IBM Plex Mono   engineered character for paths, versions, build numbers
+                      and key names. Sits with Archivo rather than fighting it.
+
+    All three are SIL OFL 1.1 and bundled under Assets/Fonts, so rendering is
+    identical on every machine instead of falling back to Segoe UI.
+
+    On weights. These foundries publish non-Regular weights under separate
+    legacy family names ("Inter Medium" is its own family), but Avalonia groups
+    embedded fonts by TYPOGRAPHIC family and matches weight across the group.
+    Asking for family "Inter" at FontWeight Medium therefore resolves to the
+    genuinely drawn Inter-Medium file, not a synthesised weight. Three family
+    resources are all that is needed.
+
+    The trap worth knowing: an unmatched weight resolves to the NEAREST
+    available one, silently. Only SemiBold and Bold of Archivo Narrow are
+    bundled, so family "Archivo Narrow" at default weight returns SemiBold
+    rather than failing. Every style below therefore states its weight
+    explicitly, and FontResourceTests asserts each pairing lands on the file it
+    is supposed to.
+  -->
+
+  <Styles.Resources>
+    <FontFamily x:Key="DisplayFont">avares://Dispatch.UI/Assets/Fonts#Archivo Narrow</FontFamily>
+    <FontFamily x:Key="BodyFont">avares://Dispatch.UI/Assets/Fonts#Inter</FontFamily>
+    <FontFamily x:Key="MonoFont">avares://Dispatch.UI/Assets/Fonts#IBM Plex Mono</FontFamily>
+  </Styles.Resources>
+
+  <!-- display  34 / 700 / -0.6px   screen titles -->
+  <Style Selector="TextBlock.display">
+    <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+    <Setter Property="FontSize" Value="34" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="-0.6" />
+    <Setter Property="LineHeight" Value="40" />
+    <Setter Property="Foreground" Value="{DynamicResource Text}" />
+  </Style>
+
+  <!-- h1  24 / 700 / -0.3px   section heads -->
+  <Style Selector="TextBlock.h1">
+    <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+    <Setter Property="FontSize" Value="24" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="-0.3" />
+    <Setter Property="LineHeight" Value="30" />
+    <Setter Property="Foreground" Value="{DynamicResource Text}" />
+  </Style>
+
+  <!-- h2  17 / 650 / -0.1px   card titles. 650 is drawn as SemiBold. -->
+  <Style Selector="TextBlock.h2">
+    <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="-0.1" />
+    <Setter Property="LineHeight" Value="22" />
+    <Setter Property="Foreground" Value="{DynamicResource Text}" />
+  </Style>
+
+  <!-- body  13.5 / 450 / 0   everything normal. 450 is drawn as Regular. -->
+  <Style Selector="TextBlock.body">
+    <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
+    <Setter Property="FontSize" Value="13.5" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="LineHeight" Value="20" />
+    <Setter Property="Foreground" Value="{DynamicResource Text}" />
+  </Style>
+
+  <!-- small  12 / 500 / 0.1px   hints, captions -->
+  <Style Selector="TextBlock.small">
+    <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="LetterSpacing" Value="0.1" />
+    <Setter Property="LineHeight" Value="17" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+  </Style>
+
+  <!-- micro  10.5 / 700 / 1.4px   uppercase eyebrows and labels -->
+  <Style Selector="TextBlock.micro">
+    <Setter Property="FontFamily" Value="{StaticResource BodyFont}" />
+    <Setter Property="FontSize" Value="10.5" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="LetterSpacing" Value="1.4" />
+    <Setter Property="LineHeight" Value="14" />
+    <Setter Property="Foreground" Value="{DynamicResource TextFaint}" />
+  </Style>
+
+  <!-- mono  12 / 450   paths, versions, logs, key names -->
+  <Style Selector="TextBlock.mono">
+    <Setter Property="FontFamily" Value="{StaticResource MonoFont}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="LineHeight" Value="18" />
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+  </Style>
+
+  <!--
+    Tone modifiers. Compose with any style above rather than duplicating the
+    scale per colour: TextBlock Classes="body muted".
+  -->
+  <Style Selector="TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+  </Style>
+  <Style Selector="TextBlock.faint">
+    <Setter Property="Foreground" Value="{DynamicResource TextFaint}" />
+  </Style>
+  <Style Selector="TextBlock.strong">
+    <Setter Property="Foreground" Value="{DynamicResource Text}" />
+  </Style>
+  <Style Selector="TextBlock.gold">
+    <Setter Property="Foreground" Value="{DynamicResource Gold}" />
+  </Style>
+  <Style Selector="TextBlock.blue">
+    <Setter Property="Foreground" Value="{DynamicResource Blue}" />
+  </Style>
+  <Style Selector="TextBlock.success">
+    <Setter Property="Foreground" Value="{DynamicResource Green}" />
+  </Style>
+  <Style Selector="TextBlock.warning">
+    <Setter Property="Foreground" Value="{DynamicResource Amber}" />
+  </Style>
+  <Style Selector="TextBlock.danger">
+    <Setter Property="Foreground" Value="{DynamicResource Red}" />
+  </Style>
+
+</Styles>
