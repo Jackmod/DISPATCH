@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 132" width="460" height="132" role="img" aria-label="DISPATCH">
+  <!--
+    The README wordmark: the same eight single-stroke letterforms the intro
+    animation draws, sitting over the five-segment lightbar. The A is gold, as
+    it is in the app, so the accent lands mid-word where the eye already is.
+  -->
+  <title>DISPATCH</title>
+
+  <defs>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#4C8DFF" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#4C8DFF" stop-opacity="0.30"/>
+      <stop offset="100%" stop-color="#4C8DFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="52" width="460" height="34" fill="url(#glow)"/>
+
+  <g fill="none" stroke="#E9EFF9" stroke-width="4.2"
+     stroke-linecap="round" stroke-linejoin="round"
+     transform="translate(28 14) scale(1.15)">
+    <path d="M4 2 V58 M4 2 H18 C28 2 32 12 32 30 C32 48 28 58 18 58 H4"/>
+    <path d="M17 2 V58" transform="translate(44 0)"/>
+    <path d="M30 13 C30 6 24 2 17 2 C9 2 4 7 4 15 C4 30 30 26 30 44 C30 53 24 58 16 58 C9 58 4 54 4 47" transform="translate(88 0)"/>
+    <path d="M4 2 V58 M4 2 H19 C27 2 31 8 31 17 C31 26 27 32 19 32 H4" transform="translate(132 0)"/>
+    <path d="M2 58 L17 2 L32 58 M8 40 H26" transform="translate(176 0)" stroke="#E8B44A"/>
+    <path d="M2 2 H32 M17 2 V58" transform="translate(220 0)"/>
+    <path d="M31 14 C28 6 23 2 17 2 C9 2 3 12 3 30 C3 48 9 58 17 58 C23 58 28 54 31 46" transform="translate(264 0)"/>
+    <path d="M4 2 V58 M30 2 V58 M4 30 H30" transform="translate(308 0)"/>
+  </g>
+
+  <g transform="translate(126 108)">
+    <rect x="0"   y="0" width="38" height="7" rx="3.5" fill="#4C8DFF"/>
+    <rect x="44"  y="0" width="38" height="7" rx="3.5" fill="#4C8DFF"/>
+    <rect x="88"  y="0" width="38" height="7" rx="3.5" fill="#E8B44A"/>
+    <rect x="132" y="0" width="38" height="7" rx="3.5" fill="#4C8DFF"/>
+    <rect x="176" y="0" width="38" height="7" rx="3.5" fill="#4C8DFF"/>
+  </g>
+</svg>
