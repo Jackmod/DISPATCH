@@ -127,14 +127,17 @@ public sealed class LoadingSlideshow : TemplatedControl
         HasImages = _frames.Count > 0;
     }
 
-    private static bool IsImage(Uri uri)
-    {
-        var path = uri.AbsolutePath;
-        return path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
-            || path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
-            || path.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
-            || path.EndsWith(".webp", StringComparison.OrdinalIgnoreCase);
-    }
+    /// <remarks>
+    /// .jfif is included because browsers routinely save ordinary JPEGs under
+    /// that extension. It decodes identically, and leaving it out means an
+    /// image sitting in the folder silently never appears.
+    /// </remarks>
+    private static readonly string[] ImageExtensions =
+        [".jpg", ".jpeg", ".jfif", ".png", ".webp", ".bmp"];
+
+    private static bool IsImage(Uri uri) =>
+        ImageExtensions.Any(extension =>
+            uri.AbsolutePath.EndsWith(extension, StringComparison.OrdinalIgnoreCase));
 
     private void Restart()
     {

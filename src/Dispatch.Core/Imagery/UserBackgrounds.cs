@@ -35,7 +35,11 @@ public interface IUserBackgrounds
 public sealed class UserBackgrounds : IUserBackgrounds
 {
     // Ordered by preference: a lossless drop-in wins over a compressed one.
-    private static readonly string[] Extensions = [".png", ".jpg", ".jpeg", ".webp", ".bmp"];
+    // .jfif is included because browsers routinely save ordinary JPEGs under
+    // that extension, and omitting it means a correctly-named file is silently
+    // ignored.
+    private static readonly string[] Extensions =
+        [".png", ".webp", ".jpg", ".jpeg", ".jfif", ".bmp"];
 
     private readonly IAppPaths _paths;
 
