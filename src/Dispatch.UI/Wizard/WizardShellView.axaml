@@ -72,12 +72,17 @@
                      VerticalAlignment="Center"
                      Text="{Binding CurrentStep.Title}" />
 
-          <Button Grid.Column="2" Classes="ghost" Padding="12,8">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <c:Icon Data="{StaticResource IconClean}" Size="16" />
-              <TextBlock Text="Clean GTA folder" VerticalAlignment="Center" />
-            </StackPanel>
-          </Button>
+          <!--
+            The step counter, not an action. Clean GTA folder used to live here
+            and therefore appeared on every screen, including during an install
+            where running it would be actively destructive. It belongs on the
+            screen where a folder is actually being chosen, and that is where it
+            now is.
+          -->
+          <TextBlock Grid.Column="2"
+                     Classes="micro"
+                     VerticalAlignment="Center"
+                     Text="{Binding StepCounter}" />
 
         </Grid>
       </StackPanel>

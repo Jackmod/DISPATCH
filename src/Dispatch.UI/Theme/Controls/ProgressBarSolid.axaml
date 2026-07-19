@@ -1,0 +1,92 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:Dispatch.UI.Controls">
+
+  <!--
+    Gold fill on a steel track, with the percentage in the display face
+    alongside. A sheen travels the filled portion so the bar reads as working
+    even when the number holds still for a few seconds.
+  -->
+
+  <ControlTheme x:Key="{x:Type controls:ProgressBarSolid}" TargetType="controls:ProgressBarSolid">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid ColumnDefinitions="*,Auto">
+
+          <Border Grid.Column="0"
+                  Height="{TemplateBinding BarHeight}"
+                  CornerRadius="{DynamicResource RadiusPill}"
+                  Background="{DynamicResource Steel}"
+                  VerticalAlignment="Center"
+                  ClipToBounds="True">
+
+            <Border Name="Fill"
+                    HorizontalAlignment="Left"
+                    Width="{TemplateBinding TrackWidth}"
+                    CornerRadius="{DynamicResource RadiusPill}"
+                    ClipToBounds="True">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                  <GradientStop Offset="0" Color="{DynamicResource GoldColor}" />
+                  <GradientStop Offset="1" Color="{DynamicResource GoldBrightColor}" />
+                </LinearGradientBrush>
+              </Border.Background>
+
+              <Border Name="Sheen"
+                      Width="90"
+                      HorizontalAlignment="Left"
+                      Background="{DynamicResource GlassHighlight}"
+                      Opacity="0" />
+            </Border>
+          </Border>
+
+          <TextBlock Grid.Column="1"
+                     Name="Percent"
+                     Text="{TemplateBinding PercentText}"
+                     Classes="h2"
+                     Width="56"
+                     TextAlignment="Right"
+                     VerticalAlignment="Center"
+                     Margin="8,0,0,0"
+                     Foreground="{DynamicResource Gold}"
+                     IsVisible="{TemplateBinding ShowPercent}" />
+
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+
+    <!-- The fill eases toward each new value; progress arrives in discrete
+         steps and an unanimated bar visibly ratchets. -->
+    <Style Selector="^ /template/ Border#Fill">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Width"
+                            Duration="{DynamicResource StandardDuration}"
+                            Easing="{DynamicResource StandardEasing}" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="^ /template/ Border#Sheen">
+      <Style.Animations>
+        <Animation Duration="0:0:2.2" IterationCount="INFINITE" Easing="SineEaseInOut">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="TranslateTransform.X" Value="-120" />
+          </KeyFrame>
+          <KeyFrame Cue="35%">
+            <Setter Property="Opacity" Value="0.7" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="TranslateTransform.X" Value="900" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+
+  </ControlTheme>
+
+</ResourceDictionary>

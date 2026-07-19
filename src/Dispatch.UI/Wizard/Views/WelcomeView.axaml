@@ -13,11 +13,31 @@
 
   <Panel>
 
-    <!-- The motif, very large and very quiet, behind the content. -->
+    <!--
+      Photographic backdrop, scrimmed hard. The image sets the register in the
+      first half second; the scrim is what keeps the wordmark and the button
+      readable over whatever frame happens to be there.
+    -->
+    <Panel IsVisible="{Binding HasBackdrop}">
+      <Image Source="{Binding Backdrop}" Stretch="UniformToFill" />
+      <Border>
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+            <GradientStop Offset="0" Color="#D9060A12" />
+            <GradientStop Offset="0.5" Color="#C2060A12" />
+            <GradientStop Offset="1" Color="#F2060A12" />
+          </LinearGradientBrush>
+        </Border.Background>
+      </Border>
+      <Border Background="{DynamicResource Vignette}" />
+    </Panel>
+
+    <!-- Vector fallback, for a build with no photographs compiled in. -->
     <Viewbox Width="1400"
              HorizontalAlignment="Center"
              VerticalAlignment="Center"
-             Opacity="0.04">
+             Opacity="0.04"
+             IsVisible="{Binding !HasBackdrop}">
       <Canvas Width="240" Height="88">
         <Path Data="{StaticResource ArtCruiser}"
               Stroke="{DynamicResource Blue}"

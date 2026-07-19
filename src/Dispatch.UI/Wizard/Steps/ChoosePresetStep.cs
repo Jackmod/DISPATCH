@@ -3,6 +3,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Dispatch.Core.Imagery;
+using Dispatch.UI.Imagery;
 
 namespace Dispatch.UI.Wizard.Steps;
 
@@ -210,31 +211,44 @@ public sealed partial class ChoosePresetStep : WizardStep
         Selected = preset;
     }
 
+    /// <summary>
+    /// Resolves each card's photograph.
+    /// </summary>
+    /// <remarks>
+    /// Three sources, most specific first: a file the user dropped in their own
+    /// backgrounds folder, a file named for the tier in Assets/Presets, then a
+    /// positional pick from the compiled-in pool. The last one is what makes
+    /// this work with the arbitrary filenames a browser produces, while still
+    /// giving each tier a different and consistent image.
+    ///
+    /// <para>
+    /// Standard takes the first image, Full Duty the second, Realism the third,
+    /// so the visual escalation the copy describes is at least stable even
+    /// before anyone curates the folder.
+    /// </para>
+    /// </remarks>
     private void LoadBackgrounds()
     {
-        if (_backgrounds is null)
+        for (var index = 0; index < Presets.Count; index++)
         {
-            return;
-        }
+            var preset = Presets[index];
 
-        foreach (var preset in Presets)
-        {
-            var path = _backgrounds.TryResolve(preset.BackgroundKey);
-            if (path is null)
+            // A user-supplied override always wins.
+            var userPath = _backgrounds?.TryResolve(preset.BackgroundKey);
+            if (userPath is not null)
             {
-                continue;
+                try
+                {
+                    preset.Background = new Bitmap(userPath);
+                    continue;
+                }
+                catch (Exception ex) when (ex is IOException or ArgumentException or NotSupportedException)
+                {
+                    // Fall through to the compiled-in art.
+                }
             }
 
-            // A corrupt or half-copied file must not take the wizard down over
-            // what is purely decoration.
-            try
-            {
-                preset.Background = new Bitmap(path);
-            }
-            catch (Exception ex) when (ex is IOException or ArgumentException or NotSupportedException)
-            {
-                preset.Background = null;
-            }
+            preset.Background = ImageCatalog.For(preset.BackgroundKey, index);
         }
     }
 

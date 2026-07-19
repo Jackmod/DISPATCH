@@ -71,6 +71,12 @@ public sealed class SimulatedInstallRunner : IInstallRunner
         var total = Math.Max(1, request.ModCount);
         var completed = 0;
 
+        // Percentage runs across every step of every phase. Deriving it from
+        // the item counter would leave the bar frozen through the four phases
+        // that do not work per-mod, which reads as a hang.
+        var totalSteps = Plan.Sum(entry => entry.Steps);
+        var stepsDone = 0;
+
         foreach (var (phase, steps, countsItems) in Plan)
         {
             for (var step = 0; step < steps; step++)
@@ -85,11 +91,15 @@ public sealed class SimulatedInstallRunner : IInstallRunner
                     installed.Add(mod);
                 }
 
+                stepsDone++;
+
                 progress.Report(new InstallProgress(
                     phase,
                     DetailFor(phase, mod),
                     Math.Min(completed, total),
-                    total));
+                    total,
+                    (double)stepsDone / totalSteps,
+                    LogFor(phase, mod, stopwatch.Elapsed)));
 
                 // Collecting is the slow phase in a real run; everything else
                 // is disk-bound and comparatively quick.
@@ -122,6 +132,41 @@ public sealed class SimulatedInstallRunner : IInstallRunner
             [],
             stopwatch.Elapsed);
     }
+
+    /// <summary>
+    /// One log line, in the shape the real runner will emit: elapsed time, a
+    /// fixed-width verb, then the operand.
+    /// </summary>
+    /// <remarks>
+    /// Elapsed rather than wall-clock time. A pasted log is almost always
+    /// being read by someone who was not there, and "44 seconds in" is more
+    /// use to them than a timestamp in the reader's own timezone.
+    /// </remarks>
+    private static string LogFor(InstallPhase phase, string mod, TimeSpan elapsed)
+    {
+        var stamp = elapsed.ToString(@"mm\:ss\.ff", System.Globalization.CultureInfo.InvariantCulture);
+        var slug = Slug(mod);
+
+        var line = phase switch
+        {
+            InstallPhase.Collecting => $"fetch    {slug}",
+            InstallPhase.CheckingCompatibility => $"version  {slug} → reading assembly metadata",
+            InstallPhase.BackingUp => $"backup   {slug} → backups/run-7f3a/",
+            InstallPhase.PlacingFiles => $"place    staging/{slug}/ → game root",
+            InstallPhase.WritingConfiguration => $"config   {slug}.ini (values written in place)",
+            InstallPhase.InstallingTextures => $"texture  {slug} → mods/update/update.rpf",
+            InstallPhase.Verifying => $"verify   {slug} sha256 ok",
+            _ => slug,
+        };
+
+        return $"{stamp}  {line}";
+    }
+
+    /// <summary>Mod name to a filesystem-shaped token, as the log would show it.</summary>
+    private static string Slug(string mod) =>
+        mod.Replace(" ", string.Empty, StringComparison.Ordinal)
+           .Replace("&", "And", StringComparison.Ordinal)
+           .ToLowerInvariant();
 
     private static string DetailFor(InstallPhase phase, string mod) => phase switch
     {

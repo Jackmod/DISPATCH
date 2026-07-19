@@ -123,12 +123,24 @@
           </ListBox.ItemTemplate>
         </ListBox>
 
-        <Button Classes="secondary" HorizontalAlignment="Left">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <c:Icon Data="{StaticResource IconFolder}" Size="16" />
-            <TextBlock Text="Browse for another folder" VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Button Classes="secondary">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <c:Icon Data="{StaticResource IconFolder}" Size="16" />
+              <TextBlock Text="Browse for another folder" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <!-- The cleaner lives here and nowhere else. It only makes sense
+               against a chosen folder, and offering it mid-install would be
+               offering to delete the files being written. -->
+          <Button Classes="ghost">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <c:Icon Data="{StaticResource IconClean}" Size="16" />
+              <TextBlock Text="Clean GTA folder" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
 
       </StackPanel>
     </ScrollViewer>

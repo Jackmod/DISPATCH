@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Dispatch.Core.Audio;
 
 namespace Dispatch.UI.Wizard.Steps;
 
@@ -9,6 +11,23 @@ namespace Dispatch.UI.Wizard.Steps;
 /// </summary>
 public sealed partial class OfficerStep : WizardStep
 {
+    private readonly ICallsignVoice _voice;
+
+    /// <summary>Constructs the screen against a voice.</summary>
+    public OfficerStep(ICallsignVoice? voice = null) =>
+        _voice = voice ?? new SilentCallsignVoice();
+
+    /// <summary>
+    /// Whether the callsign can actually be played back. False hides the
+    /// button rather than offering one that silently does nothing.
+    /// </summary>
+    public bool CanHearCallsign => _voice.IsAvailable;
+
+    /// <summary>Reads the current callsign back in radio phrasing.</summary>
+    [RelayCommand]
+    private async Task HearCallsignAsync() =>
+        await _voice.SpeakAsync(CallsignPreview).ConfigureAwait(false);
+
     [ObservableProperty]
     private string _officerName = string.Empty;
 

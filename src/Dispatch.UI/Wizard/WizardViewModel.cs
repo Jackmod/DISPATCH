@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
+using Dispatch.Core.Audio;
 using Dispatch.Core.Imagery;
 using Dispatch.Core.Installation;
 using Dispatch.UI.Wizard.Steps;
@@ -29,7 +30,10 @@ public sealed partial class WizardViewModel : ObservableObject
     /// Resolves optional user-supplied background images. Null falls back to
     /// the original vector scenes everywhere.
     /// </param>
-    public WizardViewModel(IInstallRunner? runner = null, IUserBackgrounds? backgrounds = null)
+    public WizardViewModel(
+        IInstallRunner? runner = null,
+        IUserBackgrounds? backgrounds = null,
+        ICallsignVoice? voice = null)
     {
         var install = new InstallStep(runner ?? new SimulatedInstallRunner());
 
@@ -40,7 +44,7 @@ public sealed partial class WizardViewModel : ObservableObject
             new LocateGameStep(),
             new ChoosePresetStep(backgrounds),
             install,
-            new OfficerStep(),
+            new OfficerStep(voice),
         ];
 
         // Subscribed after Steps exists, since the handler reads it. The
@@ -60,6 +64,9 @@ public sealed partial class WizardViewModel : ObservableObject
 
     /// <summary>Total screens, for the progress rail.</summary>
     public int StepCount => Steps.Count;
+
+    /// <summary>Position in the flow, as "STEP 3 OF 6".</summary>
+    public string StepCounter => $"STEP {CurrentIndex + 1} OF {StepCount}";
 
     /// <summary>True when there is a screen before this one.</summary>
     public bool CanGoBack => CurrentIndex > 0;
@@ -154,6 +161,7 @@ public sealed partial class WizardViewModel : ObservableObject
         OnPropertyChanged(nameof(CanGoBack));
         OnPropertyChanged(nameof(CanGoNext));
         OnPropertyChanged(nameof(IsLastStep));
+        OnPropertyChanged(nameof(StepCounter));
         NextCommand.NotifyCanExecuteChanged();
         BackCommand.NotifyCanExecuteChanged();
     }

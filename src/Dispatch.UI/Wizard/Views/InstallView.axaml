@@ -70,10 +70,15 @@
           <TextBlock Text="{Binding Detail}" Classes="mono" />
         </StackPanel>
 
-        <StackPanel Spacing="12">
+        <StackPanel Spacing="14">
+          <!-- The bar carries overall progress; the rail below still says
+               which of the seven phases that progress is inside. -->
+          <c:ProgressBarSolid Fraction="{Binding Fraction}" BarHeight="12" />
+
           <c:LightbarProgress SegmentCount="7"
                               CompletedSegments="{Binding PhaseIndex}"
-                              SegmentHeight="10" />
+                              SegmentHeight="4" />
+
           <Grid ColumnDefinitions="Auto,*,Auto">
             <TextBlock Grid.Column="0" Text="{Binding Counter}" Classes="mono" />
             <TextBlock Grid.Column="2"
@@ -83,9 +88,15 @@
         </StackPanel>
 
         <Expander IsExpanded="{Binding IsLogExpanded}" Header="Show detailed log" HorizontalAlignment="Left">
-          <TextBlock Classes="mono"
-                     TextWrapping="Wrap"
-                     Text="04:19:22  placed  plugins/StopThePed.dll&#10;04:19:22  backup   plugins/StopThePed.dll -&gt; backups/run-7f3a&#10;04:19:23  verify   sha256 match&#10;04:19:24  extract  SearchItemsReborn.zip -&gt; staging/" />
+          <ScrollViewer Name="LogScroll" Height="180" Width="820" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Log}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <TextBlock Text="{Binding}" Classes="mono" TextWrapping="NoWrap" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
         </Expander>
 
       </StackPanel>

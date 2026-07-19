@@ -32,12 +32,27 @@ public enum InstallPhase
 /// <param name="Detail">What is happening right now, for the mono line.</param>
 /// <param name="Completed">Items finished.</param>
 /// <param name="Total">Items in the run.</param>
+/// <param name="Fraction">
+/// Overall progress through the whole run, 0 to 1. Measured across every step
+/// of every phase rather than derived from the item counter, which only moves
+/// during the phases that work per-mod and would sit still for long stretches.
+/// </param>
+/// <param name="Log">
+/// A timestamped line describing what just happened, for the expandable log.
+/// Null when the update carries no new log entry.
+/// </param>
 public readonly record struct InstallProgress(
     InstallPhase Phase,
     string Detail,
     int Completed,
-    int Total)
+    int Total,
+    double Fraction = 0,
+    string? Log = null)
 {
+    /// <summary>Whole-number percentage, for display.</summary>
+    public int Percent => (int)Math.Round(Math.Clamp(Fraction, 0, 1) * 100);
+
+
     /// <summary>Human-readable phase name, shown large on the install screen.</summary>
     public string PhaseName => Phase switch
     {

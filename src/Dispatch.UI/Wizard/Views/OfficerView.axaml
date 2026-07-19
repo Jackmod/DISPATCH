@@ -92,7 +92,12 @@
             <TextBlock Text="{Binding CallsignPreview}"
                        Classes="display"
                        HorizontalAlignment="Center" />
-            <Button Classes="ghost" HorizontalAlignment="Center">
+            <!-- Hidden rather than disabled where no speech engine exists; a
+                 button that cannot ever work is worse than no button. -->
+            <Button Classes="ghost"
+                    HorizontalAlignment="Center"
+                    Command="{Binding HearCallsignCommand}"
+                    IsVisible="{Binding CanHearCallsign}">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <c:Icon Data="{StaticResource IconRadioWave}" Size="16" />
                 <TextBlock Text="Hear it" VerticalAlignment="Center" />

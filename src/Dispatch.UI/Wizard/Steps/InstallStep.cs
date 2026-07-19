@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Dispatch.Core.Installation;
@@ -37,12 +38,31 @@ public sealed partial class InstallStep : WizardStep
     [ObservableProperty]
     private bool _isLogExpanded;
 
+    [ObservableProperty]
+    private double _fraction;
+
+    [ObservableProperty]
+    private int _percent;
+
     /// <summary>Constructs the screen against a runner.</summary>
     public InstallStep(IInstallRunner runner)
     {
         ArgumentNullException.ThrowIfNull(runner);
         _runner = runner;
     }
+
+    /// <summary>
+    /// The run log, newest last.
+    /// </summary>
+    /// <remarks>
+    /// Capped at <see cref="MaxLogLines"/>. A real run emits thousands of
+    /// lines and an unbounded collection bound to a scroll viewer is a memory
+    /// leak with a UI attached. The completion report, not this, is the thing
+    /// meant to be kept.
+    /// </remarks>
+    public ObservableCollection<string> Log { get; } = [];
+
+    private const int MaxLogLines = 400;
 
     /// <summary>Raised when the run finishes and the wizard should move on.</summary>
     public event EventHandler<InstallReport>? Finished;
@@ -89,6 +109,18 @@ public sealed partial class InstallStep : WizardStep
                 Detail = update.Detail;
                 Completed = update.Completed;
                 Total = update.Total;
+                Fraction = update.Fraction;
+                Percent = update.Percent;
+
+                if (update.Log is { Length: > 0 } line)
+                {
+                    Log.Add(line);
+
+                    while (Log.Count > MaxLogLines)
+                    {
+                        Log.RemoveAt(0);
+                    }
+                }
             }));
 
         try
@@ -104,9 +136,14 @@ public sealed partial class InstallStep : WizardStep
             {
                 PhaseIndex = 7;
                 Phase = "Done";
+                Fraction = 1;
+                Percent = 100;
                 Detail = Report.IsClean
                     ? "Everything installed cleanly"
                     : $"{Report.NeedsAttention.Count} item needs attention";
+
+                Log.Add($"{Report.Elapsed:mm\\:ss}  done     " +
+                        $"{Report.Installed.Count} installed, {Report.NeedsAttention.Count} need attention");
 
                 Finished?.Invoke(this, Report);
             });

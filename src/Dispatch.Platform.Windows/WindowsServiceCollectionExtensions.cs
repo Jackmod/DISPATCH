@@ -1,4 +1,6 @@
+using Dispatch.Core.Audio;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Dispatch.Platform.Windows;
 
@@ -12,6 +14,8 @@ public static class WindowsServiceCollectionExtensions
     public static IServiceCollection AddDispatchWindows(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddSingleton<ICallsignVoice, SapiCallsignVoice>();
 
         // Implementations land here as the interfaces they satisfy are
         // introduced in Core: ProcessGuard, PowerService, ElevationService,
