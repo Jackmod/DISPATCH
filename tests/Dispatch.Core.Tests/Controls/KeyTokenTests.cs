@@ -131,10 +131,37 @@ public sealed class KeyTokenTests
     [InlineData("DPadRight", true)]
     [InlineData("RightThumb", true)]
     [InlineData("LeftTrigger", true)]
+    [InlineData("PadX", true)]
     [InlineData("F9", false)]
     [InlineData("NumPad7", false)]
+    [InlineData("X", false)]
+    [InlineData("A", false)]
     public void Controller_inputs_are_identifiable(string token, bool expected) =>
         new KeyToken(token).IsControllerInput.Should().Be(expected);
+
+    [Fact]
+    public void A_keyboard_letter_is_not_a_face_button()
+    {
+        // A, B, X and Y are both keyboard letters and gamepad face buttons.
+        // Without distinct tokens, every keyboard bind on X reported itself as
+        // a controller input and the two devices stopped being separable.
+        var keyboardX = KeyTokens.Parse("X");
+        var padX = KeyTokens.Parse("X", KeyDialect.Controller);
+
+        keyboardX.Should().NotBe(padX);
+        keyboardX.IsControllerInput.Should().BeFalse();
+        padX.IsControllerInput.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Face_buttons_read_as_buttons_and_write_back_bare()
+    {
+        // The Pad prefix is ours; the config file expects the plain letter.
+        var padA = KeyTokens.Parse("A", KeyDialect.Controller);
+
+        KeyTokens.ToDisplay(padA).Should().Be("A Button");
+        KeyTokens.Format(padA, KeyDialect.Controller).Should().Be("A");
+    }
 
     // ===== Modifiers ======================================================
 

@@ -45,14 +45,21 @@ public readonly record struct KeyToken(string Canonical)
     /// <inheritdoc />
     public override string ToString() => Canonical;
 
+    /// <remarks>
+    /// Face buttons carry a <c>Pad</c> prefix in canonical form. A, B, X and Y
+    /// are also perfectly ordinary keyboard letters, and without the prefix a
+    /// keyboard bind on X is indistinguishable from the gamepad's X button —
+    /// which made every keyboard letter bind report itself as a controller
+    /// input.
+    /// </remarks>
     private static readonly HashSet<string> ControllerInputs = new(StringComparer.Ordinal)
     {
         "DPadUp", "DPadDown", "DPadLeft", "DPadRight",
-        "A", "B", "X", "Y",
+        "PadA", "PadB", "PadX", "PadY",
         "LeftShoulder", "RightShoulder",
         "LeftTrigger", "RightTrigger",
         "LeftThumb", "RightThumb",
-        "Start", "Back",
+        "PadStart", "PadBack",
     };
 }
 
@@ -126,14 +133,32 @@ public static class KeyTokens
         ["DPadDown"] = "D-Pad Down",
         ["DPadLeft"] = "D-Pad Left",
         ["DPadRight"] = "D-Pad Right",
+        ["PadA"] = "A Button",
+        ["PadB"] = "B Button",
+        ["PadX"] = "X Button",
+        ["PadY"] = "Y Button",
         ["LeftShoulder"] = "Left Bumper",
         ["RightShoulder"] = "Right Bumper",
         ["LeftTrigger"] = "Left Trigger",
         ["RightTrigger"] = "Right Trigger",
         ["LeftThumb"] = "Left Stick (click)",
         ["RightThumb"] = "Right Stick (click)",
-        ["Start"] = "Start",
-        ["Back"] = "Back",
+        ["PadStart"] = "Start",
+        ["PadBack"] = "Back",
+    };
+
+    /// <summary>
+    /// Controller inputs a mod writes without a prefix, mapped to the
+    /// prefixed canonical form.
+    /// </summary>
+    private static readonly Dictionary<string, string> ControllerAliases = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["A"] = "PadA",
+        ["B"] = "PadB",
+        ["X"] = "PadX",
+        ["Y"] = "PadY",
+        ["Start"] = "PadStart",
+        ["Back"] = "PadBack",
     };
 
     /// <summary>Parses a token written by a mod into canonical form.</summary>
@@ -207,6 +232,12 @@ public static class KeyTokens
             // Bare drops the D prefix from number-row digits; everything else
             // is spelled the same way.
             KeyDialect.Bare when IsNumberRow(token, out var digit) => digit.ToString(),
+
+            // The Pad prefix is ours, not the mod's. Config files expect the
+            // bare face-button letter.
+            KeyDialect.Controller when token.Canonical.StartsWith("Pad", StringComparison.Ordinal)
+                => token.Canonical[3..],
+
             _ => token.Canonical,
         };
     }
@@ -256,9 +287,18 @@ public static class KeyTokens
     /// <summary>Every canonical token the display table knows, for the map legend.</summary>
     public static IReadOnlyCollection<string> KnownTokens => Display.Keys;
 
-    private static string NormaliseControllerInput(string value) =>
-        Display.Keys.FirstOrDefault(k => string.Equals(k, value, StringComparison.OrdinalIgnoreCase))
-        ?? value;
+    private static string NormaliseControllerInput(string value)
+    {
+        // Face buttons gain their Pad prefix here, so a gamepad X and a
+        // keyboard X never collapse to the same token.
+        if (ControllerAliases.TryGetValue(value, out var prefixed))
+        {
+            return prefixed;
+        }
+
+        return Display.Keys.FirstOrDefault(k => string.Equals(k, value, StringComparison.OrdinalIgnoreCase))
+            ?? value;
+    }
 }
 
 /// <summary>Modifier keys that can qualify a binding.</summary>
