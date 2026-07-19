@@ -2,12 +2,13 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:gallery="clr-namespace:Dispatch.UI.Gallery"
         xmlns:intro="clr-namespace:Dispatch.UI.Intro"
+        xmlns:wizard="clr-namespace:Dispatch.UI.Wizard"
         x:Class="Dispatch.UI.Shell.MainWindow"
         Title="Dispatch"
-        Width="1240"
+        Width="1280"
         Height="880"
-        MinWidth="1040"
-        MinHeight="700"
+        MinWidth="1120"
+        MinHeight="740"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource Ink}">
 
@@ -15,12 +16,16 @@
     The intro sits over the shell rather than replacing it, so the app is fully
     constructed and laid out behind the animation. By the time the intro fades
     there is nothing left to wait for.
+
+    F12 swaps the wizard for the design-system gallery. It is a development
+    affordance and is not reachable from any shipped navigation.
   -->
 
   <Panel>
-    <ContentControl Name="ShellHost" Opacity="0">
-      <gallery:GalleryView />
-    </ContentControl>
+    <Panel Name="ShellHost" Opacity="0">
+      <wizard:WizardShellView Name="Wizard" />
+      <gallery:GalleryView Name="Gallery" IsVisible="False" />
+    </Panel>
 
     <intro:IntroView Name="Intro" />
   </Panel>

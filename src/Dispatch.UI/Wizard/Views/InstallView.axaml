@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Dispatch.UI.Controls"
+             xmlns:steps="clr-namespace:Dispatch.UI.Wizard.Steps"
+             x:Class="Dispatch.UI.Wizard.Views.InstallView"
+             x:DataType="steps:InstallStep">
+
+  <!--
+    The screen goes quiet and focused. Current phase only, one detail line, a
+    counter, and the rail carrying progress.
+
+    The log is collapsed by default and always will be. A wall of scrolling
+    text makes an install feel fragile, and the people who want it will open it.
+  -->
+
+  <Grid RowDefinitions="*,Auto" Margin="64,40,64,32">
+
+    <StackPanel Grid.Row="0" VerticalAlignment="Center" Spacing="32" MaxWidth="760">
+
+      <StackPanel Spacing="12">
+        <TextBlock Text="INSTALLING" Classes="micro" />
+        <TextBlock Text="{Binding Phase}" Classes="display" />
+        <TextBlock Text="{Binding Detail}" Classes="mono" />
+      </StackPanel>
+
+      <StackPanel Spacing="12">
+        <c:LightbarProgress SegmentCount="7"
+                            CompletedSegments="{Binding PhaseIndex}"
+                            SegmentHeight="10" />
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <TextBlock Grid.Column="0" Text="{Binding Counter}" Classes="mono" />
+          <TextBlock Grid.Column="2" Text="Nothing blocks. A failed mod is reported at the end."
+                     Classes="small" />
+        </Grid>
+      </StackPanel>
+
+      <Expander IsExpanded="{Binding IsLogExpanded}" Header="Show detailed log">
+        <TextBlock Classes="mono"
+                   TextWrapping="Wrap"
+                   Text="04:19:22  placed  plugins/StopThePed.dll&#10;04:19:22  backup   plugins/StopThePed.dll -> backups/run-7f3a&#10;04:19:23  verify   sha256 match&#10;04:19:24  extract  SearchItemsReborn.zip -> staging/" />
+      </Expander>
+
+    </StackPanel>
+
+    <!-- ===== Tip rail ======================================== -->
+    <Border Grid.Row="1"
+            Padding="20,14"
+            CornerRadius="{DynamicResource RadiusPill}"
+            Background="{DynamicResource GlassSurface}"
+            BorderBrush="{DynamicResource GlassBorder}"
+            BorderThickness="1">
+      <StackPanel Orientation="Horizontal" Spacing="14">
+        <c:Icon Data="{StaticResource IconInfo}" Foreground="{DynamicResource Gold}" Size="18" />
+        <TextBlock Classes="small"
+                   VerticalAlignment="Center"
+                   Text="Numpad binds need Num Lock on. This will waste ten minutes of your life at least once." />
+      </StackPanel>
+    </Border>
+
+  </Grid>
+
+</UserControl>

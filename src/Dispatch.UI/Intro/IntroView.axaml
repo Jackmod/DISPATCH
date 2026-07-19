@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Dispatch.UI.Intro.IntroView"
              Background="{DynamicResource Ink}"
@@ -14,7 +14,7 @@
 
     The letters draw via StrokeDashOffset. Avalonia measures StrokeDashArray
     and StrokeDashOffset in multiples of StrokeThickness, not pixels, so at 3px
-    thickness a dash of 120 is 360px — comfortably longer than any letter path,
+    thickness a dash of 120 is 360px â€” comfortably longer than any letter path,
     which is what makes the stroke appear to grow from nothing rather than
     ticking through repeated dashes.
 
@@ -28,6 +28,28 @@
     <!-- The field itself carries a very slow drift, so the first frame is
          never completely dead. -->
     <Panel Name="Field" Background="{DynamicResource Ink}" />
+
+    <!--
+      Patrol lights washing the field from either side. Red left, blue right,
+      alternating on a 380ms cycle with the two sides in opposite phase, which
+      is roughly the cadence of a real bar and reads as one immediately.
+
+      Kept to the intro. In the working UI this would be wallpaper inside a
+      day; here it is the one moment the product says what it is.
+    -->
+    <Ellipse Name="PatrolRedLight"
+             Width="1000" Height="1000"
+             HorizontalAlignment="Left" VerticalAlignment="Center"
+             Margin="-380,0,0,0"
+             Fill="{DynamicResource PatrolRed}"
+             Opacity="0" />
+
+    <Ellipse Name="PatrolBlueLight"
+             Width="1000" Height="1000"
+             HorizontalAlignment="Right" VerticalAlignment="Center"
+             Margin="0,0,-380,0"
+             Fill="{DynamicResource PatrolBlue}"
+             Opacity="0" />
 
     <Ellipse Name="Glow"
              Width="900" Height="900"

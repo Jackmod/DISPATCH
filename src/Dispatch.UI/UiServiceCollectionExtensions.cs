@@ -1,5 +1,8 @@
+using Dispatch.Core.Imagery;
 using Dispatch.UI.Shell;
+using Dispatch.UI.Wizard;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Dispatch.UI;
 
@@ -11,6 +14,8 @@ public static class UiServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        services.TryAddSingleton<IUserBackgrounds, UserBackgrounds>();
+        services.AddSingleton<WizardViewModel>();
         services.AddSingleton<MainWindow>();
 
         return services;

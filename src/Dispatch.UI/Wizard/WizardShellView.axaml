@@ -1,0 +1,142 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Dispatch.UI.Controls"
+             xmlns:vm="clr-namespace:Dispatch.UI.Wizard"
+             xmlns:steps="clr-namespace:Dispatch.UI.Wizard.Steps"
+             xmlns:views="clr-namespace:Dispatch.UI.Wizard.Views"
+             x:Class="Dispatch.UI.Wizard.WizardShellView"
+             x:DataType="vm:WizardViewModel">
+
+  <!--
+    Step view model to view. Declared here rather than as keyed resources
+    because implicit template matching only looks at DataTemplates collections;
+    a keyed DataTemplate in a ResourceDictionary is never consulted by a
+    ContentControl. Scoping them to the shell also keeps wizard templates out
+    of the application-wide namespace.
+  -->
+  <UserControl.DataTemplates>
+    <DataTemplate DataType="steps:WelcomeStep">
+      <views:WelcomeView />
+    </DataTemplate>
+    <DataTemplate DataType="steps:WhatThisIsStep">
+      <views:WhatThisIsView />
+    </DataTemplate>
+    <DataTemplate DataType="steps:LocateGameStep">
+      <views:LocateGameView />
+    </DataTemplate>
+    <DataTemplate DataType="steps:ChoosePresetStep">
+      <views:ChoosePresetView />
+    </DataTemplate>
+    <DataTemplate DataType="steps:InstallStep">
+      <views:InstallView />
+    </DataTemplate>
+    <DataTemplate DataType="steps:OfficerStep">
+      <views:OfficerView />
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <!--
+    Every screen is full-bleed and fixed: no page scrolls. If a screen does not
+    fit, that screen is carrying too much and gets split, rather than the user
+    being handed a scrollbar and left to discover the rest.
+
+    Three fixed bands: the rail and top bar, the screen, the footer. Only the
+    middle changes, so the chrome never moves between steps and the eye keeps
+    its place.
+  -->
+
+  <Panel>
+    <c:AmbientBackdrop Intensity="0.85" />
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+      <!-- ===== Rail and top bar ================================== -->
+      <StackPanel Grid.Row="0">
+        <c:LightbarProgress SegmentCount="{Binding StepCount}"
+                            CompletedSegments="{Binding CurrentIndex}"
+                            SegmentHeight="3"
+                            SegmentGap="2"
+                            Margin="0" />
+
+        <Grid ColumnDefinitions="Auto,*,Auto" Margin="32,20,32,0">
+
+          <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+            <c:Icon Data="{StaticResource IconShield}" Foreground="{DynamicResource Gold}" Size="22" />
+            <TextBlock Text="DISPATCH" Classes="micro" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextMuted}" />
+          </StackPanel>
+
+          <TextBlock Grid.Column="1"
+                     Classes="micro"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     Text="{Binding CurrentStep.Title}" />
+
+          <Button Grid.Column="2" Classes="ghost" Padding="12,8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <c:Icon Data="{StaticResource IconClean}" Size="16" />
+              <TextBlock Text="Clean GTA folder" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+        </Grid>
+      </StackPanel>
+
+      <!-- ===== The screen ======================================== -->
+      <TransitioningContentControl Grid.Row="1"
+                                   Content="{Binding CurrentStep}"
+                                   ClipToBounds="True">
+        <TransitioningContentControl.PageTransition>
+          <CompositePageTransition>
+            <CompositePageTransition.PageTransitions>
+              <PageSlide Duration="0:0:0.38" Orientation="Horizontal" />
+              <CrossFade Duration="0:0:0.38" />
+            </CompositePageTransition.PageTransitions>
+          </CompositePageTransition>
+        </TransitioningContentControl.PageTransition>
+      </TransitioningContentControl>
+
+      <!-- ===== Footer =========================================== -->
+      <Border Grid.Row="2"
+              IsVisible="{Binding CurrentStep.ShowNavigation}"
+              Background="{DynamicResource GlassSurface}"
+              BorderBrush="{DynamicResource Steel}"
+              BorderThickness="0,1,0,0"
+              Padding="32,20">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+
+          <Button Grid.Column="0"
+                  Classes="ghost"
+                  Command="{Binding BackCommand}"
+                  IsVisible="{Binding CanGoBack}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <c:Icon Data="{StaticResource IconChevronLeft}" Size="16" />
+              <TextBlock Text="Back" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <TextBlock Grid.Column="1"
+                     Classes="small"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     Text="{Binding CurrentStep.Title}" />
+
+          <Button Grid.Column="2"
+                  Classes="primary"
+                  Command="{Binding NextCommand}"
+                  IsEnabled="{Binding CanGoNext}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="{Binding CurrentStep.AdvanceLabel}" VerticalAlignment="Center" />
+              <c:Icon Data="{StaticResource IconChevronRight}"
+                      Size="16"
+                      Foreground="{DynamicResource Ink}" />
+            </StackPanel>
+          </Button>
+
+        </Grid>
+      </Border>
+
+    </Grid>
+  </Panel>
+
+</UserControl>

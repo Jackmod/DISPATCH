@@ -52,7 +52,19 @@
                    Fill="{DynamicResource OrbCyan}"
                    Opacity="0.6" />
 
-          <!-- ===== Street grid ===================================== -->
+          <!--
+            The street grid is off by default here.
+
+            At hero scale, inside a card, it reads as a city. Stretched across a
+            whole window it degrades into a few long diagonals that look like
+            display artefacts rather than streets — and a texture that makes
+            people wonder whether their screen is broken is worse than no
+            texture. It stays available via ShowGrid for surfaces that frame it
+            properly, which is where the preset scenes use it.
+
+            The periodic scan sweep is gone for the same reason: on a large
+            surface it read as a rolling-shutter glitch, not as radar.
+          -->
           <Canvas Name="GridLayer"
                   IsVisible="{TemplateBinding ShowGrid}"
                   ClipToBounds="False">
@@ -61,20 +73,7 @@
                   StrokeThickness="1"
                   Canvas.Left="-40"
                   Canvas.Top="-20" />
-            <Path Data="{StaticResource ArtCoastline}"
-                  Stroke="{DynamicResource Blue}"
-                  StrokeThickness="1.5"
-                  Opacity="0.18"
-                  Canvas.Left="-40"
-                  Canvas.Top="-20" />
           </Canvas>
-
-          <!-- ===== Scan sweep ====================================== -->
-          <Border Name="Scan"
-                  Height="1"
-                  VerticalAlignment="Top"
-                  Background="{DynamicResource ScanLine}"
-                  Opacity="0" />
 
           <!-- ===== Vignette ======================================== -->
           <Border Background="{DynamicResource Vignette}" />
@@ -151,32 +150,6 @@
           <KeyFrame Cue="100%">
             <Setter Property="TranslateTransform.X" Value="-72" />
             <Setter Property="TranslateTransform.Y" Value="-36" />
-          </KeyFrame>
-        </Animation>
-      </Style.Animations>
-    </Style>
-
-    <!-- The sweep: mostly absent, crossing about once every 13 seconds. -->
-    <Style Selector="^[IsAnimated=True] /template/ Border#Scan">
-      <Style.Animations>
-        <Animation Duration="0:0:13" IterationCount="INFINITE" Easing="LinearEasing">
-          <KeyFrame Cue="0%">
-            <Setter Property="Opacity" Value="0" />
-            <Setter Property="TranslateTransform.Y" Value="0" />
-          </KeyFrame>
-          <KeyFrame Cue="6%">
-            <Setter Property="Opacity" Value="0.9" />
-          </KeyFrame>
-          <KeyFrame Cue="44%">
-            <Setter Property="Opacity" Value="0.5" />
-          </KeyFrame>
-          <KeyFrame Cue="58%">
-            <Setter Property="Opacity" Value="0" />
-            <Setter Property="TranslateTransform.Y" Value="960" />
-          </KeyFrame>
-          <KeyFrame Cue="100%">
-            <Setter Property="Opacity" Value="0" />
-            <Setter Property="TranslateTransform.Y" Value="960" />
           </KeyFrame>
         </Animation>
       </Style.Animations>

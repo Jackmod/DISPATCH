@@ -1,0 +1,139 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Dispatch.UI.Controls"
+             xmlns:steps="clr-namespace:Dispatch.UI.Wizard.Steps"
+             x:Class="Dispatch.UI.Wizard.Views.OfficerView"
+             x:DataType="steps:OfficerStep">
+
+  <!--
+    The first screen that should feel like a game rather than a tool. The
+    callsign is a builder with a live preview in display type, because
+    "1 ADAM 7" is the thing the player will hear over the radio all night and
+    typing it into a text box would waste that.
+  -->
+
+  <Grid ColumnDefinitions="*,32,420" Margin="64,40,64,32">
+
+    <!-- ===== Identity ======================================== -->
+    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="24">
+
+        <StackPanel Spacing="6" Classes="reveal">
+          <TextBlock Text="STEP 6" Classes="micro" />
+          <TextBlock Text="Create your officer" Classes="display" />
+        </StackPanel>
+
+        <StackPanel Spacing="8" Classes="reveal d1">
+          <TextBlock Text="NAME" Classes="micro" />
+          <TextBox Text="{Binding OfficerName}" Watermark="e.g. J. Reyes" />
+          <TextBlock Classes="small"
+                     Text="Appears on your dash cam overlay and in dispatch." />
+        </StackPanel>
+
+        <StackPanel Spacing="8" Classes="reveal d2">
+          <TextBlock Text="AGENCY" Classes="micro" />
+          <ItemsControl ItemsSource="{Binding Agencies}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="12" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <Border Width="94" Height="94"
+                        CornerRadius="{DynamicResource RadiusCard}"
+                        Background="{DynamicResource GlassSurface}"
+                        BorderBrush="{DynamicResource GlassBorder}"
+                        BorderThickness="1">
+                  <StackPanel VerticalAlignment="Center" Spacing="8">
+                    <Viewbox Height="36" HorizontalAlignment="Center">
+                      <Canvas Width="120" Height="140">
+                        <Path Data="{StaticResource ArtBadge}"
+                              Stroke="{DynamicResource Gold}"
+                              StrokeThickness="4"
+                              StrokeLineCap="Round"
+                              StrokeJoin="Round" />
+                      </Canvas>
+                    </Viewbox>
+                    <TextBlock Text="{Binding}" Classes="micro" HorizontalAlignment="Center" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <StackPanel Spacing="8" Classes="reveal d3">
+          <TextBlock Text="DEPARTMENT NAME" Classes="micro" />
+          <TextBox Text="{Binding DepartmentName}" />
+        </StackPanel>
+
+        <StackPanel Spacing="8" Classes="reveal d4">
+          <TextBlock Text="AIR UNIT CALLSIGN" Classes="micro" />
+          <TextBox Text="{Binding AirUnitCallsign}" Width="200" HorizontalAlignment="Left" />
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- ===== Callsign builder ================================ -->
+    <c:Card Grid.Column="2"
+            Title="Callsign"
+            Eyebrow="ON THE RADIO"
+            Classes="reveal d2">
+      <StackPanel Spacing="20">
+
+        <Border CornerRadius="{DynamicResource RadiusCard}"
+                Background="{DynamicResource NavyDeep}"
+                BorderBrush="{DynamicResource Steel}"
+                BorderThickness="1"
+                Padding="20,24">
+          <StackPanel Spacing="10">
+            <TextBlock Text="{Binding CallsignPreview}"
+                       Classes="display"
+                       HorizontalAlignment="Center" />
+            <Button Classes="ghost" HorizontalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <c:Icon Data="{StaticResource IconRadioWave}" Size="16" />
+                <TextBlock Text="Hear it" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Border>
+
+        <Grid ColumnDefinitions="*,12,2*,12,*">
+          <StackPanel Grid.Column="0" Spacing="6">
+            <TextBlock Text="DIVISION" Classes="micro" />
+            <NumericUpDown Value="{Binding CallsignDivision}" Minimum="1" Maximum="10"
+                           FormatString="0" ShowButtonSpinner="True" />
+          </StackPanel>
+
+          <StackPanel Grid.Column="2" Spacing="6">
+            <TextBlock Text="PHONETIC" Classes="micro" />
+            <ComboBox ItemsSource="{Binding Phonetics}"
+                      SelectedItem="{Binding CallsignPhonetic}"
+                      HorizontalAlignment="Stretch" />
+          </StackPanel>
+
+          <StackPanel Grid.Column="4" Spacing="6">
+            <TextBlock Text="BEAT" Classes="micro" />
+            <NumericUpDown Value="{Binding CallsignBeat}" Minimum="1" Maximum="24"
+                           FormatString="0" ShowButtonSpinner="True" />
+          </StackPanel>
+        </Grid>
+
+        <StackPanel Spacing="8">
+          <TextBlock Text="KEYBIND PROFILE" Classes="micro" />
+          <ComboBox ItemsSource="{Binding ControlProfiles}"
+                    SelectedItem="{Binding ControlProfile}"
+                    HorizontalAlignment="Stretch" />
+          <TextBlock Classes="small" TextWrapping="Wrap"
+                     Text="Suggested is the conflict-free scheme from the guide. Default keeps every mod's factory binds, several of which conflict." />
+        </StackPanel>
+
+      </StackPanel>
+    </c:Card>
+
+  </Grid>
+
+</UserControl>

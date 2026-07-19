@@ -127,6 +127,33 @@
     <GradientStop Offset="1" Color="#007DB0FF" />
   </RadialGradientBrush>
 
+  <!--
+    Patrol lighting. Used in the intro and on hero surfaces only.
+
+    The red-and-blue lightbar is the most obvious visual cliche available to
+    this subject, which is exactly why it is quarantined here. In the identity
+    moment it is the point — nothing says police faster. In the working UI it
+    would become wallpaper within a day, so the chrome stays navy and gold and
+    these two brushes never appear on a screen you have to read.
+
+    Deeper and more saturated than the status Red, which has a different job
+    and must never be confused with an emergency light.
+  -->
+  <Color x:Key="PatrolRedColor">#FF2D3F</Color>
+  <Color x:Key="PatrolBlueColor">#2E6BFF</Color>
+
+  <RadialGradientBrush x:Key="PatrolRed" GradientOrigin="50%,50%" Center="50%,50%" RadiusX="50%" RadiusY="50%">
+    <GradientStop Offset="0" Color="#73FF2D3F" />
+    <GradientStop Offset="0.45" Color="#26FF2D3F" />
+    <GradientStop Offset="1" Color="#00FF2D3F" />
+  </RadialGradientBrush>
+
+  <RadialGradientBrush x:Key="PatrolBlue" GradientOrigin="50%,50%" Center="50%,50%" RadiusX="50%" RadiusY="50%">
+    <GradientStop Offset="0" Color="#732E6BFF" />
+    <GradientStop Offset="0.45" Color="#262E6BFF" />
+    <GradientStop Offset="1" Color="#002E6BFF" />
+  </RadialGradientBrush>
+
   <!-- Corner falloff, so the composition sits in the frame rather than
        running off the edges. -->
   <RadialGradientBrush x:Key="Vignette" GradientOrigin="50%,45%" Center="50%,45%" RadiusX="75%" RadiusY="75%">

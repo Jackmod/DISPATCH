@@ -28,7 +28,7 @@ public sealed class AmbientBackdrop : TemplatedControl
 
     /// <summary>Defines the <see cref="ShowGrid"/> property.</summary>
     public static readonly StyledProperty<bool> ShowGridProperty =
-        AvaloniaProperty.Register<AmbientBackdrop, bool>(nameof(ShowGrid), true);
+        AvaloniaProperty.Register<AmbientBackdrop, bool>(nameof(ShowGrid));
 
     /// <summary>Defines the <see cref="Intensity"/> property.</summary>
     public static readonly StyledProperty<double> IntensityProperty =
@@ -44,7 +44,12 @@ public sealed class AmbientBackdrop : TemplatedControl
         set => SetValue(IsAnimatedProperty, value);
     }
 
-    /// <summary>Whether to draw the street grid layer.</summary>
+    /// <summary>
+    /// Whether to draw the street grid layer. Off by default: across a whole
+    /// window the grid degrades into long diagonals that read as display
+    /// artefacts rather than streets. Turn it on only where the surface frames
+    /// it, as the preset scenes do.
+    /// </summary>
     public bool ShowGrid
     {
         get => GetValue(ShowGridProperty);

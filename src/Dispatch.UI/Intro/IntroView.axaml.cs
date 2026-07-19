@@ -72,6 +72,10 @@ public partial class IntroView : UserControl
         // The glow comes up under everything so the field is never flat black.
         var glow = Animate(GlowFadeIn(), Glow, token);
 
+        // Patrol lights run for the whole intro, in opposite phase.
+        var redLight = Animate(PatrolFlash(TimeSpan.Zero), PatrolRedLight, token);
+        var blueLight = Animate(PatrolFlash(TimeSpan.FromMilliseconds(190)), PatrolBlueLight, token);
+
         // 0-560ms: the scan line crosses.
         var scan = Animate(ScanSweep(width), Scan, token);
         var scanOpacity = Animate(ScanOpacity(), Scan, token);
@@ -81,6 +85,11 @@ public partial class IntroView : UserControl
 
         await Task.WhenAll(glow, scan, scanOpacity, letters);
         token.ThrowIfCancellationRequested();
+
+        // The lights are on their own long loop; they end with the fade rather
+        // than being awaited here.
+        _ = redLight;
+        _ = blueLight;
 
         // 900-1180ms: the lightbar pulses once.
         await PulseLightbarAsync(token);
@@ -141,6 +150,35 @@ public partial class IntroView : UserControl
         {
             Frame(0d, (OpacityProperty, 0d)),
             Frame(1d, (OpacityProperty, 0.55d)),
+        },
+    };
+
+    /// <summary>
+    /// One side of the lightbar: a hard-edged double flash over a low standing
+    /// wash. Two of these in opposite phase read as a real bar; a smooth sine
+    /// fade reads as a lava lamp.
+    /// </summary>
+    /// <remarks>
+    /// The floor is 0.18 rather than near-zero. A real bar is dark for most of
+    /// its cycle, but at 1.4s total that produced isolated flickers against
+    /// black rather than a lit scene — the eye never got long enough to read it
+    /// as patrol lighting. Keeping a standing wash under the flashes reads
+    /// correctly and still leaves the double-tap obvious.
+    /// </remarks>
+    private static Animation PatrolFlash(TimeSpan delay) => new()
+    {
+        Duration = TimeSpan.FromMilliseconds(380),
+        Delay = delay,
+        IterationCount = new IterationCount(4),
+        FillMode = FillMode.Both,
+        Children =
+        {
+            Frame(0d, (OpacityProperty, 0.18d)),
+            Frame(0.08d, (OpacityProperty, 0.95d)),
+            Frame(0.20d, (OpacityProperty, 0.32d)),
+            Frame(0.30d, (OpacityProperty, 0.90d)),
+            Frame(0.46d, (OpacityProperty, 0.18d)),
+            Frame(1d, (OpacityProperty, 0.18d)),
         },
     };
 

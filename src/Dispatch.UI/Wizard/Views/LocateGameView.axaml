@@ -1,0 +1,172 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Dispatch.UI.Controls"
+             xmlns:steps="clr-namespace:Dispatch.UI.Wizard.Steps"
+             x:Class="Dispatch.UI.Wizard.Views.LocateGameView"
+             x:DataType="steps:LocateGameStep">
+
+  <!--
+    Every install found is listed. If someone has both a Steam and an Epic
+    copy, silently picking one produces a failure that is almost impossible to
+    diagnose later, so the choice is always explicit.
+
+    The build number is shown in mono from the first moment. It matters later —
+    Script Hook V is locked to it — and surfacing it early builds trust that
+    the app knows what it is looking at.
+  -->
+
+  <UserControl.Styles>
+    <!-- Candidate rows are glass cards rather than list rows. The selection
+         model is a ListBox because that is what it is; only the skin changes. -->
+    <Style Selector="ListBox.candidates">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <Style Selector="ListBox.candidates ListBoxItem">
+      <Setter Property="Margin" Value="0,0,0,12" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <!--
+      Fluent's ListBoxItem template paints its own ContentPresenter background
+      on hover and selection, from its accent resources. Setting Background on
+      the item does not override that — it has to be cleared on the presenter
+      itself, or the row fills solid and the glass disappears underneath it.
+    -->
+    <Style Selector="ListBox.candidates ListBoxItem /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBox.candidates ListBoxItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBox.candidates ListBoxItem:selected /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <!-- The visible surface is a Border inside the item template, so the theme
+         controls it rather than Fluent's item chrome. -->
+    <Style Selector="ListBox.candidates ListBoxItem Border#Row">
+      <Setter Property="Background" Value="{DynamicResource GlassSurface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource GlassBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="BorderBrush" Duration="{DynamicResource MicroDuration}" />
+          <BrushTransition Property="Background" Duration="{DynamicResource MicroDuration}" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="ListBox.candidates ListBoxItem:pointerover Border#Row">
+      <Setter Property="Background" Value="{DynamicResource GlassSurfaceStrong}" />
+    </Style>
+
+    <Style Selector="ListBox.candidates ListBoxItem:selected Border#Row">
+      <Setter Property="Background" Value="{DynamicResource GlassSurfaceStrong}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderGold}" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto" Margin="64,40,64,40">
+
+    <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,28" Classes="reveal">
+      <TextBlock Text="STEP 3" Classes="micro" />
+      <TextBlock Text="Locate GTA V" Classes="display" />
+      <TextBlock Classes="body muted"
+                 Text="Dispatch looks in the usual places. Pick the copy you want to set up." />
+    </StackPanel>
+
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="12" Classes="reveal d1">
+
+        <ListBox Classes="candidates"
+                 ItemsSource="{Binding Candidates}"
+                 SelectedItem="{Binding Selected}">
+          <ListBox.ItemTemplate>
+            <DataTemplate DataType="steps:GameCandidate">
+              <Border Name="Row"
+                      CornerRadius="{DynamicResource RadiusCard}"
+                      Padding="20">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+
+                <Border Grid.Column="0"
+                        Width="44" Height="44"
+                        CornerRadius="{DynamicResource RadiusInput}"
+                        Background="{DynamicResource BlueDim}"
+                        VerticalAlignment="Center"
+                        Margin="0,0,16,0">
+                  <c:Icon Data="{StaticResource IconFolder}"
+                          Foreground="{DynamicResource Blue}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center" />
+                </Border>
+
+                <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="{Binding Platform}" Classes="h2" />
+                    <TextBlock Text="{Binding Build, StringFormat='build {0}'}"
+                               Classes="mono"
+                               VerticalAlignment="Center" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding Path}" Classes="mono" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding StateDetail}" Classes="small" TextWrapping="Wrap" />
+                </StackPanel>
+
+              </Grid>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Button Classes="secondary" HorizontalAlignment="Left">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <c:Icon Data="{StaticResource IconFolder}" Size="16" />
+            <TextBlock Text="Browse for another folder" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- ===== Status strip ==================================== -->
+    <Border Grid.Row="2"
+            Margin="0,24,0,0"
+            Padding="20,16"
+            CornerRadius="{DynamicResource RadiusCard}"
+            Background="{DynamicResource GlassSurface}"
+            BorderBrush="{DynamicResource GlassBorder}"
+            BorderThickness="1">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+
+        <c:StatusPill Grid.Column="0"
+                      Text="{Binding SelectedLabel}"
+                      Tone="{Binding SelectedTone}"
+                      VerticalAlignment="Center"
+                      Margin="0,0,16,0" />
+
+        <TextBlock Grid.Column="1"
+                   Classes="small"
+                   VerticalAlignment="Center"
+                   TextWrapping="Wrap"
+                   Text="{Binding Selected.StateDetail}" />
+
+        <Button Grid.Column="2"
+                Classes="secondary"
+                IsVisible="{Binding ShowCleanOffer}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <c:Icon Data="{StaticResource IconClean}" Size="16" />
+            <TextBlock Text="Clean it first" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+
+      </Grid>
+    </Border>
+
+  </Grid>
+
+</UserControl>

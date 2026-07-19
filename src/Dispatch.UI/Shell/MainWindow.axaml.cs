@@ -1,6 +1,9 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Dispatch.UI.Wizard;
 
 namespace Dispatch.UI.Shell;
 
@@ -12,10 +15,72 @@ public partial class MainWindow : Window
 
     /// <summary>Constructs the window.</summary>
     public MainWindow()
+        : this(new WizardViewModel())
     {
+    }
+
+    /// <summary>Constructs the window against a composed wizard.</summary>
+    public MainWindow(WizardViewModel wizard)
+    {
+        ArgumentNullException.ThrowIfNull(wizard);
+
         InitializeComponent();
         ApplyDarkTitleBar();
         WireIntro();
+
+        Wizard.DataContext = wizard;
+
+        // Tunnelling, not bubbling: Avalonia's directional focus navigation
+        // consumes arrow keys on the way down, so a bubbling handler never
+        // sees Ctrl+Arrow — focus just moves instead.
+        AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
+    }
+
+    /// <summary>
+    /// Development shortcuts. None of these are reachable from shipped
+    /// navigation, and all of them are compiled out of a Release build.
+    /// </summary>
+    /// <remarks>
+    /// F12 toggles the design-system gallery.
+    ///
+    /// <para>
+    /// Ctrl+Right and Ctrl+Left step the wizard regardless of whether the
+    /// current screen is satisfied. Without this the install screen is a
+    /// dead end — it hides its own navigation by design, and nothing advances
+    /// it until InstallRunner exists — so the last screen would be unreachable
+    /// and untestable.
+    /// </para>
+    /// </remarks>
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+#if DEBUG
+        if (e.Key == Key.F12)
+        {
+            Gallery.IsVisible = !Gallery.IsVisible;
+            Wizard.IsVisible = !Gallery.IsVisible;
+            e.Handled = true;
+            return;
+        }
+
+        if (!e.KeyModifiers.HasFlag(KeyModifiers.Control) ||
+            Wizard.DataContext is not WizardViewModel wizard)
+        {
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case Key.Right:
+                wizard.GoTo(wizard.CurrentIndex + 1);
+                e.Handled = true;
+                break;
+
+            case Key.Left:
+                wizard.GoTo(wizard.CurrentIndex - 1);
+                e.Handled = true;
+                break;
+        }
+#endif
     }
 
     private void WireIntro()

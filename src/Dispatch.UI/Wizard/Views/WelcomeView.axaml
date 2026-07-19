@@ -1,0 +1,82 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Dispatch.UI.Controls"
+             xmlns:steps="clr-namespace:Dispatch.UI.Wizard.Steps"
+             x:Class="Dispatch.UI.Wizard.Views.WelcomeView"
+             x:DataType="steps:WelcomeStep">
+
+  <!--
+    Deliberately sparse. This screen's only job is to make the app feel
+    considered before it asks for anything, so it holds a wordmark, a line of
+    orientation and one gold button, and nothing else competes.
+  -->
+
+  <Panel>
+
+    <!-- The motif, very large and very quiet, behind the content. -->
+    <Viewbox Width="1400"
+             HorizontalAlignment="Center"
+             VerticalAlignment="Center"
+             Opacity="0.04">
+      <Canvas Width="240" Height="88">
+        <Path Data="{StaticResource ArtCruiser}"
+              Stroke="{DynamicResource Blue}"
+              StrokeThickness="1"
+              StrokeLineCap="Round"
+              StrokeJoin="Round" />
+      </Canvas>
+    </Viewbox>
+
+    <StackPanel HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="24"
+                MaxWidth="620">
+
+      <Viewbox Height="76" HorizontalAlignment="Center" Classes="reveal">
+        <Canvas Width="120" Height="140">
+          <Path Data="{StaticResource ArtBadge}"
+                Stroke="{DynamicResource Gold}"
+                StrokeThickness="2.5"
+                StrokeLineCap="Round"
+                StrokeJoin="Round" />
+        </Canvas>
+      </Viewbox>
+
+      <!-- LineHeight has to move with FontSize. The display class fixes it at
+           40 for its own 34px size, so raising only the size clips the glyphs
+           against a line box that never grew. -->
+      <TextBlock Text="DISPATCH"
+                 Classes="display reveal d1"
+                 HorizontalAlignment="Center"
+                 FontSize="52"
+                 LineHeight="64"
+                 LetterSpacing="4" />
+
+      <TextBlock Text="Everything you need. Nothing you have to figure out."
+                 Classes="h2 reveal d2"
+                 HorizontalAlignment="Center"
+                 Foreground="{DynamicResource Gold}" />
+
+      <TextBlock Classes="body muted reveal d3"
+                 HorizontalAlignment="Center"
+                 TextAlignment="Center"
+                 TextWrapping="Wrap"
+                 MaxWidth="520"
+                 Text="Dispatch installs a complete LSPDFR police setup into GTA V in one unattended run, then stays on as the launcher and control panel for it. Six steps, and you can walk away during the long one." />
+
+      <StackPanel Orientation="Horizontal"
+                  Spacing="6"
+                  HorizontalAlignment="Center"
+                  Margin="0,8,0,0"
+                  Classes="reveal d4">
+        <Border Width="44" Height="6" CornerRadius="3" Background="{DynamicResource Blue}" />
+        <Border Width="44" Height="6" CornerRadius="3" Background="{DynamicResource Blue}" />
+        <Border Width="44" Height="6" CornerRadius="3" Background="{DynamicResource Gold}" />
+        <Border Width="44" Height="6" CornerRadius="3" Background="{DynamicResource Blue}" />
+        <Border Width="44" Height="6" CornerRadius="3" Background="{DynamicResource Blue}" />
+      </StackPanel>
+
+    </StackPanel>
+  </Panel>
+
+</UserControl>

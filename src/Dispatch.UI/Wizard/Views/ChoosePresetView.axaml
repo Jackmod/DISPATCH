@@ -1,0 +1,257 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Dispatch.UI.Controls"
+             xmlns:steps="clr-namespace:Dispatch.UI.Wizard.Steps"
+             x:Class="Dispatch.UI.Wizard.Views.ChoosePresetView"
+             x:DataType="steps:ChoosePresetStep">
+
+  <!--
+    Three live preview surfaces, not radio buttons with captions.
+
+    Each card carries its own scene, and the scene escalates with the tier: one
+    quiet unit for Standard, a second unit plus patrol lighting for Full Duty,
+    air support on top for Realism. The cards therefore say what they mean
+    before a word is read.
+
+    If a user has dropped an image into the backgrounds folder for a tier, it
+    is used instead of that tier's vector scene. Nothing is bundled — the app
+    ships with the vector art and picks up overrides at runtime.
+  -->
+
+  <UserControl.Styles>
+    <Style Selector="ListBox.presets">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <Style Selector="ListBox.presets ListBoxItem">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0,0,20,0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform"
+                                         Duration="{DynamicResource StandardDuration}"
+                                         Easing="{DynamicResource StandardEasing}" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="ListBox.presets ListBoxItem:pointerover">
+      <Setter Property="RenderTransform" Value="translateY(-4px)" />
+    </Style>
+
+    <Style Selector="ListBox.presets ListBoxItem /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <!-- The chosen card holds a gold edge; the others stay quiet. -->
+    <Style Selector="ListBox.presets ListBoxItem:selected Border#Frame">
+      <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderGold}" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,*,Auto" Margin="48,32,48,32">
+
+    <StackPanel Grid.Row="0" Spacing="6" Margin="0,0,0,20" Classes="reveal">
+      <TextBlock Text="STEP 4" Classes="micro" />
+      <TextBlock Text="Choose a setup" Classes="display" />
+    </StackPanel>
+
+    <ListBox Grid.Row="1"
+             Classes="presets"
+             ItemsSource="{Binding Presets}"
+             SelectedItem="{Binding Selected}"
+             ScrollViewer.VerticalScrollBarVisibility="Disabled"
+             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+      <ListBox.ItemsPanel>
+        <ItemsPanelTemplate>
+          <UniformGrid Rows="1" />
+        </ItemsPanelTemplate>
+      </ListBox.ItemsPanel>
+
+      <ListBox.ItemTemplate>
+        <DataTemplate DataType="steps:PresetOption">
+
+          <Border Name="Frame"
+                  CornerRadius="{DynamicResource RadiusCard}"
+                  Background="{DynamicResource GlassSurface}"
+                  BorderBrush="{DynamicResource GlassBorder}"
+                  BorderThickness="1"
+                  BoxShadow="{DynamicResource ShadowRaised}"
+                  ClipToBounds="True">
+
+            <Grid RowDefinitions="200,*">
+
+              <!-- ===== Scene ==================================== -->
+              <Panel Grid.Row="0" ClipToBounds="True">
+
+                <Panel Background="{DynamicResource NavyDeep}" />
+
+                <!-- A user-supplied image wins over the vector scene. -->
+                <Image Source="{Binding Background}"
+                       Stretch="UniformToFill"
+                       IsVisible="{Binding Background, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                <!-- Vector scene, shown when no image has been supplied. -->
+                <Panel IsVisible="{Binding Background, Converter={x:Static ObjectConverters.IsNull}}">
+
+                  <Viewbox Stretch="UniformToFill" Opacity="0.45">
+                    <Canvas Width="1200" Height="800">
+                      <Path Data="{StaticResource ArtStreetGrid}"
+                            Stroke="{DynamicResource StreetGrid}"
+                            StrokeThickness="1.6" />
+                    </Canvas>
+                  </Viewbox>
+
+                  <!-- Patrol lighting from the second tier up. -->
+                  <Ellipse Width="380" Height="380"
+                           HorizontalAlignment="Left" VerticalAlignment="Center"
+                           Margin="-150,0,0,0"
+                           Fill="{DynamicResource PatrolRed}"
+                           Opacity="0.75"
+                           IsVisible="{Binding ShowPatrolLighting}" />
+                  <Ellipse Width="380" Height="380"
+                           HorizontalAlignment="Right" VerticalAlignment="Center"
+                           Margin="0,0,-150,0"
+                           Fill="{DynamicResource PatrolBlue}"
+                           Opacity="0.75"
+                           IsVisible="{Binding ShowPatrolLighting}" />
+
+                  <!-- Air support, top tier only. -->
+                  <Viewbox Width="120"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Top"
+                           Margin="0,18,24,0"
+                           IsVisible="{Binding ShowAirUnit}">
+                    <Canvas Width="120" Height="120">
+                      <Path Data="{StaticResource ArtRadioWave}"
+                            Stroke="{DynamicResource GoldBright}"
+                            StrokeThickness="3"
+                            StrokeLineCap="Round"
+                            Opacity="0.7" />
+                    </Canvas>
+                  </Viewbox>
+
+                  <!-- Second unit, from the second tier up, set behind. -->
+                  <Viewbox Width="150"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Bottom"
+                           Margin="16,0,0,58"
+                           Opacity="0.4"
+                           IsVisible="{Binding ShowSecondUnit}">
+                    <Canvas Width="240" Height="88">
+                      <Path Data="{StaticResource ArtCruiser}"
+                            Stroke="{DynamicResource BlueBright}"
+                            StrokeThickness="2.5"
+                            StrokeLineCap="Round"
+                            StrokeJoin="Round" />
+                    </Canvas>
+                  </Viewbox>
+
+                  <!-- The lead unit, every tier. -->
+                  <Viewbox Width="230"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Bottom"
+                           Margin="0,0,0,20">
+                    <Canvas Width="240" Height="88">
+                      <Path Data="{StaticResource ArtCruiser}"
+                            Stroke="{DynamicResource BlueBright}"
+                            StrokeThickness="2"
+                            StrokeLineCap="Round"
+                            StrokeJoin="Round" />
+                    </Canvas>
+                  </Viewbox>
+
+                </Panel>
+
+                <Border Background="{DynamicResource Vignette}" />
+
+                <c:StatusPill Text="{Binding Tagline}"
+                              Tone="Active"
+                              HorizontalAlignment="Left"
+                              VerticalAlignment="Top"
+                              Margin="16"
+                              IsVisible="{Binding Tagline, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+              </Panel>
+
+              <!-- ===== Copy ==================================== -->
+              <StackPanel Grid.Row="1" Spacing="12" Margin="20">
+
+                <TextBlock Text="{Binding Name}" Classes="h1" />
+
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="{Binding Counts}" Classes="mono" />
+                  <TextBlock Text="·" Classes="mono" />
+                  <TextBlock Text="{Binding Duration}" Classes="mono" />
+                </StackPanel>
+
+                <TextBlock Text="{Binding Summary}"
+                           Classes="body muted"
+                           TextWrapping="Wrap" />
+
+                <ItemsControl ItemsSource="{Binding Features}" Margin="0,4,0,0">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                      <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,8">
+                        <Border Width="5" Height="5" CornerRadius="2.5"
+                                Background="{DynamicResource Gold}"
+                                VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding}" Classes="small" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <c:StatusPill Text="COMING SOON"
+                              Tone="Neutral"
+                              IsVisible="{Binding ComingSoon}" />
+
+              </StackPanel>
+            </Grid>
+          </Border>
+
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+
+    <!-- ===== Size summary ==================================== -->
+    <Border Grid.Row="2"
+            Margin="0,20,0,0"
+            Padding="20,14"
+            CornerRadius="{DynamicResource RadiusCard}"
+            Background="{DynamicResource GlassSurface}"
+            BorderBrush="{DynamicResource GlassBorder}"
+            BorderThickness="1">
+      <StackPanel Orientation="Horizontal" Spacing="40">
+
+        <StackPanel Spacing="2">
+          <TextBlock Text="DOWNLOAD" Classes="micro" />
+          <TextBlock Text="{Binding DownloadSize}" Classes="mono" />
+        </StackPanel>
+
+        <StackPanel Spacing="2">
+          <TextBlock Text="DISK NEEDED" Classes="micro" />
+          <TextBlock Text="{Binding DiskRequired}" Classes="mono" />
+        </StackPanel>
+
+        <StackPanel Spacing="2">
+          <TextBlock Text="FREE SPACE" Classes="micro" />
+          <TextBlock Text="{Binding DiskAvailable}" Classes="mono" />
+        </StackPanel>
+
+        <TextBlock Classes="small"
+                   VerticalAlignment="Bottom"
+                   Text="Every mod is fetched from its own author's server during the run." />
+
+      </StackPanel>
+    </Border>
+
+  </Grid>
+
+</UserControl>

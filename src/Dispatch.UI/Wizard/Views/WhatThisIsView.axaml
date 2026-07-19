@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Dispatch.UI.Controls"
+             xmlns:steps="clr-namespace:Dispatch.UI.Wizard.Steps"
+             x:Class="Dispatch.UI.Wizard.Views.WhatThisIsView"
+             x:DataType="steps:WhatThisIsStep">
+
+  <!--
+    Two panels, revealed 40ms apart. Written for someone who has genuinely
+    never heard of LSPDFR, so no term is used before it is explained and
+    nothing assumes the reader has modded a game before.
+  -->
+
+  <Grid RowDefinitions="Auto,*" Margin="64,40,64,40">
+
+    <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,32" Classes="reveal">
+      <TextBlock Text="BEFORE WE START" Classes="micro" />
+      <TextBlock Text="What this is" Classes="display" />
+    </StackPanel>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,24,*">
+
+      <!-- ===== What LSPDFR is ================================== -->
+      <c:Card Grid.Column="0"
+              Title="What LSPDFR is"
+              Eyebrow="THE MOD"
+              Classes="reveal d1">
+        <Grid RowDefinitions="Auto,*">
+
+          <StackPanel Grid.Row="0" Spacing="16">
+            <TextBlock Classes="body" TextWrapping="Wrap"
+                       Text="A mod that turns GTA V into a police simulator. Instead of playing a criminal, you go on duty as an officer." />
+            <TextBlock Classes="body muted" TextWrapping="Wrap"
+                       Text="Dispatch calls you to incidents. You respond, run traffic stops, check licence plates, question people and make arrests. It is the same city, playing the other side of it." />
+          </StackPanel>
+
+          <StackPanel Grid.Row="1" Spacing="14" VerticalAlignment="Center" Margin="0,24,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="14">
+              <c:Icon Data="{StaticResource IconRadioWave}" Foreground="{DynamicResource Blue}" />
+              <TextBlock Classes="body" VerticalAlignment="Center" Text="Take callouts from dispatch" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="14">
+              <c:Icon Data="{StaticResource IconLightbar}" Foreground="{DynamicResource Blue}" />
+              <TextBlock Classes="body" VerticalAlignment="Center" Text="Run traffic stops and pursuits" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="14">
+              <c:Icon Data="{StaticResource IconKey}" Foreground="{DynamicResource Blue}" />
+              <TextBlock Classes="body" VerticalAlignment="Center" Text="Search, arrest and transport suspects" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="14">
+              <c:Icon Data="{StaticResource IconShield}" Foreground="{DynamicResource Blue}" />
+              <TextBlock Classes="body" VerticalAlignment="Center" Text="Call backup, K9 and air support" />
+            </StackPanel>
+          </StackPanel>
+
+        </Grid>
+      </c:Card>
+
+      <!-- ===== What Dispatch does ============================== -->
+      <c:Card Grid.Column="2"
+              Title="What Dispatch does"
+              Eyebrow="THIS APP"
+              Classes="reveal d2">
+        <Grid RowDefinitions="Auto,*">
+
+          <StackPanel Grid.Row="0" Spacing="16">
+            <TextBlock Classes="body" TextWrapping="Wrap"
+                       Text="Normally this is a four-hour install: forty mods from thirty different sites, files dragged into specific folders, thirty config files hand-edited." />
+            <TextBlock Classes="body muted" TextWrapping="Wrap"
+                       Text="Any single typo breaks it silently, and nothing tells you which step went wrong. Dispatch does all of it in one run, then stays on to manage it." />
+          </StackPanel>
+
+          <StackPanel Grid.Row="1" Spacing="14" VerticalAlignment="Center" Margin="0,24,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="14">
+              <c:Icon Data="{StaticResource IconDownload}" Foreground="{DynamicResource Gold}" />
+              <TextBlock Classes="body" VerticalAlignment="Center" Text="Collects every mod from its author" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="14">
+              <c:Icon Data="{StaticResource IconFolder}" Foreground="{DynamicResource Gold}" />
+              <TextBlock Classes="body" VerticalAlignment="Center" Text="Places every file where it belongs" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="14">
+              <c:Icon Data="{StaticResource IconControls}" Foreground="{DynamicResource Gold}" />
+              <TextBlock Classes="body" VerticalAlignment="Center" Text="Writes every config, conflict-free" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="14">
+              <c:Icon Data="{StaticResource IconCheck}" Foreground="{DynamicResource Gold}" />
+              <TextBlock Classes="body" VerticalAlignment="Center" Text="Checks the result and tells you plainly" />
+            </StackPanel>
+          </StackPanel>
+
+        </Grid>
+      </c:Card>
+
+    </Grid>
+  </Grid>
+
+</UserControl>
