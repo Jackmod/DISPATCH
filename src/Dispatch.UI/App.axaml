@@ -27,6 +27,7 @@
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Spacing.axaml" />
         <ResourceInclude Source="avares://Dispatch.UI/Assets/Icons.axaml" />
         <ResourceInclude Source="avares://Dispatch.UI/Assets/Art.axaml" />
+        <ResourceInclude Source="avares://Dispatch.UI/Assets/Wordmark.axaml" />
 
         <!-- One ControlTheme per control. -->
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/Icon.axaml" />

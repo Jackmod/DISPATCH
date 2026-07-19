@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:gallery="clr-namespace:Dispatch.UI.Gallery"
+        xmlns:intro="clr-namespace:Dispatch.UI.Intro"
         x:Class="Dispatch.UI.Shell.MainWindow"
         Title="Dispatch"
         Width="1240"
@@ -11,11 +12,17 @@
         Background="{DynamicResource Ink}">
 
   <!--
-    Currently hosting the gallery. Replaced by the real navigation chrome and
-    routing once the intro and shell land; the gallery then moves behind a
-    development-only route rather than being deleted.
+    The intro sits over the shell rather than replacing it, so the app is fully
+    constructed and laid out behind the animation. By the time the intro fades
+    there is nothing left to wait for.
   -->
 
-  <gallery:GalleryView />
+  <Panel>
+    <ContentControl Name="ShellHost" Opacity="0">
+      <gallery:GalleryView />
+    </ContentControl>
+
+    <intro:IntroView Name="Intro" />
+  </Panel>
 
 </Window>

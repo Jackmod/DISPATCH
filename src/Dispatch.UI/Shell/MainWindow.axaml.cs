@@ -7,11 +7,38 @@ namespace Dispatch.UI.Shell;
 /// <summary>The application window. Code-behind is for control wiring only.</summary>
 public partial class MainWindow : Window
 {
+    /// <summary>Tracks whether the intro has run, so it is shown once per session.</summary>
+    private static bool _introPlayed;
+
     /// <summary>Constructs the window.</summary>
     public MainWindow()
     {
         InitializeComponent();
         ApplyDarkTitleBar();
+        WireIntro();
+    }
+
+    private void WireIntro()
+    {
+        if (_introPlayed)
+        {
+            Intro.IsVisible = false;
+            ShellHost.Opacity = 1;
+            return;
+        }
+
+        _introPlayed = true;
+        Intro.Completed += OnIntroCompleted;
+    }
+
+    private void OnIntroCompleted(object? sender, EventArgs e)
+    {
+        Intro.Completed -= OnIntroCompleted;
+        Intro.IsVisible = false;
+
+        // The shell fades up as the intro's own fade finishes, so the two
+        // overlap into one movement rather than reading as two steps.
+        ShellHost.Opacity = 1;
     }
 
     /// <summary>

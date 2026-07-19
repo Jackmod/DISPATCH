@@ -1,0 +1,115 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Dispatch.UI.Intro.IntroView"
+             Background="{DynamicResource Ink}"
+             Focusable="True">
+
+  <!--
+    1400ms, in four overlapping movements:
+
+      0-560     a scan line crosses the field
+      120-980   the wordmark draws on, letter by letter, 60ms apart
+      900-1180  the lightbar pulses once: blue, blue, gold, blue, blue
+      1150-1400 the whole composition lifts 8px and fades into the app
+
+    The letters draw via StrokeDashOffset. Avalonia measures StrokeDashArray
+    and StrokeDashOffset in multiples of StrokeThickness, not pixels, so at 3px
+    thickness a dash of 120 is 360px — comfortably longer than any letter path,
+    which is what makes the stroke appear to grow from nothing rather than
+    ticking through repeated dashes.
+
+    The gold letter is the A, not the first letter: the accent lands mid-word
+    where the eye already is, and it rhymes with the gold segment sitting
+    third in the lightbar below.
+  -->
+
+  <Panel Name="Root">
+
+    <!-- The field itself carries a very slow drift, so the first frame is
+         never completely dead. -->
+    <Panel Name="Field" Background="{DynamicResource Ink}" />
+
+    <Ellipse Name="Glow"
+             Width="900" Height="900"
+             HorizontalAlignment="Center" VerticalAlignment="Center"
+             Fill="{DynamicResource OrbBlue}"
+             Opacity="0" />
+
+    <Panel Name="Composition" VerticalAlignment="Center" HorizontalAlignment="Center">
+      <StackPanel Spacing="28" HorizontalAlignment="Center">
+
+        <!-- ===== Wordmark ======================================== -->
+        <Canvas Name="Wordmark" Width="352" Height="60" HorizontalAlignment="Center">
+
+          <Path Name="L0" Data="{StaticResource MarkD}" Canvas.Left="0"
+                Stroke="{DynamicResource Text}" StrokeThickness="3"
+                StrokeLineCap="Round" StrokeJoin="Round"
+                StrokeDashArray="120,120" StrokeDashOffset="120" />
+
+          <Path Name="L1" Data="{StaticResource MarkI}" Canvas.Left="44"
+                Stroke="{DynamicResource Text}" StrokeThickness="3"
+                StrokeLineCap="Round" StrokeJoin="Round"
+                StrokeDashArray="120,120" StrokeDashOffset="120" />
+
+          <Path Name="L2" Data="{StaticResource MarkS}" Canvas.Left="88"
+                Stroke="{DynamicResource Text}" StrokeThickness="3"
+                StrokeLineCap="Round" StrokeJoin="Round"
+                StrokeDashArray="120,120" StrokeDashOffset="120" />
+
+          <Path Name="L3" Data="{StaticResource MarkP}" Canvas.Left="132"
+                Stroke="{DynamicResource Text}" StrokeThickness="3"
+                StrokeLineCap="Round" StrokeJoin="Round"
+                StrokeDashArray="120,120" StrokeDashOffset="120" />
+
+          <Path Name="L4" Data="{StaticResource MarkA}" Canvas.Left="176"
+                Stroke="{DynamicResource Gold}" StrokeThickness="3"
+                StrokeLineCap="Round" StrokeJoin="Round"
+                StrokeDashArray="120,120" StrokeDashOffset="120" />
+
+          <Path Name="L5" Data="{StaticResource MarkT}" Canvas.Left="220"
+                Stroke="{DynamicResource Text}" StrokeThickness="3"
+                StrokeLineCap="Round" StrokeJoin="Round"
+                StrokeDashArray="120,120" StrokeDashOffset="120" />
+
+          <Path Name="L6" Data="{StaticResource MarkC}" Canvas.Left="264"
+                Stroke="{DynamicResource Text}" StrokeThickness="3"
+                StrokeLineCap="Round" StrokeJoin="Round"
+                StrokeDashArray="120,120" StrokeDashOffset="120" />
+
+          <Path Name="L7" Data="{StaticResource MarkH}" Canvas.Left="308"
+                Stroke="{DynamicResource Text}" StrokeThickness="3"
+                StrokeLineCap="Round" StrokeJoin="Round"
+                StrokeDashArray="120,120" StrokeDashOffset="120" />
+
+        </Canvas>
+
+        <!-- ===== Lightbar ======================================== -->
+        <StackPanel Name="Lightbar" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+          <Border Name="S0" Width="52" Height="6" CornerRadius="3" Background="{DynamicResource Blue}" Opacity="0.12" />
+          <Border Name="S1" Width="52" Height="6" CornerRadius="3" Background="{DynamicResource Blue}" Opacity="0.12" />
+          <Border Name="S2" Width="52" Height="6" CornerRadius="3" Background="{DynamicResource Gold}" Opacity="0.12" />
+          <Border Name="S3" Width="52" Height="6" CornerRadius="3" Background="{DynamicResource Blue}" Opacity="0.12" />
+          <Border Name="S4" Width="52" Height="6" CornerRadius="3" Background="{DynamicResource Blue}" Opacity="0.12" />
+        </StackPanel>
+
+      </StackPanel>
+    </Panel>
+
+    <!-- ===== Scan line ========================================== -->
+    <Border Name="Scan"
+            Width="2"
+            HorizontalAlignment="Left"
+            Background="{DynamicResource Blue}"
+            Opacity="0" />
+
+    <TextBlock Name="SkipHint"
+               Text="PRESS ANY KEY TO SKIP"
+               Classes="micro"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Bottom"
+               Margin="0,0,0,40"
+               Opacity="0" />
+
+  </Panel>
+
+</UserControl>
