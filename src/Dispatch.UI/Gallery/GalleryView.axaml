@@ -20,6 +20,25 @@
     <ScrollViewer>
     <StackPanel Margin="48" Spacing="48" MaxWidth="1040" HorizontalAlignment="Center">
 
+      <!-- ===== Dev bar ============================================= -->
+      <Border Background="{DynamicResource GlassSurface}"
+              BorderBrush="{DynamicResource GlassBorder}"
+              BorderThickness="1"
+              CornerRadius="{DynamicResource RadiusPill}"
+              Padding="16,10"
+              HorizontalAlignment="Left">
+        <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+          <TextBlock Text="DEV" Classes="micro" VerticalAlignment="Center" />
+          <Button Name="ReducedMotionToggle"
+                  Classes="ghost"
+                  Click="OnToggleReducedMotion"
+                  Content="Reduced motion: OFF" />
+          <TextBlock Classes="small"
+                     VerticalAlignment="Center"
+                     Text="Toggling stops the backdrop, the pulse and every transition." />
+        </StackPanel>
+      </Border>
+
       <!-- ===== Header ============================================== -->
       <StackPanel Spacing="8" Classes="reveal">
         <TextBlock Text="DESIGN SYSTEM" Classes="micro" />
