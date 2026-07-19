@@ -70,6 +70,28 @@ Install the SDK, then either restart your editor completely or run:
 "@
 }
 
+function Stop-RunningDispatch {
+    # A running instance holds its own DLLs open, and MSBuild's copy step fails
+    # after ten retries with a wall of MSB3026 warnings that bury the real
+    # cause. Closing it first is always what you wanted.
+    $running = Get-Process Dispatch -ErrorAction SilentlyContinue
+    if (-not $running) { return }
+
+    foreach ($process in $running) {
+        Write-Host "Closing running Dispatch (pid $($process.Id))" -ForegroundColor Yellow
+        try {
+            # Ask politely first so the window shuts down normally.
+            if (-not $process.CloseMainWindow()) { $process.Kill() }
+            if (-not $process.WaitForExit(3000)) { $process.Kill() }
+        }
+        catch {
+            try { $process.Kill() } catch { }
+        }
+    }
+
+    Start-Sleep -Milliseconds 400
+}
+
 $dotnet = Resolve-Dotnet
 $root = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $solution = Join-Path $root 'Dispatch.slnx'
@@ -78,6 +100,10 @@ $app = Join-Path $root 'src\Dispatch.App\Dispatch.App.csproj'
 Write-Host "dotnet: $dotnet" -ForegroundColor DarkGray
 Write-Host "task:   $Task ($Configuration)" -ForegroundColor Cyan
 Write-Host ""
+
+if ($Task -in @('build', 'run', 'watch', 'clean')) {
+    Stop-RunningDispatch
+}
 
 switch ($Task) {
     'build' { & $dotnet build $solution -c $Configuration }
