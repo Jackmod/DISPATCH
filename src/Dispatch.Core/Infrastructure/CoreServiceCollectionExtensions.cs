@@ -28,6 +28,16 @@ public static class CoreServiceCollectionExtensions
         services.TryAddSingleton<Detection.IGameLocator, Detection.GameLocator>();
         services.TryAddSingleton<Detection.IVersionReader, Detection.VersionReader>();
 
+        services.TryAddSingleton<Maintenance.IQuarantine>(sp =>
+            new Maintenance.Quarantine(
+                sp.GetRequiredService<IAppPaths>().QuarantineDirectory,
+                sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Maintenance.Quarantine>>()));
+
+        services.TryAddSingleton<Maintenance.IBackupStore>(sp =>
+            new Maintenance.BackupStore(
+                sp.GetRequiredService<IAppPaths>().BackupsDirectory,
+                sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Maintenance.BackupStore>>()));
+
         return services;
     }
 }
