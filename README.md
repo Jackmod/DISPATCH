@@ -11,7 +11,7 @@
 <br>
 
 [![Build](https://img.shields.io/github/actions/workflow/status/Jackmod/dispatch/ci.yml?branch=main&style=for-the-badge&labelColor=0B1220&color=E8B44A&label=BUILD)](../../actions)
-[![Tests](https://img.shields.io/badge/TESTS-279%20passing-3ECF8E?style=for-the-badge&labelColor=0B1220)](../../actions)
+[![Tests](https://img.shields.io/badge/TESTS-396%20passing-3ECF8E?style=for-the-badge&labelColor=0B1220)](../../actions)
 [![.NET](https://img.shields.io/badge/.NET-8.0-4C8DFF?style=for-the-badge&labelColor=0B1220)](https://dotnet.microsoft.com)
 [![Platform](https://img.shields.io/badge/WINDOWS-10%2F11-93A6C4?style=for-the-badge&labelColor=0B1220)](#)
 
@@ -65,12 +65,12 @@ Then it stays on as the launcher and control panel for the setup it built.
 ## Status
 
 > [!IMPORTANT]
-> **Dispatch does not write to your game folder yet.** The install runs as a
-> full simulation â€” every phase, every progress update, the complete report â€”
-> against a clock rather than a filesystem. That is deliberate: the spec puts
-> the resilience layer (journal, staging, rollback, preflight) *before* any
-> file-writing code, and that layer isn't built. It is safe to run today, and
-> it will not touch anything.
+> **The wizard install is still a simulation, and nothing writes to a real
+> game folder in normal use.** The placement engine underneath it *is* real
+> and fully tested — it backs up, journals, verifies and rolls back to a
+> byte-identical state — but it only runs against temp fixtures, because the
+> acquisition layer that would feed it real downloaded mods is not built yet.
+> Running Dispatch today is completely safe: it will not touch your game.
 
 | Stage | | |
 |---|---|---|
@@ -86,11 +86,12 @@ Then it stays on as the launcher and control panel for the setup it built.
 | Controls screen | ✅ | Keyboard map, capture, conflict resolution, staged diffs |
 | Launcher | ✅ | Nav rail, dashboard, command palette, empty states |
 | Game detection | ✅ | Steam VDF, Epic manifests, version reader |
-| Folder cleaner — scanner | ✅ | Allowlist, three tiers, protected paths |
-| Folder cleaner — UI + quarantine | ⬜ | Dry-run tree, backup, restore |
-| Resilience layer | ⬜ | Journal, staging, preflight, retry |
+| Folder cleaner | ✅ | Scanner, three-tier modal, quarantine with byte-identical restore |
+| Resilience layer | ✅ | Journal, staging, preflight, retry, error catalogue |
+| Install engine | ✅ | Catalogue-driven placement, backup, reversible rollback |
+| Audit + log translation | ✅ | Integrity, compatibility, plain-English log findings |
 | Acquisition | ⬜ | GitHub, direct HTTP, embedded browser |
-| Real installer | ⬜ | Placement, OpenIV, Defender |
+| Wire acquisition to the engine | ⬜ | Real unattended install, OpenIV, Defender |
 
 ---
 
@@ -279,7 +280,7 @@ nothing looks missing â€” images are an enhancement, not a dependency.
 ./tools/dispatch.ps1 test
 ```
 
-279 tests. The ones worth knowing about:
+396 tests. The ones worth knowing about:
 
 - **Font resolution** â€” each type style is asserted to land on the *genuinely
   drawn* weight. Avalonia resolves an unmatched weight to the nearest one
