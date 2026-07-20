@@ -175,10 +175,19 @@ public sealed class GameLocatorTests
 
         public IEnumerable<string> ReadAllManifests(string folder) => Manifests;
 
-        public bool DirectoryExists(string path) => Directories.Contains(path);
+        // The fixtures are Windows-style paths (drive letters, backslashes) because
+        // that is what Valve and Epic actually write. Comparisons and resolution
+        // are made separator-neutral so the same fixtures exercise the real
+        // Path.Combine logic on a case- and separator-sensitive Linux runner too —
+        // Path.GetFullPath would otherwise mangle a "C:\..." path there.
+        private static string Norm(string p) => p.Replace('\\', '/');
 
-        public bool FileExists(string path) => Files.Contains(path);
+        public bool DirectoryExists(string path) =>
+            Directories.Any(d => string.Equals(Norm(d), Norm(path), StringComparison.OrdinalIgnoreCase));
 
-        public string ResolveRealPath(string path) => Path.GetFullPath(path);
+        public bool FileExists(string path) =>
+            Files.Any(f => string.Equals(Norm(f), Norm(path), StringComparison.OrdinalIgnoreCase));
+
+        public string ResolveRealPath(string path) => Norm(path);
     }
 }

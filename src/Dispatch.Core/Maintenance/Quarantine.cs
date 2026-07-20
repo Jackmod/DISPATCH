@@ -132,7 +132,13 @@ public sealed class Quarantine : IQuarantine
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
+                // Two forms of the path: the lower-cased one is only for the
+                // protection check (which is case-insensitive by design); the
+                // real filesystem path keeps its original case, because on a
+                // case-sensitive filesystem "plugins/StopThePed.dll" and its
+                // lower-cased form are different files and the move would miss.
                 var normalised = StockManifest.Normalise(relative);
+                var relativePath = relative.Replace('\\', '/').Trim('/');
 
                 // Nothing protected is ever moved, whatever a caller passes. This
                 // is a second wall behind the scanner: even a bug that put a save
@@ -143,7 +149,8 @@ public sealed class Quarantine : IQuarantine
                     continue;
                 }
 
-                var source = Path.GetFullPath(Path.Combine(fullGamePath, normalised));
+                var source = Path.GetFullPath(
+                    Path.Combine(fullGamePath, relativePath.Replace('/', Path.DirectorySeparatorChar)));
 
                 // Path-traversal defence: a crafted relative path must not reach
                 // outside the game folder and move something arbitrary off the disk.
@@ -168,11 +175,11 @@ public sealed class Quarantine : IQuarantine
                     continue;
                 }
 
-                progress?.Report(normalised);
+                progress?.Report(relativePath);
 
                 // Flatten the path so leaf-name collisions across folders cannot
                 // overwrite each other inside the batch.
-                var quarantinedName = $"{index:D4}__{Flatten(normalised)}";
+                var quarantinedName = $"{index:D4}__{Flatten(relativePath)}";
                 var destination = Path.Combine(batchDir, quarantinedName);
 
                 var hash = await Hashing.Sha256Async(source, cancellationToken).ConfigureAwait(false);
@@ -180,7 +187,9 @@ public sealed class Quarantine : IQuarantine
 
                 File.Move(source, destination, overwrite: false);
 
-                entries.Add(new QuarantineEntry(normalised, quarantinedName, size, hash));
+                // The original path is stored with its real case so a restore puts
+                // it back exactly where it was, case-sensitive filesystems included.
+                entries.Add(new QuarantineEntry(relativePath, quarantinedName, size, hash));
                 index++;
             }
         }
