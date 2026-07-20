@@ -92,7 +92,8 @@ public static class CoreServiceCollectionExtensions
         // The hosted pack index, loaded once from the small remote-pack.json that
         // ships beside the executable. Absent (or empty) in a fat build that bundles
         // the whole pack; populated in a thin build that downloads on demand.
-        services.TryAddSingleton(_ => LoadRemotePackIndex());
+        services.TryAddSingleton(sp => LoadRemotePackIndex(sp.GetRequiredService<IAppPaths>()));
+        services.TryAddSingleton<Acquisition.RemotePackRefresher>();
 
         // TryAddEnumerable so the acquirer receives every source exactly once,
         // even if AddDispatchCore is called more than once in a host. Order is
@@ -130,13 +131,34 @@ public static class CoreServiceCollectionExtensions
     ];
 
     /// <summary>
-    /// Loads the hosted pack index from <c>remote-pack.json</c> beside the
-    /// executable. A missing, empty or malformed file yields an empty index — the
-    /// remote source then simply handles nothing, exactly as a fat build wants.
+    /// Loads the hosted pack index, preferring the refreshed cache under the app's
+    /// data folder (where <see cref="Acquisition.RemotePackRefresher"/> writes the
+    /// live manifest) over the copy shipped beside the executable. A missing, empty
+    /// or malformed file falls through to the next candidate; none yields an empty
+    /// index, which is exactly what a fat build wants.
     /// </summary>
-    private static Acquisition.RemotePackIndex LoadRemotePackIndex()
+    private static Acquisition.RemotePackIndex LoadRemotePackIndex(IAppPaths paths)
     {
-        var path = Path.Combine(AppContext.BaseDirectory, "remote-pack.json");
+        string[] candidates =
+        [
+            Path.Combine(paths.Root, "remote-pack.json"),
+            Path.Combine(AppContext.BaseDirectory, "remote-pack.json"),
+        ];
+
+        foreach (var path in candidates)
+        {
+            var index = TryReadRemotePackIndex(path);
+            if (index.Entries.Count > 0)
+            {
+                return index;
+            }
+        }
+
+        return new Acquisition.RemotePackIndex([]);
+    }
+
+    private static Acquisition.RemotePackIndex TryReadRemotePackIndex(string path)
+    {
         if (!File.Exists(path))
         {
             return new Acquisition.RemotePackIndex([]);

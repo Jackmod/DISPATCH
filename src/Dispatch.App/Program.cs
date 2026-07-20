@@ -60,6 +60,17 @@ internal static class Program
             using var host = BuildHost(paths, demo, offline);
             host.Start();
 
+            // Pull the current hosted-pack manifest in the background, so a thin
+            // install picks up mods added or renamed since this installer was built —
+            // the same installer keeps working as the pack changes. Best-effort: a
+            // failure leaves the shipped manifest in place, and demo touches nothing.
+            if (!demo)
+            {
+                _ = host.Services
+                    .GetRequiredService<Dispatch.Core.Acquisition.RemotePackRefresher>()
+                    .RefreshAsync();
+            }
+
             var exitCode = BuildAvaloniaApp(host.Services)
                 .StartWithClassicDesktopLifetime(args);
 

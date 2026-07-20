@@ -146,10 +146,19 @@ $entries = @($assets |
 $json = $entries | ConvertTo-Json -Depth 4
 if ($entries.Count -eq 0) { $json = '[]' }
 elseif ($entries.Count -eq 1) { $json = '[' + $json + ']' }
-Set-Content -Path $ManifestOut -Value $json -Encoding utf8
+# UTF-8 without a BOM: Set-Content -Encoding utf8 adds one in Windows PowerShell,
+# and the leading U+FEFF trips a strict JSON reader when the app fetches it live.
+[System.IO.File]::WriteAllText($ManifestOut, $json, (New-Object System.Text.UTF8Encoding($false)))
+
+# Host the manifest alongside the mods, so an already-installed thin installer can
+# fetch the current mod list (including mods added or renamed since it was built)
+# without being rebuilt. This must be named remote-pack.json to match the app's
+# AcquisitionOptions.DefaultManifestUrl.
+gh release upload $Tag $ManifestOut --repo $Repo --clobber
+if ($LASTEXITCODE -ne 0) { throw "Failed to upload the manifest asset to release '$Tag'" }
 
 Write-Host ''
-Write-Host "Wrote $($entries.Count) entrie(s) to $ManifestOut" -ForegroundColor Green
+Write-Host "Wrote $($entries.Count) entrie(s) to $ManifestOut and hosted it on release '$Tag'" -ForegroundColor Green
 Write-Host 'Now build the thin installer:' -ForegroundColor Gray
 Write-Host '  dotnet publish src/Dispatch.App/Dispatch.App.csproj -c Release -r win-x64 --self-contained true -p:IncludeModPack=false -o publish-thin' -ForegroundColor Green
 Write-Host '  vpk pack -u Dispatch -v 1.0.0 -p publish-thin -e Dispatch.exe -o releases' -ForegroundColor Green

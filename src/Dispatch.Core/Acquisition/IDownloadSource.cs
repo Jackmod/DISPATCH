@@ -7,7 +7,17 @@ namespace Dispatch.Core.Acquisition;
 /// When true, only the bundled pack is used — no network source is consulted, so
 /// a real install proceeds entirely from local files with no download.
 /// </param>
-public sealed record AcquisitionOptions(bool Offline = false);
+/// <param name="ManifestUrl">
+/// Where the live hosted-pack index lives. A thin installer fetches this to pick up
+/// mods added or renamed since it was built, so the same installer keeps working as
+/// the pack changes. Null or offline skips the refresh and the bundled index is used.
+/// </param>
+public sealed record AcquisitionOptions(bool Offline = false, string? ManifestUrl = AcquisitionOptions.DefaultManifestUrl)
+{
+    /// <summary>The release asset that serves the current mod list, alongside the mods themselves.</summary>
+    public const string DefaultManifestUrl =
+        "https://github.com/Jackmod/DISPATCH/releases/download/modpack-v1/remote-pack.json";
+}
 
 /// <summary>Progress of a single download, 0 to 1 where the length is known.</summary>
 /// <param name="BytesReceived">Bytes downloaded so far.</param>
