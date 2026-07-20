@@ -1,15 +1,18 @@
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 
 namespace Dispatch.UI.Launcher;
 
 /// <summary>
-/// The cleaner modal. Code-behind wires the scroll-to-bottom gate, which is raw
-/// scroll geometry rather than a bindable value.
+/// The cleaner modal. Code-behind only bridges the two close paths — the Cancel
+/// and empty-state buttons, and the view model's own <c>CloseRequested</c> that
+/// the Done button raises once verify is ticked — onto the single event the host
+/// listens to.
 /// </summary>
 public partial class CleanerView : UserControl
 {
-    /// <summary>Raised when the user asks to close the modal.</summary>
+    private CleanerViewModel? _model;
+
+    /// <summary>Raised when the modal should close.</summary>
     public event EventHandler? CloseRequested;
 
     /// <summary>Constructs the view.</summary>
@@ -17,26 +20,25 @@ public partial class CleanerView : UserControl
     {
         InitializeComponent();
 
-        CloseButton.Click += (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty);
-        PreviewScroll.ScrollChanged += OnScrollChanged;
+        CancelButton.Click += RequestClose;
+        CloseWhenEmptyButton.Click += RequestClose;
+        DataContextChanged += OnDataContextChanged;
     }
 
-    private void OnScrollChanged(object? sender, ScrollChangedEventArgs e)
+    private void OnDataContextChanged(object? sender, EventArgs e)
     {
-        if (DataContext is not CleanerViewModel model || sender is not ScrollViewer viewer)
+        if (_model is not null)
         {
-            return;
+            _model.CloseRequested -= RequestClose;
         }
 
-        // Bottom, within a few pixels — or the content is short enough that
-        // there is nothing to scroll, in which case they have already seen it
-        // all. Both count as "looked".
-        var atBottom = viewer.Offset.Y >= viewer.Extent.Height - viewer.Viewport.Height - 4;
-        var nothingToScroll = viewer.Extent.Height <= viewer.Viewport.Height;
-
-        if (atBottom || nothingToScroll)
+        _model = DataContext as CleanerViewModel;
+        if (_model is not null)
         {
-            model.MarkScrolledToBottomCommand.Execute(null);
+            _model.CloseRequested += RequestClose;
         }
     }
+
+    private void RequestClose(object? sender, EventArgs e) =>
+        CloseRequested?.Invoke(this, EventArgs.Empty);
 }

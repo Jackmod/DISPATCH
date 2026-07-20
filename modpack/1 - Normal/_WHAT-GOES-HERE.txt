@@ -1,0 +1,8 @@
+DISPATCH MOD PACK — 1 - Normal
+
+Download each mod below and drop its archive (.zip, .rar or .7z) straight into
+this folder. Do NOT rename or unzip them — Dispatch matches each archive to its
+mod by name and unpacks only what the user selects.
+
+  - Script Hook V   (Alexander Blade)
+  - LSPD First Response   (G17 Media)

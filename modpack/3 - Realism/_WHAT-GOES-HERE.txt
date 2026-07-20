@@ -1,0 +1,7 @@
+DISPATCH MOD PACK — 3 - Realism
+
+Download each mod below and drop its archive (.zip, .rar or .7z) straight into
+this folder. Do NOT rename or unzip them — Dispatch matches each archive to its
+mod by name and unpacks only what the user selects.
+
+(No mods defined for this setup yet.)

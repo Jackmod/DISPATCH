@@ -261,4 +261,48 @@ public sealed class IniDocumentTests
         document.Get("General", "Nope").Should().BeNull();
         document.Has("General", "Nope").Should().BeFalse();
     }
+
+    [Fact]
+    public void GetAnywhere_finds_a_key_regardless_of_its_section()
+    {
+        // The control catalogue names a key without tracking which section holds
+        // it, because no two of these mods spell their section names the same way.
+        var document = IniDocument.Parse(Sample);
+
+        document.GetAnywhere("NearestCop").Should().Be("YES");
+        document.GetAnywhere("PatDownKey").Should().Be("F9");
+        document.HasAnywhere("Nope").Should().BeFalse();
+    }
+
+    [Fact]
+    public void SetAnywhere_edits_in_place_and_disturbs_nothing_else()
+    {
+        var document = IniDocument.Parse(Sample);
+
+        document.SetAnywhere("NearestCop", "NO").Should().BeTrue();
+
+        document.GetAnywhere("NearestCop").Should().Be("NO");
+        // The comment header and the [General] keys are untouched.
+        document.ToText().Should().Contain("; Stop The Ped configuration")
+            .And.Contain("PatDownKey = F9   ; the pat-down key");
+    }
+
+    [Fact]
+    public void SetAnywhere_is_a_no_op_when_the_value_is_unchanged()
+    {
+        var document = IniDocument.Parse(Sample);
+
+        document.SetAnywhere("NearestCop", "YES").Should().BeFalse();
+        document.ToText().Should().Be(Sample);
+    }
+
+    [Fact]
+    public void SetAnywhere_adds_a_missing_key_rather_than_failing()
+    {
+        var document = IniDocument.Parse(Sample);
+
+        document.SetAnywhere("BrandNewKey", "1").Should().BeTrue();
+
+        document.GetAnywhere("BrandNewKey").Should().Be("1");
+    }
 }

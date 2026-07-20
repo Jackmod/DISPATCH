@@ -1,0 +1,13 @@
+# The mod archives themselves are large and are other authors' work — they are
+# bundled into the built release, not committed to the repository. The folder
+# structure and guidance files ARE tracked so the pack layout is version-controlled.
+*.zip
+*.rar
+*.7z
+*.partial
+
+# Keep the folders and their guidance files.
+!*/
+!.gitignore
+!README.txt
+!**/_WHAT-GOES-HERE.txt

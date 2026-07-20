@@ -56,6 +56,7 @@ public static class StockManifest
         "ReadMe",
         "installers",
         "EasyAntiCheat",
+        "BattlEye",
         "Redistributables",
         "DLCPacks",
         "Launcher Files",
@@ -79,6 +80,7 @@ public static class StockManifest
         "social club",
         "launcher files",
         "easyanticheat",
+        "battleye",       // anti-cheat; removing it can break launch and Online
     ];
 
     /// <summary>File extensions that are never removed.</summary>
@@ -108,7 +110,21 @@ public static class StockManifest
             return true;
         }
 
-        return segments.Length == 1 && RootFiles.Contains(segments[0]);
+        if (segments.Length != 1)
+        {
+            return false;
+        }
+
+        // The 24 archives that ship at the game root — x64a.rpf through x64w.rpf
+        // and common.rpf — are stock. No mod drops a loose .rpf here; they go into
+        // mods/, update/ or dlcpacks/. Recognising them by extension saves listing
+        // two dozen names and keeps them out of the plan entirely.
+        if (Path.GetExtension(segments[0]) is ".rpf")
+        {
+            return true;
+        }
+
+        return RootFiles.Contains(segments[0]);
     }
 
     /// <summary>

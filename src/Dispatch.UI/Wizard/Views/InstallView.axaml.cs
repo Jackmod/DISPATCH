@@ -1,4 +1,5 @@
 ﻿using Avalonia.Controls;
+using Dispatch.UI.Wizard.Steps;
 
 namespace Dispatch.UI.Wizard.Views;
 
@@ -6,5 +7,9 @@ namespace Dispatch.UI.Wizard.Views;
 public partial class InstallView : UserControl
 {
     /// <summary>Constructs the view.</summary>
-    public InstallView() => InitializeComponent();
+    public InstallView()
+    {
+        InitializeComponent();
+        RetryGameButton.Click += (_, _) => (DataContext as InstallStep)?.RetryAfterClosingGame();
+    }
 }

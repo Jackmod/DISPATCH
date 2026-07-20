@@ -43,3 +43,6 @@ desktop.ini
 ## Local scratch
 /scratch/
 *.local.json
+
+## Release output
+/release/

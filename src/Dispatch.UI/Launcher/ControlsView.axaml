@@ -31,6 +31,16 @@
           <c:StatusPill Text="NO CONFLICTS"
                         Tone="Good"
                         IsVisible="{Binding IsClean}" />
+          <Button Classes="ghost" Content="Read from game"
+                  Command="{Binding ReadFromGameCommand}"
+                  ToolTip.Tip="Read the current values back out of the config files, in case a mod's in-game menu changed them." />
+          <Button Classes="secondary" Content="Export cheat sheet"
+                  Command="{Binding ExportCheatSheetCommand}"
+                  ToolTip.Tip="Save a printable reference of every bound key." />
+          <ComboBox ItemsSource="{Binding PluginFilters}"
+                    SelectedItem="{Binding PluginFilter}"
+                    Width="180"
+                    ToolTip.Tip="Filter the list to one plugin." />
           <!-- ItemsSource of strings, not ComboBoxItem children: SelectedItem
                binds to a string, and item elements never match it. -->
           <ComboBox ItemsSource="{Binding ProfileNames}"
@@ -42,7 +52,18 @@
       <!-- ===== Map ============================================= -->
       <StackPanel Grid.Row="1" Spacing="12" Margin="0,0,0,20">
 
-        <Grid ColumnDefinitions="Auto,*,Auto">
+        <!-- Keyboard and controller are separate namespaces with separate
+             conflict sets, so they are separate tabs rather than one mixed list. -->
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <RadioButton GroupName="Device" Content="Keyboard" IsChecked="True"
+                       Command="{Binding $parent[UserControl].((vm:ControlsViewModel)DataContext).SetDeviceCommand}"
+                       CommandParameter="{x:Static core:InputDevice.Keyboard}" />
+          <RadioButton GroupName="Device" Content="Controller"
+                       Command="{Binding $parent[UserControl].((vm:ControlsViewModel)DataContext).SetDeviceCommand}"
+                       CommandParameter="{x:Static core:InputDevice.Controller}" />
+        </StackPanel>
+
+        <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding ShowKeyboardMap}">
           <!-- Layers are essential, not decorative: Left Shift + X and a bare
                X are different bindings and must not share a surface. -->
           <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
@@ -66,7 +87,8 @@
           </StackPanel>
         </Grid>
 
-        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                      IsVisible="{Binding ShowKeyboardMap}">
           <c:KeyboardMap Bindings="{Binding AllBindings}"
                          Layer="{Binding Layer}"
                          SelectedKey="{Binding SelectedKey}"
@@ -74,7 +96,26 @@
                          HorizontalAlignment="Left" />
         </ScrollViewer>
 
-        <StackPanel Orientation="Horizontal" Spacing="20">
+        <!-- ===== Controller map ================================= -->
+        <StackPanel IsVisible="{Binding !ShowKeyboardMap}" Spacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+            <RadioButton GroupName="Pad" Content="Xbox" IsChecked="True"
+                         Command="{Binding SetPadTypeCommand}" CommandParameter="Xbox" />
+            <RadioButton GroupName="Pad" Content="PlayStation"
+                         Command="{Binding SetPadTypeCommand}" CommandParameter="PS" />
+          </StackPanel>
+          <Border Padding="16" CornerRadius="{DynamicResource RadiusCard}"
+                  Background="{DynamicResource GlassSurface}" BorderBrush="{DynamicResource GlassBorder}"
+                  BorderThickness="1" HorizontalAlignment="Center">
+            <c:ControllerMap Bindings="{Binding AllBindings}"
+                             SelectedKey="{Binding SelectedKey}"
+                             PadType="{Binding PadType}" />
+          </Border>
+          <TextBlock Classes="small" Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center"
+                     Text="Click any button to see what's on it and map an action to it." />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Spacing="20" IsVisible="{Binding ShowKeyboardMap}">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <Border Width="12" Height="12" CornerRadius="3" Background="{DynamicResource BlueDim}"
                     BorderBrush="{DynamicResource Blue}" BorderThickness="1" VerticalAlignment="Center" />
@@ -151,6 +192,11 @@
                               Command="{Binding $parent[ItemsControl].((vm:ControlsViewModel)DataContext).BeginCaptureCommand}"
                               CommandParameter="{Binding}" />
                       <Button Classes="ghost"
+                              Content="Reset"
+                              Command="{Binding $parent[ItemsControl].((vm:ControlsViewModel)DataContext).ResetRowCommand}"
+                              CommandParameter="{Binding}"
+                              ToolTip.Tip="Reset to the recommended, conflict-free key." />
+                      <Button Classes="ghost"
                               Content="Clear"
                               Command="{Binding $parent[ItemsControl].((vm:ControlsViewModel)DataContext).UnbindCommand}"
                               CommandParameter="{Binding}" />
@@ -164,10 +210,16 @@
         </ScrollViewer>
       </Grid>
 
-      <!-- ===== Pending bar ===================================== -->
-      <Border Grid.Row="3"
-              IsVisible="{Binding HasPending}"
-              Margin="0,16,0,16"
+      <!-- ===== Status + pending bar =========================== -->
+      <StackPanel Grid.Row="3" Spacing="8" Margin="0,12,0,16">
+
+        <TextBlock Classes="small"
+                   Foreground="{DynamicResource TextMuted}"
+                   TextWrapping="Wrap"
+                   Text="{Binding StatusMessage}"
+                   IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+      <Border IsVisible="{Binding HasPending}"
               Padding="20,14"
               CornerRadius="{DynamicResource RadiusCard}"
               Background="{DynamicResource GoldDim}"
@@ -188,7 +240,99 @@
         </Grid>
       </Border>
 
+      </StackPanel>
+
     </Grid>
+
+    <!-- ===== Click-a-key mapping panel ====================== -->
+    <!-- Clicking a key on the map opens this: what is on the key now, and a
+         searchable list of every action you can map onto it. -->
+    <Border IsVisible="{Binding IsKeyPanelOpen}"
+            HorizontalAlignment="Right"
+            Width="388"
+            Background="{DynamicResource Navy}"
+            BorderBrush="{DynamicResource SteelLight}"
+            BorderThickness="1,0,0,0"
+            BoxShadow="{DynamicResource ShadowModal}">
+      <Grid RowDefinitions="Auto,*">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="22,20,18,14">
+          <Border Grid.Column="0" Width="54" Height="54" CornerRadius="8"
+                  Background="{DynamicResource GoldDim}" BorderBrush="{DynamicResource Gold}" BorderThickness="1">
+            <TextBlock Text="{Binding SelectedKeyDisplay}" Classes="mono" FontSize="12"
+                       Foreground="{DynamicResource GoldBright}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       TextAlignment="Center" TextWrapping="Wrap" />
+          </Border>
+          <StackPanel Grid.Column="1" Margin="14,0" VerticalAlignment="Center" Spacing="2">
+            <TextBlock Text="EDITING KEY" Classes="micro" />
+            <TextBlock Text="{Binding SelectedKeyDisplay}" Classes="h1" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+          <Button Grid.Column="2" Classes="ghost" VerticalAlignment="Top" Padding="8"
+                  Command="{Binding ClosePanelCommand}" ToolTip.Tip="Close">
+            <c:Icon Data="{StaticResource IconClose}" Size="16" />
+          </Button>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" Padding="22,0,22,22" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="8">
+
+            <TextBlock Text="ON THIS KEY NOW" Classes="micro" />
+            <ItemsControl ItemsSource="{Binding ActionsOnSelectedKey}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:BindingRow">
+                  <Border Margin="0,0,0,6" Padding="12,10" CornerRadius="{DynamicResource RadiusInput}"
+                          Background="{DynamicResource BlueDim}" BorderBrush="{DynamicResource Blue}" BorderThickness="1">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Grid.Column="0" Spacing="2">
+                        <TextBlock Text="{Binding Action.Name}" Classes="h2" />
+                        <TextBlock Text="{Binding Action.Plugin}" Classes="micro" />
+                      </StackPanel>
+                      <Button Grid.Column="1" Classes="ghost" Padding="6" VerticalAlignment="Center"
+                              Command="{Binding $parent[ItemsControl].((vm:ControlsViewModel)DataContext).UnbindCommand}"
+                              CommandParameter="{Binding}" ToolTip.Tip="Take it off this key">
+                        <c:Icon Data="{StaticResource IconClose}" Size="14" />
+                      </Button>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="Nothing on this key yet — pick an action below to put it here."
+                       Classes="small" Foreground="{DynamicResource TextFaint}" TextWrapping="Wrap"
+                       IsVisible="{Binding !SelectedKeyHasActions}" />
+
+            <TextBlock Text="MAP AN ACTION TO THIS KEY" Classes="micro" Margin="0,14,0,0" />
+            <TextBox Text="{Binding KeyPanelSearch}"
+                     Watermark="Search actions across every plugin…" />
+            <ItemsControl ItemsSource="{Binding AssignableActions}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:BindingRow">
+                  <Button Classes="ghost" HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Stretch"
+                          Margin="0,0,0,5" Padding="12,10"
+                          Command="{Binding $parent[ItemsControl].((vm:ControlsViewModel)DataContext).MapToKeyCommand}"
+                          CommandParameter="{Binding}">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <StackPanel Grid.Column="0" Spacing="2">
+                        <TextBlock Text="{Binding Action.Name}" Classes="h2" />
+                        <TextBlock Text="{Binding Action.Plugin}" Classes="micro" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                        <TextBlock Text="{Binding BindingDisplay}" Classes="mono" FontSize="11"
+                                   Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Right" />
+                        <TextBlock Text="Map here →" Classes="micro"
+                                   Foreground="{DynamicResource Gold}" HorizontalAlignment="Right" />
+                      </StackPanel>
+                    </Grid>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+          </StackPanel>
+        </ScrollViewer>
+      </Grid>
+    </Border>
 
     <!-- ===== Capture overlay ================================== -->
     <Border IsVisible="{Binding Capturing, Converter={x:Static ObjectConverters.IsNotNull}}"

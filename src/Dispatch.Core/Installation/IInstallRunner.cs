@@ -2,9 +2,30 @@ namespace Dispatch.Core.Installation;
 
 /// <summary>What to install, and where.</summary>
 /// <param name="GamePath">Root of the validated GTA V installation.</param>
-/// <param name="PresetName">Which setup was chosen.</param>
+/// <param name="PresetName">Which setup was chosen, for display.</param>
 /// <param name="ModCount">How many mods the preset contains.</param>
-public sealed record InstallRequest(string GamePath, string PresetName, int ModCount);
+/// <param name="PresetId">
+/// The catalogue preset id the real runner reads to know which mods to fetch.
+/// Empty for the simulated runner, which needs no catalogue.
+/// </param>
+/// <param name="GameBuild">The detected GTA V build, recorded with the install.</param>
+/// <param name="ModIds">
+/// The exact mods to install. When set, ONLY these are unpacked and placed —
+/// the guarantee that a user gets nothing they did not pick. When null, the
+/// whole preset is installed. Ids not in the catalogue are ignored.
+/// </param>
+/// <param name="Officer">
+/// The values that personalise the config files — callsign, name, department,
+/// air-unit callsign. Null uses sensible defaults.
+/// </param>
+public sealed record InstallRequest(
+    string GamePath,
+    string PresetName,
+    int ModCount,
+    string PresetId = "",
+    string? GameBuild = null,
+    IReadOnlyList<string>? ModIds = null,
+    Configuration.OfficerValues? Officer = null);
 
 /// <summary>
 /// Executes an install run, reporting progress as it goes.

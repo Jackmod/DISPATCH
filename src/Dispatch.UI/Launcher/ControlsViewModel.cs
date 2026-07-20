@@ -1,7 +1,11 @@
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Dispatch.Core.Configuration;
 using Dispatch.Core.Controls;
+using Dispatch.Core.Profiles;
 
 namespace Dispatch.UI.Launcher;
 
@@ -71,6 +75,9 @@ public sealed partial class BindingRow : ObservableObject
 public sealed partial class ControlsViewModel : ObservableObject
 {
     private readonly List<BindingRow> _all = [];
+    private readonly IControlWriter _writer;
+    private readonly string? _gamePath;
+    private readonly OfficerProfile? _officer;
 
     [ObservableProperty]
     private string _search = string.Empty;
@@ -93,18 +100,37 @@ public sealed partial class ControlsViewModel : ObservableObject
     [ObservableProperty]
     private string _profileName = "Suggested";
 
-    /// <summary>Constructs the screen against the shipped Suggested scheme.</summary>
-    public ControlsViewModel()
-        : this(ControlCatalogue.Suggested)
-    {
-    }
+    [ObservableProperty]
+    private InputDevice _device = InputDevice.Keyboard;
 
-    /// <summary>Constructs the screen against a specific scheme.</summary>
-    public ControlsViewModel(IReadOnlyDictionary<string, KeyBinding> scheme)
-    {
-        ArgumentNullException.ThrowIfNull(scheme);
+    [ObservableProperty]
+    private string _pluginFilter = AllPlugins;
 
-        foreach (var bound in ControlCatalogue.Bind(scheme))
+    [ObservableProperty]
+    private string? _statusMessage;
+
+    [ObservableProperty]
+    private string _keyPanelSearch = string.Empty;
+
+    private const string AllPlugins = "All plugins";
+
+    /// <summary>
+    /// Constructs the screen. Every dependency is optional, so the design-time and
+    /// test cases stay a bare <c>new()</c> against the Suggested scheme, while the
+    /// launcher supplies the game folder, writer and officer that make Apply, the
+    /// read-back and the cheat sheet real.
+    /// </summary>
+    public ControlsViewModel(
+        IReadOnlyDictionary<string, KeyBinding>? scheme = null,
+        string? gamePath = null,
+        IControlWriter? writer = null,
+        OfficerProfile? officer = null)
+    {
+        _gamePath = gamePath;
+        _writer = writer ?? new ControlWriter();
+        _officer = officer;
+
+        foreach (var bound in ControlCatalogue.Bind(scheme ?? ControlCatalogue.Suggested))
         {
             _all.Add(new BindingRow(bound.Action, bound.Binding));
         }
@@ -119,9 +145,74 @@ public sealed partial class ControlsViewModel : ObservableObject
     /// <summary>The schemes offered in the profile picker.</summary>
     public IReadOnlyList<string> ProfileNames { get; } = ["Default", "Suggested", "Custom"];
 
+    /// <summary>The plugin filter options, "All plugins" first.</summary>
+    public IReadOnlyList<string> PluginFilters { get; } =
+        new[] { AllPlugins }.Concat(ControlCatalogue.Plugins).ToList();
+
     /// <summary>Every binding, for the keyboard map.</summary>
     public IReadOnlyList<BoundAction> AllBindings =>
         _all.Select(row => new BoundAction(row.Action, row.Binding)).ToList();
+
+    /// <summary>The keyboard map only makes sense on the keyboard tab.</summary>
+    public bool ShowKeyboardMap => Device == InputDevice.Keyboard;
+
+    /// <summary>Whether the click-a-key mapping panel is open.</summary>
+    public bool IsKeyPanelOpen => SelectedKey is not null;
+
+    /// <summary>The selected key in plain words, for the panel header.</summary>
+    public string SelectedKeyDisplay =>
+        SelectedKey is { } key ? KeyTokens.ToDisplay(key) : string.Empty;
+
+    /// <summary>The modifier the current layer maps onto — shown so a chord is obvious.</summary>
+    public string LayerLabel => Layer switch
+    {
+        KeyModifier.Shift => "Left Shift + ",
+        KeyModifier.Control => "Left Control + ",
+        KeyModifier.Alt => "Left Alt + ",
+        _ => string.Empty,
+    };
+
+    /// <summary>Everything already bound to the selected key on the current layer.</summary>
+    public IReadOnlyList<BindingRow> ActionsOnSelectedKey =>
+        SelectedKey is { } key
+            ? _all.Where(row => row.Action.Device == Device
+                    && !row.Binding.IsUnbound
+                    && row.Binding.Key == key
+                    && row.Binding.Modifier == Layer)
+                .OrderBy(row => row.Action.Plugin, StringComparer.Ordinal)
+                .ToList()
+            : [];
+
+    /// <summary>Whether anything is already on the selected key.</summary>
+    public bool SelectedKeyHasActions => ActionsOnSelectedKey.Count > 0;
+
+    /// <summary>
+    /// Every action that could be mapped to the selected key — the panel's list.
+    /// Anything already on this exact key and layer is left out, and the panel's
+    /// own search narrows it.
+    /// </summary>
+    public IReadOnlyList<BindingRow> AssignableActions
+    {
+        get
+        {
+            if (SelectedKey is not { } key)
+            {
+                return [];
+            }
+
+            var term = KeyPanelSearch.Trim();
+            return _all
+                .Where(row => row.Action.Device == Device)
+                .Where(row => !(row.Binding.Key == key && row.Binding.Modifier == Layer))
+                .Where(row => string.IsNullOrEmpty(term)
+                    || row.Action.Name.Contains(term, StringComparison.OrdinalIgnoreCase)
+                    || row.Action.Plugin.Contains(term, StringComparison.OrdinalIgnoreCase)
+                    || row.Action.Category.Contains(term, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(row => row.Action.Plugin, StringComparer.Ordinal)
+                .ThenBy(row => row.Action.Name, StringComparer.Ordinal)
+                .ToList();
+        }
+    }
 
     /// <summary>Conflicts across the whole scheme, not just the visible rows.</summary>
     public IReadOnlyList<Conflict> Conflicts => ConflictDetector.Detect(AllBindings);
@@ -155,6 +246,18 @@ public sealed partial class ControlsViewModel : ObservableObject
     [RelayCommand]
     private void SetLayer(KeyModifier layer) => Layer = layer;
 
+    /// <summary>Switches between the keyboard and controller tabs.</summary>
+    [RelayCommand]
+    private void SetDevice(InputDevice device) => Device = device;
+
+    /// <summary>Which controller art the map draws: <c>Xbox</c> or <c>PS</c>.</summary>
+    [ObservableProperty]
+    private string _padType = "Xbox";
+
+    /// <summary>Switches the controller art.</summary>
+    [RelayCommand]
+    private void SetPadType(string type) => PadType = type;
+
     /// <summary>Starts capture on a row. The next key pressed becomes its binding.</summary>
     [RelayCommand]
     private void BeginCapture(BindingRow? row) => Capturing = row;
@@ -162,6 +265,42 @@ public sealed partial class ControlsViewModel : ObservableObject
     /// <summary>Cancels capture without changing anything.</summary>
     [RelayCommand]
     private void CancelCapture() => Capturing = null;
+
+    /// <summary>
+    /// Maps an action onto the selected key (with the current layer's modifier),
+    /// from the click-a-key panel. This is the direct answer to "what can I put on
+    /// this key?" — pick from every action, and it moves here.
+    /// </summary>
+    [RelayCommand]
+    private void MapToKey(BindingRow? row)
+    {
+        if (row is null || SelectedKey is not { } key)
+        {
+            return;
+        }
+
+        row.Binding = new KeyBinding(key, Layer);
+        Refresh();
+    }
+
+    /// <summary>Closes the click-a-key panel.</summary>
+    [RelayCommand]
+    private void ClosePanel() => SelectedKey = null;
+
+    /// <summary>Resets one binding to the Suggested (conflict-free) default.</summary>
+    [RelayCommand]
+    private void ResetRow(BindingRow? row)
+    {
+        if (row is null)
+        {
+            return;
+        }
+
+        row.Binding = ControlCatalogue.Suggested.TryGetValue(row.Action.Id, out var binding)
+            ? binding
+            : KeyBinding.Unbound;
+        Refresh();
+    }
 
     /// <summary>Clears a row's binding.</summary>
     [RelayCommand]
@@ -238,18 +377,115 @@ public sealed partial class ControlsViewModel : ObservableObject
         Refresh();
     }
 
-    /// <summary>Accepts every staged change as the new baseline.</summary>
+    /// <summary>
+    /// Writes every binding into the config file that owns it — backing each up
+    /// first — then accepts the result as the new baseline.
+    /// </summary>
+    /// <remarks>
+    /// The whole scheme is written, not only the staged rows, so a file that
+    /// drifted underneath the app is brought back into line. Only files that
+    /// actually differ are touched, and each is copied to a <c>.bak</c> sibling
+    /// before it changes.
+    /// </remarks>
     [RelayCommand]
-    private void Apply()
+    private async Task ApplyAsync()
     {
-        // Writing to config files lands with IniDocument. Until then this
-        // commits in memory so the staging behaviour is exercisable.
+        if (!string.IsNullOrWhiteSpace(_gamePath) && Directory.Exists(_gamePath))
+        {
+            var result = await _writer.WriteAsync(_gamePath, AllBindings).ConfigureAwait(true);
+            StatusMessage = Describe(result);
+        }
+        else
+        {
+            StatusMessage = "No game folder is set, so the changes are kept in the app only.";
+        }
+
         foreach (var row in _all)
         {
             row.Commit();
         }
 
         Refresh();
+    }
+
+    /// <summary>
+    /// Reads the bindings currently on disk back in, staging anything a mod's
+    /// in-game menu changed so it can be reviewed before it overwrites the profile.
+    /// </summary>
+    /// <remarks>
+    /// Several mods write straight to their own ini from an in-game menu, so after
+    /// a session the stored profile and the real files drift. Without this the app
+    /// would confidently overwrite a setting the user changed in-game, which is
+    /// worse than not having the app.
+    /// </remarks>
+    [RelayCommand]
+    private async Task ReadFromGameAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_gamePath) || !Directory.Exists(_gamePath))
+        {
+            StatusMessage = "No game folder is set, so there is nothing to read.";
+            return;
+        }
+
+        var onDisk = await _writer.ReadAsync(_gamePath, ControlCatalogue.Actions).ConfigureAwait(true);
+
+        var changed = 0;
+        foreach (var row in _all)
+        {
+            if (onDisk.TryGetValue(row.Action.Id, out var binding) && binding != row.Binding)
+            {
+                row.Binding = binding;
+                changed++;
+            }
+        }
+
+        StatusMessage = changed == 0
+            ? "The config files match your profile — nothing changed in-game."
+            : $"{changed} setting(s) were changed in-game. Review the staged changes, then apply to keep them.";
+
+        Refresh();
+    }
+
+    /// <summary>The current scheme as a printable Markdown cheat sheet.</summary>
+    public string BuildCheatSheet() => CheatSheet.BuildMarkdown(AllBindings, _officer);
+
+    /// <summary>Saves the cheat sheet to the user's Desktop.</summary>
+    [RelayCommand]
+    private async Task ExportCheatSheetAsync()
+    {
+        var desktop = Environment.GetFolderPath(
+            Environment.SpecialFolder.DesktopDirectory, Environment.SpecialFolderOption.DoNotVerify);
+        var path = Path.Combine(desktop, "Dispatch Cheat Sheet.md");
+
+        try
+        {
+            await File.WriteAllTextAsync(path, BuildCheatSheet()).ConfigureAwait(true);
+            StatusMessage = $"Cheat sheet saved to {path}";
+        }
+        catch (IOException ex)
+        {
+            StatusMessage = $"Could not save the cheat sheet: {ex.Message}";
+        }
+    }
+
+    private static string Describe(ControlWriteResult result)
+    {
+        if (result.IsEmpty && result.MissingFiles.Count == 0)
+        {
+            return "Nothing to write — the config files already match.";
+        }
+
+        var written = result.IsEmpty
+            ? "No values changed"
+            : $"Wrote {result.Changes.Count} value(s) across {result.FilesTouched} file(s); each was backed up first";
+
+        if (result.MissingFiles.Count == 0)
+        {
+            return written + ".";
+        }
+
+        return written +
+            $". {result.MissingFiles.Count} file(s) do not exist yet and were skipped — some mods write their config on first launch.";
     }
 
     /// <summary>Loads a named scheme, staging the differences rather than writing.</summary>
@@ -292,11 +528,33 @@ public sealed partial class ControlsViewModel : ObservableObject
 
     partial void OnSearchChanged(string value) => Refresh();
 
-    partial void OnLayerChanged(KeyModifier value) => Refresh();
+    partial void OnDeviceChanged(InputDevice value)
+    {
+        // A key selected on the keyboard map means nothing on the controller tab.
+        SelectedKey = null;
+        OnPropertyChanged(nameof(ShowKeyboardMap));
+        Refresh();
+    }
+
+    partial void OnLayerChanged(KeyModifier value)
+    {
+        OnPropertyChanged(nameof(LayerLabel));
+        Refresh();
+    }
+
+    partial void OnPluginFilterChanged(string value) => Refresh();
 
     partial void OnConflictsOnlyChanged(bool value) => Refresh();
 
-    partial void OnSelectedKeyChanged(KeyToken? value) => Refresh();
+    partial void OnKeyPanelSearchChanged(string value) =>
+        OnPropertyChanged(nameof(AssignableActions));
+
+    partial void OnSelectedKeyChanged(KeyToken? value)
+    {
+        // A fresh key opens the panel on an empty search.
+        KeyPanelSearch = string.Empty;
+        Refresh();
+    }
 
     /// <summary>Recomputes the visible rows and every derived count.</summary>
     private void Refresh()
@@ -310,20 +568,22 @@ public sealed partial class ControlsViewModel : ObservableObject
             row.IsConflicted = conflicted.Contains(row.Action.Id);
         }
 
-        var visible = _all.AsEnumerable();
+        // Keyboard and controller are separate namespaces; the tab picks one.
+        var visible = _all.Where(row => row.Action.Device == Device);
+
+        if (PluginFilter != AllPlugins)
+        {
+            visible = visible.Where(row => row.Action.Plugin == PluginFilter);
+        }
 
         if (ConflictsOnly)
         {
             visible = visible.Where(row => row.IsConflicted);
         }
 
-        // Clicking a key on the map filters the list to it, which is how the
-        // map answers "what is on this key?" without a separate panel.
-        if (SelectedKey is { } key)
-        {
-            visible = visible.Where(row => row.Binding.Key == key);
-        }
-
+        // Clicking a key opens the mapping panel, which owns the "what is on this
+        // key?" view; the main list stays whole so the panel and the list answer
+        // two different questions at once.
         if (!string.IsNullOrWhiteSpace(Search))
         {
             var term = Search.Trim();
@@ -352,5 +612,10 @@ public sealed partial class ControlsViewModel : ObservableObject
         OnPropertyChanged(nameof(PendingCount));
         OnPropertyChanged(nameof(HasPending));
         OnPropertyChanged(nameof(PendingDiff));
+        OnPropertyChanged(nameof(IsKeyPanelOpen));
+        OnPropertyChanged(nameof(SelectedKeyDisplay));
+        OnPropertyChanged(nameof(ActionsOnSelectedKey));
+        OnPropertyChanged(nameof(SelectedKeyHasActions));
+        OnPropertyChanged(nameof(AssignableActions));
     }
 }

@@ -5,33 +5,88 @@
              x:Class="Dispatch.UI.Launcher.ModsView"
              x:DataType="vm:ModsViewModel">
 
-  <!--
-    Empty state that teaches, over the street-grid texture, as the spec asks.
-    The real grid arrives with the catalogue and the mod detail panel; this is
-    what the section looks like before an install has happened.
-  -->
-
   <Panel>
-    <c:AmbientBackdrop Intensity="0.5" ShowGrid="True" />
+    <c:AmbientBackdrop Intensity="0.6" ShowGrid="True" />
 
-    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20" MaxWidth="440">
-      <Viewbox Width="72" HorizontalAlignment="Center" Opacity="0.7">
-        <Canvas Width="20" Height="20">
-          <Path Data="{StaticResource IconMods}"
-                Stroke="{DynamicResource Blue}" StrokeThickness="1"
-                StrokeLineCap="Round" StrokeJoin="Round" />
-        </Canvas>
-      </Viewbox>
-      <TextBlock Text="No mods installed yet" Classes="h1" HorizontalAlignment="Center" />
-      <TextBlock Classes="body muted" TextAlignment="Center" TextWrapping="Wrap"
-                 Text="Once you have run the installer, every mod appears here as a card — its version, the keys it owns, and buttons to reconfigure, repair, update or remove it." />
-      <Button Classes="secondary" HorizontalAlignment="Center">
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <c:Icon Data="{StaticResource IconPlus}" Size="16" />
-          <TextBlock Text="Add a mod" VerticalAlignment="Center" />
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="32,24,32,0">
+
+      <!-- ===== Header ========================================== -->
+      <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,18">
+        <StackPanel Grid.Column="0" Spacing="6">
+          <TextBlock Text="MODS" Classes="micro" />
+          <TextBlock Text="Your setup" Classes="display" />
         </StackPanel>
-      </Button>
-    </StackPanel>
+        <ComboBox Grid.Column="1" VerticalAlignment="Center" Width="150"
+                  ItemsSource="{Binding Filters}" SelectedItem="{Binding Filter}" />
+      </Grid>
+
+      <TextBox Grid.Row="1" Text="{Binding Search}"
+               Watermark="Search mods by name or author"
+               Margin="0,0,0,16" />
+
+      <!-- ===== List =========================================== -->
+      <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding Rows}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ModRow">
+              <Border Margin="0,0,0,8" Padding="16,12"
+                      CornerRadius="{DynamicResource RadiusCard}"
+                      Background="{DynamicResource GlassSurface}"
+                      BorderBrush="{DynamicResource GlassBorder}"
+                      BorderThickness="1">
+                <StackPanel Spacing="10">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name}" Classes="h2" />
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="{Binding Author}" Classes="micro" />
+                        <TextBlock Text="·" Classes="micro" />
+                        <TextBlock Text="{Binding StatusText}" Classes="small" Foreground="{DynamicResource TextMuted}" />
+                      </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                      <Button Classes="ghost" Content="Files"
+                              IsVisible="{Binding HasFiles}"
+                              Command="{Binding $parent[ItemsControl].((vm:ModsViewModel)DataContext).ToggleFilesCommand}"
+                              CommandParameter="{Binding}" />
+                      <Button Classes="secondary" Content="Open page"
+                              IsVisible="{Binding HasUrl}"
+                              Command="{Binding $parent[ItemsControl].((vm:ModsViewModel)DataContext).OpenPageCommand}"
+                              CommandParameter="{Binding}" />
+                      <Button Classes="ghost" Content="Remove"
+                              IsVisible="{Binding CanRemove}"
+                              Command="{Binding $parent[ItemsControl].((vm:ModsViewModel)DataContext).RemoveCommand}"
+                              CommandParameter="{Binding}"
+                              ToolTip.Tip="Move this mod's files to quarantine. Reversible from Settings." />
+                    </StackPanel>
+                  </Grid>
+
+                  <Border IsVisible="{Binding Expanded}" Padding="12,10"
+                          CornerRadius="{DynamicResource RadiusInput}"
+                          Background="{DynamicResource NavyDeep}"
+                          BorderBrush="{DynamicResource Steel}" BorderThickness="1">
+                    <ItemsControl ItemsSource="{Binding Files}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <TextBlock Text="{Binding}" Classes="mono" FontSize="11" Margin="0,1" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </Border>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
+      <!-- ===== Status ========================================= -->
+      <TextBlock Grid.Row="3" Classes="small" Margin="0,10,0,16"
+                 Foreground="{DynamicResource Gold}" TextWrapping="Wrap"
+                 Text="{Binding StatusMessage}"
+                 IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    </Grid>
   </Panel>
 
 </UserControl>

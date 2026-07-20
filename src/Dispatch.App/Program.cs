@@ -19,18 +19,38 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        // Dry-run mode: walk the whole UI without downloading a mod or writing a
+        // file to the game. The simulated runner just plays the phases.
+        var demo = args.Any(a => a is "--demo" or "--dry-run")
+                   || Environment.GetEnvironmentVariable("DISPATCH_DEMO") is "1" or "true";
+
+        // Offline mode: a REAL install that never downloads — every mod comes from
+        // the bundled pack. For testing the full install/config on a machine where
+        // the pack is already present, without any network round-trip.
+        var offline = args.Any(a => a is "--offline" or "--no-download")
+                      || Environment.GetEnvironmentVariable("DISPATCH_OFFLINE") is "1" or "true";
+
         // Paths and logging come up before anything else, so that a failure
-        // during composition still leaves a trace on disk to read afterwards.
-        var paths = new AppPaths();
+        // during composition still leaves a trace on disk to read afterwards. In
+        // demo, every path is redirected to a throwaway folder so nothing real is
+        // touched — no install record, so no config is ever written to the game.
+        var paths = demo
+            ? new AppPaths(
+                Path.Combine(Path.GetTempPath(), "Dispatch-Demo"),
+                Path.Combine(Path.GetTempPath(), "Dispatch-Demo-temp"))
+            : new AppPaths();
         paths.EnsureCreated();
 
         Log.Logger = BuildLogger(paths);
 
         try
         {
-            Log.Information("Dispatch starting");
+            Log.Information(
+                demo ? "Dispatch starting in DEMO mode (no downloads, no writes)"
+                : offline ? "Dispatch starting in OFFLINE mode (real install, pack only, no downloads)"
+                : "Dispatch starting");
 
-            using var host = BuildHost(paths);
+            using var host = BuildHost(paths, demo, offline);
             host.Start();
 
             var exitCode = BuildAvaloniaApp(host.Services)
@@ -61,7 +81,7 @@ internal static class Program
             .UsePlatformDetect()
             .LogToTrace();
 
-    private static IHost BuildHost(IAppPaths paths)
+    private static IHost BuildHost(IAppPaths paths, bool demo, bool offline)
     {
         var builder = Host.CreateApplicationBuilder();
 
@@ -69,8 +89,28 @@ internal static class Program
         builder.Services.AddSerilog();
 
         builder.Services.AddSingleton(paths);
-        builder.Services.AddDispatchCore();
+
+        // Registered before AddDispatchCore so its TryAdd keeps these overrides.
+        if (demo)
+        {
+            // Simulated runner: plays the phases against a clock, downloads and
+            // writes nothing.
+            builder.Services.AddSingleton<Dispatch.Core.Installation.IInstallRunner>(
+                _ => new Dispatch.Core.Installation.SimulatedInstallRunner(TimeSpan.FromMilliseconds(140)));
+        }
+
+        if (offline)
+        {
+            // Real install, but every mod is sourced from the bundled pack.
+            builder.Services.AddSingleton(new Dispatch.Core.Acquisition.AcquisitionOptions(Offline: true));
+        }
+
+        // Platform layer before Core, for the same reason as the overrides above:
+        // Core registers silent audio fallbacks with TryAdd, so the real winmm
+        // sound player and SAPI voice must be registered first or the fallbacks
+        // win and neither the intro siren nor the callsign read-back ever plays.
         builder.Services.AddDispatchWindows();
+        builder.Services.AddDispatchCore();
         builder.Services.AddDispatchUi();
 
         return builder.Build();

@@ -26,7 +26,7 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet('build', 'test', 'run', 'watch', 'clean')]
+    [ValidateSet('build', 'test', 'run', 'demo', 'offline', 'watch', 'clean')]
     [string]$Task = 'build',
 
     [ValidateSet('Debug', 'Release')]
@@ -101,7 +101,7 @@ Write-Host "dotnet: $dotnet" -ForegroundColor DarkGray
 Write-Host "task:   $Task ($Configuration)" -ForegroundColor Cyan
 Write-Host ""
 
-if ($Task -in @('build', 'run', 'watch', 'clean')) {
+if ($Task -in @('build', 'run', 'demo', 'offline', 'watch', 'clean')) {
     Stop-RunningDispatch
 }
 
@@ -109,6 +109,8 @@ switch ($Task) {
     'build' { & $dotnet build $solution -c $Configuration }
     'test'  { & $dotnet test  $solution -c $Configuration }
     'run'   { & $dotnet run --project $app -c $Configuration }
+    'demo'  { & $dotnet run --project $app -c $Configuration -- --demo }
+    'offline' { & $dotnet run --project $app -c $Configuration -- --offline }
     'watch' { & $dotnet watch --project $app run }
     'clean' {
         & $dotnet clean $solution -c $Configuration

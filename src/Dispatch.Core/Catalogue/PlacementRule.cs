@@ -14,6 +14,23 @@ public enum PlacementKind
 
     /// <summary>Copy a single named file to a destination folder.</summary>
     SingleFile,
+
+    /// <summary>
+    /// Work it out: strip any wrapper folders, then merge the recognised game
+    /// folders (plugins, scripts, lspdfr, x64…) and loose root files into the
+    /// game folder. Handles the long tail of LSPDFR mods that all follow the same
+    /// "extract into the game folder" convention without a bespoke rule each.
+    /// </summary>
+    AutoDetect,
+
+    /// <summary>
+    /// Cannot be auto-installed — an OpenIV package (<c>.oiv</c>), an add-on DLC
+    /// (<c>dlc.rpf</c> + a dlclist edit) or a loose <c>.ymap</c> needing a map
+    /// loader. The whole mod is copied into the OpenIV import folder, laid out as
+    /// shipped, for the user to apply through OpenIV themselves. Nothing is placed
+    /// in the game folder.
+    /// </summary>
+    ManualImport,
 }
 
 /// <summary>

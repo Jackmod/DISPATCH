@@ -5,55 +5,199 @@
              x:Class="Dispatch.UI.Launcher.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
+  <UserControl.Styles>
+    <Style Selector="Border.section">
+      <Setter Property="Padding" Value="24" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+      <Setter Property="Background" Value="{DynamicResource GlassSurface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource GlassBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button.nav">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
+      <Setter Property="Padding" Value="13,10" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
+    </Style>
+    <Style Selector="Button.nav:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource NavyRaised}" />
+    </Style>
+    <Style Selector="Button.nav.active">
+      <Setter Property="Foreground" Value="{DynamicResource Text}" />
+    </Style>
+    <Style Selector="Button.nav.active /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource BlueDim}" />
+    </Style>
+  </UserControl.Styles>
+
   <Panel>
     <c:AmbientBackdrop Intensity="0.5" />
 
-    <ScrollViewer>
-      <StackPanel Margin="40,32,40,32" Spacing="20" MaxWidth="720" HorizontalAlignment="Left">
+    <Grid RowDefinitions="Auto,*" Margin="32,24,0,0">
 
-        <StackPanel Spacing="6" Classes="reveal">
-          <TextBlock Text="SETTINGS" Classes="micro" />
-          <TextBlock Text="Appearance and behaviour" Classes="display" />
+      <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,32,18">
+        <TextBlock Text="SETUP" Classes="micro" />
+        <TextBlock Text="Settings" Classes="display" />
+      </StackPanel>
+
+      <Grid Grid.Row="1" ColumnDefinitions="200,*">
+
+        <!-- ===== Hub sub-nav ================================== -->
+        <StackPanel Grid.Column="0" Spacing="3" Margin="0,0,20,0">
+          <Button Classes="nav" Classes.active="{Binding IsKeybinds}" Content="Keybinds"
+                  Command="{Binding SetSectionCommand}" CommandParameter="keybinds" />
+          <Button Classes="nav" Classes.active="{Binding IsPlugins}" Content="Plugin settings"
+                  Command="{Binding SetSectionCommand}" CommandParameter="plugins" />
+          <Button Classes="nav" Classes.active="{Binding IsAppearance}" Content="Appearance"
+                  Command="{Binding SetSectionCommand}" CommandParameter="appearance" />
+          <Button Classes="nav" Classes.active="{Binding IsOfficer}" Content="Officer"
+                  Command="{Binding SetSectionCommand}" CommandParameter="officer" />
+          <Button Classes="nav" Classes.active="{Binding IsFolders}" Content="Folders"
+                  Command="{Binding SetSectionCommand}" CommandParameter="folders" />
+          <Button Classes="nav" Classes.active="{Binding IsQuarantine}" Content="Quarantine"
+                  Command="{Binding SetSectionCommand}" CommandParameter="quarantine" />
+          <Button Classes="nav" Classes.active="{Binding IsAbout}" Content="About"
+                  Command="{Binding SetSectionCommand}" CommandParameter="about" />
         </StackPanel>
 
-        <c:Card Title="Appearance" Eyebrow="HOW IT LOOKS" Classes="reveal d1">
-          <StackPanel Spacing="16">
-            <Grid ColumnDefinitions="*,Auto">
-              <StackPanel Grid.Column="0" Spacing="2">
-                <TextBlock Text="Reduced motion" Classes="body" />
-                <TextBlock Text="Collapses every animation and skips the intro." Classes="small" />
-              </StackPanel>
-              <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" />
-            </Grid>
-            <Border Height="1" Background="{DynamicResource Steel}" />
-            <Grid ColumnDefinitions="*,Auto">
-              <StackPanel Grid.Column="0" Spacing="2">
-                <TextBlock Text="Sound" Classes="body" />
-                <TextBlock Text="A soft radio click on primary actions. Off by default." Classes="small" />
-              </StackPanel>
-              <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" />
-            </Grid>
-            <Border Height="1" Background="{DynamicResource Steel}" />
-            <Grid ColumnDefinitions="*,Auto">
-              <StackPanel Grid.Column="0" Spacing="2">
-                <TextBlock Text="Discord Rich Presence" Classes="body" />
-                <TextBlock Text="Show &quot;On duty · Los Santos · 1 ADAM 7&quot;. Off by default." Classes="small" />
-              </StackPanel>
-              <ToggleSwitch Grid.Column="1" VerticalAlignment="Center" />
-            </Grid>
-          </StackPanel>
-        </c:Card>
+        <!-- ===== Hub content ================================= -->
+        <Panel Grid.Column="1">
 
-        <c:Card Title="About" Eyebrow="DISPATCH" Classes="reveal d2">
-          <StackPanel Spacing="10">
-            <TextBlock Classes="body muted" TextWrapping="Wrap"
-                       Text="Dispatch is an unofficial fan project. Not affiliated with Rockstar Games, Take-Two, or the authors of any mod it installs." />
-            <TextBlock Text="Version 0.1.0 · MIT licensed" Classes="mono" />
-          </StackPanel>
-        </c:Card>
+          <!-- Keybinds: the full controls screen, hosted. The wrapper keeps the hub
+               data context so IsVisible resolves; the inner view gets the sub-VM. -->
+          <Panel IsVisible="{Binding IsKeybinds}">
+            <vm:ControlsView DataContext="{Binding Keybinds}" />
+          </Panel>
 
-      </StackPanel>
-    </ScrollViewer>
+          <!-- Plugin settings: the full plugin-settings screen, hosted -->
+          <Panel IsVisible="{Binding IsPlugins}">
+            <vm:PluginSettingsView DataContext="{Binding PluginSettings}" />
+          </Panel>
+
+          <!-- Appearance -->
+          <ScrollViewer IsVisible="{Binding IsAppearance}" VerticalScrollBarVisibility="Auto" Margin="0,0,32,0">
+            <Border Classes="section" MaxWidth="720" HorizontalAlignment="Left">
+              <StackPanel Spacing="16">
+                <TextBlock Text="Appearance &amp; behaviour" Classes="h1" />
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="Reduced motion" Classes="body" />
+                    <TextBlock Text="Collapse every animation to zero and skip the intro." Classes="small" Foreground="{DynamicResource TextMuted}" />
+                  </StackPanel>
+                  <ToggleSwitch Grid.Column="1" IsChecked="{Binding ReducedMotion}" OnContent="On" OffContent="Off" />
+                </Grid>
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="Interface sounds" Classes="body" />
+                    <TextBlock Text="A soft radio click on primary actions. Never for errors." Classes="small" Foreground="{DynamicResource TextMuted}" />
+                  </StackPanel>
+                  <ToggleSwitch Grid.Column="1" IsChecked="{Binding SoundEnabled}" OnContent="On" OffContent="Off" />
+                </Grid>
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Text="Discord rich presence" Classes="body" />
+                    <TextBlock Text="Show &quot;On duty · Los Santos · 1 ADAM 7&quot; on your Discord profile." Classes="small" Foreground="{DynamicResource TextMuted}" />
+                  </StackPanel>
+                  <ToggleSwitch Grid.Column="1" IsChecked="{Binding DiscordPresence}" OnContent="On" OffContent="Off" />
+                </Grid>
+              </StackPanel>
+            </Border>
+          </ScrollViewer>
+
+          <!-- Officer -->
+          <ScrollViewer IsVisible="{Binding IsOfficer}" VerticalScrollBarVisibility="Auto" Margin="0,0,32,0">
+            <Border Classes="section" MaxWidth="720" HorizontalAlignment="Left">
+              <StackPanel Spacing="16">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="Officer identity" Classes="h1" VerticalAlignment="Center" />
+                  <Border Grid.Column="1" Padding="12,6" CornerRadius="{DynamicResource RadiusPill}" Background="{DynamicResource BlueDim}">
+                    <TextBlock Text="{Binding CallsignPreview}" Classes="mono gold" />
+                  </Border>
+                </Grid>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="16" RowDefinitions="Auto,Auto" RowSpacing="14">
+                  <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4"><TextBlock Text="Name" Classes="micro" /><TextBox Text="{Binding OfficerName}" /></StackPanel>
+                  <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4"><TextBlock Text="Agency" Classes="micro" /><ComboBox ItemsSource="{Binding AgencyOptions}" SelectedItem="{Binding Agency}" HorizontalAlignment="Stretch" /></StackPanel>
+                  <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4"><TextBlock Text="Department" Classes="micro" /><TextBox Text="{Binding DepartmentName}" /></StackPanel>
+                  <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4"><TextBlock Text="Air unit callsign" Classes="micro" /><TextBox Text="{Binding AirUnitCallsign}" /></StackPanel>
+                </Grid>
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <StackPanel Spacing="4"><TextBlock Text="Division" Classes="micro" /><ComboBox ItemsSource="{Binding DivisionOptions}" SelectedItem="{Binding CallsignDivision}" Width="90" /></StackPanel>
+                  <StackPanel Spacing="4"><TextBlock Text="Phonetic" Classes="micro" /><ComboBox ItemsSource="{Binding PhoneticOptions}" SelectedItem="{Binding CallsignPhonetic}" Width="150" /></StackPanel>
+                  <StackPanel Spacing="4"><TextBlock Text="Beat" Classes="micro" /><ComboBox ItemsSource="{Binding BeatOptions}" SelectedItem="{Binding CallsignBeat}" Width="90" /></StackPanel>
+                </StackPanel>
+                <Button Classes="primary" Content="Save officer &amp; re-apply to game" Command="{Binding SaveOfficerCommand}" HorizontalAlignment="Left" />
+                <TextBlock Classes="small" Foreground="{DynamicResource Gold}" TextWrapping="Wrap"
+                           Text="{Binding StatusMessage}" IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+              </StackPanel>
+            </Border>
+          </ScrollViewer>
+
+          <!-- Folders -->
+          <ScrollViewer IsVisible="{Binding IsFolders}" VerticalScrollBarVisibility="Auto" Margin="0,0,32,0">
+            <Border Classes="section" MaxWidth="720" HorizontalAlignment="Left">
+              <StackPanel Spacing="14">
+                <TextBlock Text="Folders" Classes="h1" />
+                <TextBlock Text="Everything Dispatch reads and writes, one click away." Classes="small" Foreground="{DynamicResource TextMuted}" />
+                <WrapPanel>
+                  <Button Classes="secondary" Content="Game folder" Command="{Binding OpenGameFolderCommand}" Margin="0,0,10,10" />
+                  <Button Classes="secondary" Content="Logs" Command="{Binding OpenLogsCommand}" Margin="0,0,10,10" />
+                  <Button Classes="secondary" Content="Backups" Command="{Binding OpenBackupsCommand}" Margin="0,0,10,10" />
+                  <Button Classes="secondary" Content="Mod pack" Command="{Binding OpenModPackCommand}" Margin="0,0,10,10" />
+                  <Button Classes="secondary" Content="OpenIV imports" Command="{Binding OpenImportsCommand}" Margin="0,0,10,10" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+          </ScrollViewer>
+
+          <!-- Quarantine -->
+          <ScrollViewer IsVisible="{Binding IsQuarantine}" VerticalScrollBarVisibility="Auto" Margin="0,0,32,0">
+            <Border Classes="section" MaxWidth="720" HorizontalAlignment="Left">
+              <StackPanel Spacing="14">
+                <TextBlock Text="Quarantine" Classes="h1" />
+                <TextBlock Text="Nothing the cleaner removed is deleted — it waits here, restorable byte-for-byte."
+                           Classes="small" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap" />
+                <TextBlock Text="Quarantine is empty." Classes="small" IsVisible="{Binding !HasBatches}" Foreground="{DynamicResource TextFaint}" />
+                <ItemsControl ItemsSource="{Binding Batches}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:QuarantineRow">
+                      <Border Margin="0,0,0,8" Padding="14,10" CornerRadius="{DynamicResource RadiusInput}"
+                              Background="{DynamicResource NavyDeep}" BorderBrush="{DynamicResource Steel}" BorderThickness="1">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                          <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding When}" Classes="body" />
+                            <TextBlock Text="{Binding Summary}" Classes="small" Foreground="{DynamicResource TextMuted}" />
+                          </StackPanel>
+                          <Button Grid.Column="1" Classes="secondary" Content="Restore" Margin="0,0,8,0"
+                                  Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).RestoreBatchCommand}" CommandParameter="{Binding}" />
+                          <Button Grid.Column="2" Classes="ghost" Content="Purge"
+                                  Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).PurgeBatchCommand}" CommandParameter="{Binding}" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </ScrollViewer>
+
+          <!-- About -->
+          <ScrollViewer IsVisible="{Binding IsAbout}" VerticalScrollBarVisibility="Auto" Margin="0,0,32,0">
+            <Border Classes="section" MaxWidth="720" HorizontalAlignment="Left">
+              <StackPanel Spacing="8">
+                <TextBlock Text="About" Classes="h1" />
+                <TextBlock Classes="small" Foreground="{DynamicResource TextMuted}"
+                           Text="{Binding Version, StringFormat='Dispatch {0} — an unofficial fan project. Not affiliated with Rockstar Games or the authors of any mod it installs.'}"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </ScrollViewer>
+
+        </Panel>
+      </Grid>
+    </Grid>
   </Panel>
 
 </UserControl>

@@ -13,9 +13,29 @@
 
   <Grid RowDefinitions="Auto,*" Margin="64,40,64,40">
 
-    <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,32" Classes="reveal">
-      <TextBlock Text="BEFORE WE START" Classes="micro" />
-      <TextBlock Text="What this is" Classes="display" />
+    <StackPanel Grid.Row="0" Spacing="14" Margin="0,0,0,28" Classes="reveal">
+      <StackPanel Spacing="8">
+        <TextBlock Text="BEFORE WE START" Classes="micro" />
+        <TextBlock Text="What this is" Classes="display" />
+      </StackPanel>
+
+      <!-- Legacy-only notice. LSPDFR does not run on the 2025 Enhanced edition,
+           so this is stated plainly before anyone spends time on an install. -->
+      <Border Padding="16,12" CornerRadius="{DynamicResource RadiusInput}"
+              HorizontalAlignment="Left"
+              Background="{DynamicResource GreenWash}"
+              BorderBrush="{DynamicResource Green}" BorderThickness="1">
+        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+          <c:Icon Data="{StaticResource IconCheck}" Foreground="{DynamicResource Green}" Size="18"
+                  VerticalAlignment="Center" />
+          <StackPanel Spacing="1">
+            <TextBlock Classes="body" FontWeight="SemiBold"
+                       Text="For GTA V Legacy Edition only" />
+            <TextBlock Classes="small muted" TextWrapping="Wrap" MaxWidth="720"
+                       Text="LSPDFR and its plugins only run on the original (Legacy) GTA V — not the 2025 Enhanced edition. Dispatch checks which edition you have before it installs anything." />
+          </StackPanel>
+        </StackPanel>
+      </Border>
     </StackPanel>
 
     <Grid Grid.Row="1" ColumnDefinitions="*,24,*">

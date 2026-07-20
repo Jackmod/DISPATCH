@@ -1,4 +1,5 @@
 using Dispatch.Core.Audio;
+using Dispatch.Core.Platform;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -15,11 +16,14 @@ public static class WindowsServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        services.TryAddSingleton<ISoundPlayer, WinmmSoundPlayer>();
         services.TryAddSingleton<ICallsignVoice, SapiCallsignVoice>();
+        services.TryAddSingleton<IDefenderService, WindowsDefenderService>();
+        services.TryAddSingleton<IGameLauncher, WindowsGameLauncher>();
 
         // Implementations land here as the interfaces they satisfy are
-        // introduced in Core: ProcessGuard, PowerService, ElevationService,
-        // DefenderService, DependencyInstaller, WebView2BrowserSource.
+        // introduced in Core: PowerService, ElevationService,
+        // DependencyInstaller, WebView2BrowserSource.
         return services;
     }
 }

@@ -60,8 +60,22 @@ public sealed record ModDefinition
     /// <summary>What its version compatibility tracks.</summary>
     public CompatibilityAnchor Anchor { get; init; } = CompatibilityAnchor.LspdfrApi;
 
+    /// <summary>
+    /// A core dependency the whole setup rests on. Required mods are installed by
+    /// every preset and cannot be unticked — without them nothing else loads.
+    /// </summary>
+    public bool Required { get; init; }
+
     /// <summary>Mod ids this one needs placed before it.</summary>
     public IReadOnlyList<string> DependsOn { get; init; } = [];
+
+    /// <summary>
+    /// Extra names an archive of this mod might be filed under, used when the pack
+    /// matches dumped archive files to mods by name. The id and display name are
+    /// always tried; this covers the cases where a download's file name looks
+    /// nothing like either — an abbreviation, an alternate title, a bundled tool.
+    /// </summary>
+    public IReadOnlyList<string> Aliases { get; init; } = [];
 
     /// <summary>
     /// Sort weight for install order. Lower installs first.

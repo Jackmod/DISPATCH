@@ -112,6 +112,30 @@ public static class ControlCatalogue
         Action("pad.pursuit", "Pursuit menu", "Open the pursuit menu.",
             "LSPDFR", "Dispatch", "lspdfr/Keys.ini", "PURSUIT_Button",
             KeyDialect.Controller, InputDevice.Controller),
+        Action("pad.tackle", "Tackle", "Tackle a fleeing suspect.",
+            "Stop The Ped", "Suspects", "plugins/StopThePed.ini", "TackleButton",
+            KeyDialect.Controller, InputDevice.Controller),
+        Action("pad.sprint", "Sprint boost", "Run faster while chasing on foot.",
+            "Stop The Ped", "Suspects", "plugins/StopThePed.ini", "SprintButton",
+            KeyDialect.Controller, InputDevice.Controller),
+        Action("pad.engine", "Engine off", "Kill the engine of the vehicle you are in.",
+            "Turn Off Engine", "Vehicle", "plugins/TurnOffEngine.ini", "EngineButton",
+            KeyDialect.Controller, InputDevice.Controller),
+        Action("pad.sirens", "Toggle sirens", "Cycle the siren.",
+            "ELS", "Vehicle", "plugins/ELS.ini", "SirenButton",
+            KeyDialect.Controller, InputDevice.Controller),
+        Action("pad.lights", "Lights and horn", "Toggle the lights or sound the horn.",
+            "ELS", "Vehicle", "plugins/ELS.ini", "LightsButton",
+            KeyDialect.Controller, InputDevice.Controller),
+        Action("pad.camera", "Cycle camera", "Switch the camera view, including the dash cam.",
+            "Dash Cam V", "Interface", "plugins/DashCamV.ini", "CameraButton",
+            KeyDialect.Controller, InputDevice.Controller),
+        Action("pad.marktarget", "Mark pursuit target", "Mark the suspect you are aiming at.",
+            "LSPDFR", "Traffic", "lspdfr/Keys.ini", "MARK_Button",
+            KeyDialect.Controller, InputDevice.Controller),
+        Action("pad.partner", "Partner into vehicle", "Order your partner into the car.",
+            "Stop The Ped", "Suspects", "plugins/StopThePed.ini", "PartnerButton",
+            KeyDialect.Controller, InputDevice.Controller),
     ];
 
     /// <summary>
@@ -169,6 +193,14 @@ public static class ControlCatalogue
             ["pad.interact"] = Bind("DPadLeft"),
             ["pad.backup"] = Bind("DPadUp"),
             ["pad.pursuit"] = Bind("DPadDown"),
+            ["pad.tackle"] = Bind("PadX"),
+            ["pad.sprint"] = Bind("PadA"),
+            ["pad.engine"] = Bind("RightThumb"),
+            ["pad.sirens"] = Bind("PadB"),
+            ["pad.lights"] = Bind("LeftThumb"),
+            ["pad.camera"] = Bind("PadBack"),
+            ["pad.marktarget"] = Bind("PadY"),
+            ["pad.partner"] = Bind("PadStart"),
         };
 
     /// <summary>
@@ -232,6 +264,14 @@ public static class ControlCatalogue
             ["pad.interact"] = Bind("DPadLeft"),
             ["pad.backup"] = Bind("DPadUp"),
             ["pad.pursuit"] = Bind("DPadDown"),
+            ["pad.tackle"] = Bind("PadX"),
+            ["pad.sprint"] = Bind("PadA"),
+            ["pad.engine"] = Bind("RightThumb"),
+            ["pad.sirens"] = Bind("PadB"),
+            ["pad.lights"] = Bind("LeftThumb"),
+            ["pad.camera"] = Bind("PadBack"),
+            ["pad.marktarget"] = Bind("PadY"),
+            ["pad.partner"] = Bind("PadStart"),
         };
 
     /// <summary>Every category, for the filter chips.</summary>

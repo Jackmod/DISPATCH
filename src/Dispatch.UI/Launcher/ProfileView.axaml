@@ -1,0 +1,105 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Dispatch.UI.Controls"
+             xmlns:vm="clr-namespace:Dispatch.UI.Launcher"
+             x:Class="Dispatch.UI.Launcher.ProfileView"
+             x:DataType="vm:ProfileViewModel">
+
+  <!-- The officer's own page: portrait, identity, and a career in numbers. -->
+
+  <Panel>
+    <c:AmbientBackdrop Intensity="0.7" ShowGrid="True" />
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="32,28,32,32" Spacing="24" MaxWidth="1040" HorizontalAlignment="Stretch">
+
+        <!-- ===== Identity card ================================= -->
+        <Border Padding="28"
+                CornerRadius="{DynamicResource RadiusModal}"
+                Background="{DynamicResource GlassSurface}"
+                BorderBrush="{DynamicResource GlassBorder}"
+                BorderThickness="1"
+                BoxShadow="{DynamicResource ShadowRaised}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+
+            <!-- Portrait -->
+            <Panel Grid.Column="0" Width="128" Height="128" VerticalAlignment="Center">
+              <Ellipse Fill="{DynamicResource BlueDim}"
+                       Stroke="{DynamicResource Gold}" StrokeThickness="2" />
+              <TextBlock Text="{Binding Initials}"
+                         Classes="display"
+                         FontSize="44"
+                         HorizontalAlignment="Center" VerticalAlignment="Center"
+                         IsVisible="{Binding !HasAvatar}" />
+              <Border CornerRadius="999" ClipToBounds="True" IsVisible="{Binding HasAvatar}">
+                <Image Source="{Binding Avatar}" Stretch="UniformToFill" />
+              </Border>
+              <Border CornerRadius="999" BorderBrush="{DynamicResource Gold}"
+                      BorderThickness="2" IsVisible="{Binding HasAvatar}" IsHitTestVisible="False" />
+            </Panel>
+
+            <!-- Name + identity -->
+            <StackPanel Grid.Column="1" Margin="24,0" VerticalAlignment="Center" Spacing="6">
+              <TextBlock Text="{Binding Name}" Classes="display" />
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Padding="10,4" CornerRadius="{DynamicResource RadiusPill}"
+                        Background="{DynamicResource GoldDim}" BorderBrush="{DynamicResource Gold}" BorderThickness="1">
+                  <TextBlock Text="{Binding Rank}" Classes="micro" Foreground="{DynamicResource GoldBright}" />
+                </Border>
+                <TextBlock Text="{Binding Callsign}" Classes="mono gold" VerticalAlignment="Center" />
+                <TextBlock Text="·" Classes="small" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Agency}" Classes="small" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Text="{Binding Department}" Classes="small" Foreground="{DynamicResource TextMuted}" />
+              <TextBlock Text="{Binding MemberSince}" Classes="micro" />
+            </StackPanel>
+
+            <!-- Change photo -->
+            <Button Grid.Column="2" Classes="secondary" Name="ChangePhoto"
+                    VerticalAlignment="Center" Click="OnChangePhoto">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <c:Icon Data="{StaticResource IconPlus}" Size="16" />
+                <TextBlock Text="Change photo" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+
+          </Grid>
+        </Border>
+
+        <!-- ===== Career numbers =============================== -->
+        <TextBlock Text="CAREER RECORD" Classes="micro" Margin="4,4,0,0" />
+        <ItemsControl ItemsSource="{Binding Cards}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:StatCard">
+              <Border Width="238" Height="128" Margin="0,0,16,16"
+                      Padding="20,16"
+                      CornerRadius="{DynamicResource RadiusCard}"
+                      Background="{DynamicResource GlassSurface}"
+                      BorderBrush="{DynamicResource GlassBorder}"
+                      BorderThickness="1">
+                <Grid RowDefinitions="Auto,*,Auto">
+                  <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding Label}" Classes="micro" VerticalAlignment="Center" />
+                    <c:Icon Grid.Column="1" Data="{Binding Icon}"
+                            Size="18" Foreground="{DynamicResource Blue}" />
+                  </Grid>
+                  <TextBlock Grid.Row="1" Text="{Binding Value}" Classes="display" FontSize="40"
+                             VerticalAlignment="Center" />
+                  <TextBlock Grid.Row="2" Text="{Binding Sub}" Classes="small"
+                             Foreground="{DynamicResource TextMuted}" TextTrimming="CharacterEllipsis" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+      </StackPanel>
+    </ScrollViewer>
+  </Panel>
+
+</UserControl>

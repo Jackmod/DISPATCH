@@ -25,6 +25,7 @@
   <Application.Resources>
     <ResourceDictionary>
       <ui:ToneToBrushConverter x:Key="ToneToBrush" />
+      <ui:SeverityToBrushConverter x:Key="SeverityToBrush" />
       <ResourceDictionary.MergedDictionaries>
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Palette.axaml" />
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Spacing.axaml" />

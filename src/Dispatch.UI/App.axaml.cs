@@ -34,6 +34,10 @@ public sealed class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && _services is not null)
         {
+            // Hand the intro its sound player before the window shows, so the
+            // launch siren is ready the moment the wordmark begins to draw.
+            Intro.IntroView.SoundPlayer = _services.GetService<Core.Audio.ISoundPlayer>();
+
             desktop.MainWindow = _services.GetRequiredService<MainWindow>();
         }
 

@@ -3,6 +3,8 @@ using System.Runtime.Versioning;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Dispatch.Core.Detection;
+using Dispatch.Core.Profiles;
 using Dispatch.UI.Launcher;
 using Dispatch.UI.Wizard;
 
@@ -11,8 +13,9 @@ namespace Dispatch.UI.Shell;
 /// <summary>The application window. Code-behind is for control wiring only.</summary>
 public partial class MainWindow : Window
 {
-    /// <summary>Tracks whether the intro has run, so it is shown once per session.</summary>
-    private static bool _introPlayed;
+    private readonly IGameBuildWatch? _buildWatch;
+    private readonly IProfileStore? _profiles;
+    private readonly Dispatch.Core.Platform.IGameLauncher? _launcher;
 
     /// <summary>Constructs the window.</summary>
     public MainWindow()
@@ -21,12 +24,21 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Constructs the window against a composed wizard.</summary>
-    public MainWindow(WizardViewModel wizard)
+    public MainWindow(
+        WizardViewModel wizard,
+        IGameBuildWatch? buildWatch = null,
+        IProfileStore? profiles = null,
+        Dispatch.Core.Platform.IGameLauncher? launcher = null)
     {
         ArgumentNullException.ThrowIfNull(wizard);
 
+        _buildWatch = buildWatch;
+        _profiles = profiles;
+        _launcher = launcher;
+
         InitializeComponent();
         ApplyDarkTitleBar();
+        Icon = TryRenderBadgeIcon();
         WireIntro();
 
         Wizard.DataContext = wizard;
@@ -39,6 +51,31 @@ public partial class MainWindow : Window
         // consumes arrow keys on the way down, so a bubbling handler never
         // sees Ctrl+Arrow â€” focus just moves instead.
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
+
+        // Once set up, Dispatch is a launcher, not an installer: a returning user
+        // drops straight into the launcher behind the intro rather than being made
+        // to walk the wizard again. Runs while the intro plays, so the profile is
+        // read and the swap done long before the animation fades.
+        _ = TryEnterLauncherAsync();
+    }
+
+    private async Task TryEnterLauncherAsync()
+    {
+        if (_profiles is null)
+        {
+            return;
+        }
+
+        var profile = await _profiles.LoadAsync().ConfigureAwait(true);
+        if (!profile.IsConfigured)
+        {
+            return;
+        }
+
+        LauncherShell.DataContext = new LauncherViewModel(
+            profile.ActiveOfficer, _buildWatch, profile.GamePath, _launcher);
+        LauncherShell.IsVisible = true;
+        Wizard.IsVisible = false;
     }
 
     private async void OnWizardCompleted(object? sender, EventArgs e)
@@ -47,9 +84,20 @@ public partial class MainWindow : Window
             ? await wizard.BuildOfficerAsync().ConfigureAwait(true)
             : null;
 
-        LauncherShell.DataContext = new LauncherViewModel(officer);
+        // The game path comes from the profile the wizard just saved; it feeds the
+        // build watch so the launcher can flag a game update that broke Script Hook.
+        var gamePath = _profiles is not null
+            ? (await _profiles.LoadAsync().ConfigureAwait(true)).GamePath
+            : null;
+
+        LauncherShell.DataContext = new LauncherViewModel(officer, _buildWatch, gamePath, _launcher);
         LauncherShell.IsVisible = true;
         Wizard.IsVisible = false;
+
+        // Setup is done: Dispatch is now a launcher, so drop a Desktop shortcut to
+        // it. Best-effort — a returning user still lands in the launcher via the
+        // first-run check even if the shortcut could not be written.
+        DesktopShortcut.TryCreate();
     }
 
     /// <summary>
@@ -139,16 +187,67 @@ public partial class MainWindow : Window
 #endif
     }
 
+    /// <summary>
+    /// Draws the seven-point badge into a small bitmap for the window and taskbar
+    /// icon, so the app carries its own mark everywhere Windows shows it.
+    /// </summary>
+    /// <remarks>
+    /// Rendered at runtime from the same <c>ArtBadge</c> geometry the rail uses,
+    /// rather than shipping a separate raster <c>.ico</c> — the identity is all
+    /// vector, and one source for the badge means the icon can never drift from the
+    /// mark shown inside the app. A failure here is cosmetic, so it degrades to no
+    /// icon rather than taking the window down.
+    /// </remarks>
+    private static Avalonia.Controls.WindowIcon? TryRenderBadgeIcon()
+    {
+        try
+        {
+            if (Avalonia.Application.Current?.TryGetResource("ArtBadge", null, out var resource) != true
+                || resource is not Avalonia.Media.Geometry geometry)
+            {
+                return null;
+            }
+
+            const int px = 64;
+            var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(
+                new Avalonia.PixelSize(px, px), new Avalonia.Vector(96, 96));
+
+            using (var context = bitmap.CreateDrawingContext())
+            {
+                // The badge geometry lives in a 120x140 space; fit it into the
+                // icon with a little breathing room and centre it.
+                const double artWidth = 120, artHeight = 140;
+                var scale = (px - 12) / artHeight;
+                var offsetX = (px - (artWidth * scale)) / 2;
+                var offsetY = (px - (artHeight * scale)) / 2;
+
+                var gold = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#E8B44A"));
+                var pen = new Avalonia.Media.Pen(gold, 14)
+                {
+                    LineJoin = Avalonia.Media.PenLineJoin.Round,
+                    LineCap = Avalonia.Media.PenLineCap.Round,
+                };
+
+                using (context.PushTransform(
+                    Avalonia.Matrix.CreateScale(scale, scale) * Avalonia.Matrix.CreateTranslation(offsetX, offsetY)))
+                {
+                    context.DrawGeometry(null, pen, geometry);
+                }
+            }
+
+            return new Avalonia.Controls.WindowIcon(bitmap);
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
     private void WireIntro()
     {
-        if (_introPlayed)
-        {
-            Intro.IsVisible = false;
-            ShellHost.Opacity = 1;
-            return;
-        }
-
-        _introPlayed = true;
+        // The intro plays in full every time the app opens — it is never
+        // suppressed and cannot be skipped, and it runs behind the launcher swap
+        // for a returning user just as it does for the wizard.
         Intro.Completed += OnIntroCompleted;
     }
 

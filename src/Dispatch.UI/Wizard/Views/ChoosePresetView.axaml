@@ -48,10 +48,33 @@
       <Setter Property="Background" Value="Transparent" />
     </Style>
 
-    <!-- The chosen card holds a gold edge; the others stay quiet. -->
+    <!-- The chosen card lights up green and holds a steady green edge, so the
+         selection reads at a glance rather than as a faint gold hairline. -->
     <Style Selector="ListBox.presets ListBoxItem:selected Border#Frame">
-      <Setter Property="BorderBrush" Value="{DynamicResource GlassBorderGold}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Green}" />
       <Setter Property="BorderThickness" Value="2" />
+    </Style>
+
+    <!-- The pulsing green halo. Off by default; the chosen card breathes it
+         so the selection is unmistakable. -->
+    <Style Selector="ListBox.presets ListBoxItem Border#SelectionGlow">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="ListBox.presets ListBoxItem:selected Border#SelectionGlow">
+      <Setter Property="Opacity" Value="1" />
+      <Style.Animations>
+        <Animation Duration="0:0:1.6" IterationCount="INFINITE" Easing="SineEaseInOut">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="0.4" />
+          </KeyFrame>
+          <KeyFrame Cue="50%">
+            <Setter Property="Opacity" Value="1" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="0.4" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
     </Style>
   </UserControl.Styles>
 
@@ -61,6 +84,95 @@
       <TextBlock Text="STEP 4" Classes="micro" />
       <TextBlock Text="Choose a setup" Classes="display" />
     </StackPanel>
+
+    <!--
+      The customise overlay. It sits above the whole screen so the mod checklist
+      has room, and only the ticked mods are ever unpacked into the game. Opened
+      from the Customize button in the summary bar; closed by Done.
+    -->
+    <Border Grid.Row="0" Grid.RowSpan="3"
+            ZIndex="10"
+            IsVisible="{Binding IsCustomizing}"
+            Background="{DynamicResource Scrim}">
+      <Border Margin="60,24"
+              MaxWidth="720"
+              HorizontalAlignment="Center"
+              CornerRadius="{DynamicResource RadiusCard}"
+              Background="{DynamicResource Navy}"
+              BorderBrush="{DynamicResource GlassBorder}"
+              BorderThickness="1"
+              BoxShadow="{DynamicResource ShadowRaised}">
+        <Grid RowDefinitions="Auto,*,Auto" Margin="28,24">
+
+          <StackPanel Grid.Row="0" Spacing="10" Margin="0,0,0,16">
+            <TextBlock Text="Customise your install" Classes="h1" />
+            <TextBlock Classes="small muted"
+                       Text="Untick anything you don't want. Only ticked mods are unpacked into your game — nothing else is touched." />
+            <TextBox Text="{Binding ModSearch}"
+                     Watermark="Search mods…"
+                     Margin="0,4,0,0" />
+          </StackPanel>
+
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding VisibleMods}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="steps:ModPick">
+                  <Border Padding="14,10" Margin="0,0,0,6"
+                          CornerRadius="{DynamicResource RadiusInput}"
+                          Background="{DynamicResource GlassSurface}">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                      <CheckBox Grid.Column="0"
+                                IsChecked="{Binding IsSelected}"
+                                IsEnabled="{Binding CanToggle}"
+                                VerticalAlignment="Center"
+                                Margin="0,0,12,0" />
+                      <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}" Classes="body" />
+                        <TextBlock Text="{Binding Author}" Classes="small muted" />
+                      </StackPanel>
+
+                      <!-- Required badge, only on core dependencies. -->
+                      <Border Grid.Column="2"
+                              VerticalAlignment="Center"
+                              Margin="0,0,8,0"
+                              Padding="8,3"
+                              CornerRadius="6"
+                              IsVisible="{Binding IsRequired}"
+                              Background="{DynamicResource GlassSurface}"
+                              BorderBrush="{DynamicResource GlassBorderGold}"
+                              BorderThickness="1">
+                        <TextBlock Text="REQUIRED" Classes="micro" Foreground="{DynamicResource Gold}" />
+                      </Border>
+
+                      <Border Grid.Column="3"
+                              VerticalAlignment="Center"
+                              Padding="8,3"
+                              CornerRadius="6"
+                              Background="{DynamicResource GlassSurface}"
+                              BorderBrush="{DynamicResource GlassBorder}"
+                              BorderThickness="1">
+                        <TextBlock Text="{Binding SourceLabel}" Classes="micro" />
+                      </Border>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,16,0,0">
+            <TextBlock Grid.Column="0"
+                       Text="{Binding SelectionSummary}"
+                       Classes="small muted"
+                       VerticalAlignment="Center" />
+            <Button Grid.Column="1"
+                    Classes="primary"
+                    Content="Done"
+                    Click="OnToggleCustomize" />
+          </Grid>
+        </Grid>
+      </Border>
+    </Border>
 
     <ListBox Grid.Row="1"
              Classes="presets"
@@ -76,6 +188,15 @@
 
       <ListBox.ItemTemplate>
         <DataTemplate DataType="steps:PresetOption">
+
+         <Panel>
+
+          <!-- The pulsing green halo, behind the card and non-interactive. -->
+          <Border Name="SelectionGlow"
+                  CornerRadius="{DynamicResource RadiusCard}"
+                  Background="{DynamicResource GreenWash}"
+                  BoxShadow="{DynamicResource GlowGreen}"
+                  IsHitTestVisible="False" />
 
           <Border Name="Frame"
                   CornerRadius="{DynamicResource RadiusCard}"
@@ -216,6 +337,8 @@
             </Grid>
           </Border>
 
+         </Panel>
+
         </DataTemplate>
       </ListBox.ItemTemplate>
     </ListBox>
@@ -228,28 +351,30 @@
             Background="{DynamicResource GlassSurface}"
             BorderBrush="{DynamicResource GlassBorder}"
             BorderThickness="1">
-      <StackPanel Orientation="Horizontal" Spacing="40">
+      <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto">
 
-        <StackPanel Spacing="2">
-          <TextBlock Text="DOWNLOAD" Classes="micro" />
-          <TextBlock Text="{Binding DownloadSize}" Classes="mono" />
+        <StackPanel Grid.Column="0" Spacing="2" Margin="0,0,40,0">
+          <TextBlock Text="SELECTED" Classes="micro" />
+          <TextBlock Text="{Binding SelectionSummary}" Classes="mono" />
         </StackPanel>
 
-        <StackPanel Spacing="2">
+        <StackPanel Grid.Column="1" Spacing="2" Margin="0,0,40,0">
           <TextBlock Text="DISK NEEDED" Classes="micro" />
           <TextBlock Text="{Binding DiskRequired}" Classes="mono" />
         </StackPanel>
 
-        <StackPanel Spacing="2">
+        <StackPanel Grid.Column="2" Spacing="2">
           <TextBlock Text="FREE SPACE" Classes="micro" />
           <TextBlock Text="{Binding DiskAvailable}" Classes="mono" />
         </StackPanel>
 
-        <TextBlock Classes="small"
-                   VerticalAlignment="Bottom"
-                   Text="Every mod is fetched from its own author's server during the run." />
+        <Button Grid.Column="4"
+                Classes="ghost"
+                Content="Customise…"
+                VerticalAlignment="Center"
+                Click="OnToggleCustomize" />
 
-      </StackPanel>
+      </Grid>
     </Border>
 
   </Grid>

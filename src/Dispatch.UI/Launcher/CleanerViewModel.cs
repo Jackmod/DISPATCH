@@ -2,35 +2,36 @@ using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Dispatch.Core.Infrastructure;
 using Dispatch.Core.Maintenance;
+using Dispatch.Core.Profiles;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Dispatch.UI.Launcher;
 
-/// <summary>A single row in the cleaner preview, with its own checkbox.</summary>
-public sealed partial class CleanRow : ObservableObject
+/// <summary>A single mod file the cleaner will move, for the warning list.</summary>
+public sealed class CleanRow
 {
-    [ObservableProperty]
-    private bool _selected;
-
     /// <summary>Constructs a row from a scanned candidate.</summary>
     public CleanRow(CleanCandidate candidate)
     {
         Candidate = candidate;
-        _selected = candidate.IsPreselected;
+        Path = candidate.RelativePath;
+        Size = FormatSize(candidate.SizeBytes);
+        Reason = candidate.Reason;
     }
 
     /// <summary>The candidate this row represents.</summary>
     public CleanCandidate Candidate { get; }
 
     /// <summary>Its path.</summary>
-    public string Path => Candidate.RelativePath;
+    public string Path { get; }
 
     /// <summary>Its size, formatted.</summary>
-    public string Size => FormatSize(Candidate.SizeBytes);
+    public string Size { get; }
 
     /// <summary>Why the scanner classified it this way.</summary>
-    public string Reason => Candidate.Reason;
+    public string Reason { get; }
 
     private static string FormatSize(long bytes) => bytes switch
     {
@@ -40,201 +41,243 @@ public sealed partial class CleanRow : ObservableObject
     };
 }
 
-/// <summary>One tier group in the preview tree.</summary>
-public sealed partial class CleanTier_Group : ObservableObject
-{
-    /// <summary>Constructs a tier group.</summary>
-    public CleanTier_Group(CleanTier tier, string title, string caution, IEnumerable<CleanRow> rows)
-    {
-        Tier = tier;
-        Title = title;
-        Caution = caution;
-        Rows = new ObservableCollection<CleanRow>(rows);
-    }
-
-    /// <summary>Which tier.</summary>
-    public CleanTier Tier { get; }
-
-    /// <summary>The heading.</summary>
-    public string Title { get; }
-
-    /// <summary>A caution line, empty for the safe tier.</summary>
-    public string Caution { get; }
-
-    /// <summary>Whether the caution line shows.</summary>
-    public bool HasCaution => !string.IsNullOrEmpty(Caution);
-
-    /// <summary>The rows in this tier.</summary>
-    public ObservableCollection<CleanRow> Rows { get; }
-
-    /// <summary>Whether this group has any rows to show.</summary>
-    public bool HasRows => Rows.Count > 0;
-}
-
-/// <summary>Where the cleaner is in its flow.</summary>
+/// <summary>The steps of the clean modal, in order.</summary>
 public enum CleanerStage
 {
-    /// <summary>Not yet started.</summary>
-    Idle,
-
-    /// <summary>Scanning the folder.</summary>
+    /// <summary>Reading the folder against the install record.</summary>
     Scanning,
 
-    /// <summary>Showing the preview, waiting for confirmation.</summary>
-    Preview,
+    /// <summary>Showing what was found, waiting to proceed.</summary>
+    Warning,
 
-    /// <summary>Moving files to quarantine.</summary>
+    /// <summary>Moving the files to quarantine.</summary>
     Cleaning,
 
-    /// <summary>Done, showing the summary.</summary>
-    Done,
+    /// <summary>Cleaned; telling the user to verify their game files.</summary>
+    Verify,
 }
 
 /// <summary>
-/// Drives the Clean GTA folder modal: scan, preview, confirm, quarantine.
+/// Drives the Clean GTA folder modal as a short, guided sequence: warn, clean,
+/// verify, close.
 /// </summary>
 /// <remarks>
-/// The confirm button is gated on the tree having been scrolled to the bottom,
-/// as the spec insists — the point is to make the user actually look at what
-/// they are about to remove rather than clicking through. Nothing is moved until
-/// they have both scrolled and confirmed, and even then it goes to quarantine,
-/// not the bin.
+/// Detection leans on the install record rather than guesswork — Dispatch placed
+/// the mods, so it knows exactly which files are its own and marks them for
+/// removal with certainty; the heuristics only fill in for a folder modded by
+/// hand. Nothing is deleted: files move to quarantine and can be restored. The
+/// last step is the important one — after the mods are gone, verifying the game
+/// files restores anything a mod had overwritten, so the base is genuinely clean.
 /// </remarks>
 public sealed partial class CleanerViewModel : ObservableObject
 {
-    private readonly FolderCleaner _cleaner;
     private readonly IQuarantine _quarantine;
+    private readonly IInstallRecordStore _records;
+    private CleanPlan? _plan;
 
+    // Warning is the resting stage: opened without a folder to scan, the modal
+    // shows an empty "nothing to clean" state rather than a spinner that never
+    // resolves. A real scan flips it to Scanning immediately.
     [ObservableProperty]
-    private CleanerStage _stage = CleanerStage.Idle;
+    private CleanerStage _stage = CleanerStage.Warning;
 
     [ObservableProperty]
     private int _filesScanned;
 
     [ObservableProperty]
-    private bool _scrolledToBottom;
-
-    [ObservableProperty]
     private string _gamePath = string.Empty;
 
     [ObservableProperty]
-    private string _summary = string.Empty;
+    private bool _cleaningInProgress;
+
+    [ObservableProperty]
+    private string _cleanSummary = string.Empty;
+
+    /// <summary>Whether the user has ticked the "I verified" box.</summary>
+    [ObservableProperty]
+    private bool _verifyAcknowledged;
 
     /// <summary>Constructs the cleaner view model.</summary>
-    public CleanerViewModel(FolderCleaner? cleaner = null, IQuarantine? quarantine = null)
+    /// <remarks>
+    /// When no store is injected it falls back to the real ones under
+    /// LOCALAPPDATA, the same convention the other launcher screens follow — so a
+    /// bare <c>new CleanerViewModel()</c> in the launcher already reads the install
+    /// record and quarantines to the right place.
+    /// </remarks>
+    public CleanerViewModel(IQuarantine? quarantine = null, IInstallRecordStore? records = null)
     {
-        _cleaner = cleaner ?? new FolderCleaner(NullLogger<FolderCleaner>.Instance);
+        var paths = new AppPaths();
         _quarantine = quarantine ?? new Quarantine(
-            System.IO.Path.Combine(System.IO.Path.GetTempPath(), "dispatch-quarantine-fallback"),
-            NullLogger<Quarantine>.Instance);
-
-        Tiers = [];
+            paths.QuarantineDirectory, NullLogger<Quarantine>.Instance);
+        _records = records ?? new InstallRecordStore(paths, NullLogger<InstallRecordStore>.Instance);
     }
 
-    /// <summary>The preview tiers.</summary>
-    public ObservableCollection<CleanTier_Group> Tiers { get; }
+    /// <summary>The mod files that will be moved to quarantine.</summary>
+    public ObservableCollection<CleanRow> ToRemove { get; } = [];
 
-    /// <summary>How many rows are selected across every tier.</summary>
-    public int SelectedCount => Tiers.SelectMany(t => t.Rows).Count(r => r.Selected);
+    /// <summary>How many files will be removed.</summary>
+    public int RemoveCount => ToRemove.Count;
 
-    /// <summary>Total size of the selected rows.</summary>
-    public string SelectedSize => FormatSize(
-        Tiers.SelectMany(t => t.Rows).Where(r => r.Selected).Sum(r => r.Candidate.SizeBytes));
+    /// <summary>Total size of what will be removed.</summary>
+    public string RemoveSize => FormatSize(ToRemove.Sum(r => r.Candidate.SizeBytes));
 
-    /// <summary>Whether the confirm button is enabled.</summary>
-    /// <remarks>
-    /// Both conditions: the user has scrolled to the bottom of the tree, and at
-    /// least one row is selected. The scroll gate is what makes them look.
-    /// </remarks>
-    public bool CanConfirm => Stage == CleanerStage.Preview && ScrolledToBottom && SelectedCount > 0;
+    /// <summary>How many protected files were found and will be left alone.</summary>
+    public int ProtectedCount => _plan?.Protected.Count ?? 0;
 
-    /// <summary>Starts a scan of the given folder.</summary>
+    /// <summary>Whether any protected files were found, for the "left untouched" note.</summary>
+    public bool HasProtected => ProtectedCount > 0;
+
+    /// <summary>Whether there is anything to clean.</summary>
+    public bool HasWork => RemoveCount > 0;
+
+    /// <summary>Whether the warning step should offer the Clean button.</summary>
+    public bool ShowCleanButton => Stage == CleanerStage.Warning && HasWork;
+
+    /// <summary>Whether the warning step is empty and offers only Close.</summary>
+    public bool ShowCloseWhenEmpty => Stage == CleanerStage.Warning && !HasWork;
+
+    /// <summary>Whether to nudge the user to tick the verify box.</summary>
+    public bool ShowVerifyHint => Stage == CleanerStage.Verify && !VerifyAcknowledged;
+
+    /// <summary>The launcher name for the verify steps, from the game path.</summary>
+    public string VerifyPlatform =>
+        GamePath.Contains("steamapps", StringComparison.OrdinalIgnoreCase) ? "Steam"
+        : GamePath.Contains("Epic", StringComparison.OrdinalIgnoreCase) ? "the Epic Games Launcher"
+        : "your game launcher";
+
+    /// <summary>Platform-specific verify steps for the final screen, numbered.</summary>
+    public IReadOnlyList<string> VerifySteps =>
+        Numbered(GamePath.Contains("steamapps", StringComparison.OrdinalIgnoreCase)
+            ? ["Open Steam and go to your Library.",
+               "Right-click Grand Theft Auto V and choose Properties.",
+               "Open the Installed Files tab.",
+               "Click “Verify integrity of game files” and let it finish."]
+        : GamePath.Contains("Epic", StringComparison.OrdinalIgnoreCase)
+            ? ["Open the Epic Games Launcher and go to your Library.",
+               "Click the three dots (…) on Grand Theft Auto V.",
+               "Choose Manage, then click Verify.",
+               "Wait for it to finish."]
+            : ["Open the launcher you installed GTA V through.",
+               "Find its verify or repair option for Grand Theft Auto V.",
+               "Run it and let it finish."]);
+
+    private static IReadOnlyList<string> Numbered(IReadOnlyList<string> steps) =>
+        steps.Select((step, i) => $"{i + 1}.  {step}").ToList();
+
+    /// <summary>A short caption for the modal header, naming the current step.</summary>
+    public string StepCaption => Stage switch
+    {
+        CleanerStage.Scanning => "Checking your folder…",
+        CleanerStage.Warning => "Step 1 of 3  ·  Review",
+        CleanerStage.Cleaning => "Step 2 of 3  ·  Cleaning",
+        CleanerStage.Verify => "Step 3 of 3  ·  Verify",
+        _ => string.Empty,
+    };
+
+    /// <summary>Whether the Done button may close the modal.</summary>
+    public bool CanClose => Stage == CleanerStage.Verify && VerifyAcknowledged;
+
+    /// <summary>Raised when the modal should close.</summary>
+    public event EventHandler? CloseRequested;
+
+    /// <summary>Scans the folder against the install record and moves to the warning.</summary>
     public async Task ScanAsync(string gamePath, CancellationToken cancellationToken = default)
     {
         GamePath = gamePath;
         Stage = CleanerStage.Scanning;
         FilesScanned = 0;
-        Tiers.Clear();
+        VerifyAcknowledged = false;
+        ToRemove.Clear();
+
+        // The install record is the source of truth: every file Dispatch placed
+        // is a known mod file, so the scan is certain rather than heuristic.
+        var known = await LoadKnownFilesAsync(cancellationToken).ConfigureAwait(true);
+        var cleaner = new FolderCleaner(NullLogger<FolderCleaner>.Instance, known);
 
         var progress = new Progress<int>(count => Dispatcher.UIThread.Post(() => FilesScanned = count));
-
-        var plan = await Task.Run(() => _cleaner.Scan(gamePath, progress, cancellationToken), cancellationToken)
+        _plan = await Task.Run(() => cleaner.Scan(gamePath, progress, cancellationToken), cancellationToken)
             .ConfigureAwait(true);
 
-        BuildTiers(plan);
-        Stage = CleanerStage.Preview;
+        // Everything the scanner is confident about — the mod files — is queued.
+        // Unknown files are never auto-removed.
+        foreach (var candidate in _plan.Candidates.Where(c => c.IsPreselected))
+        {
+            ToRemove.Add(new CleanRow(candidate));
+        }
+
+        Stage = CleanerStage.Warning;
         RaiseDerived();
     }
 
-    /// <summary>Called when a row's checkbox toggles, to refresh the totals.</summary>
-    public void OnSelectionChanged() => RaiseDerived();
-
-    /// <summary>Called when the tree is scrolled to the bottom.</summary>
-    [RelayCommand]
-    private void MarkScrolledToBottom()
+    private async Task<IReadOnlyList<string>> LoadKnownFilesAsync(CancellationToken cancellationToken)
     {
-        ScrolledToBottom = true;
-        OnPropertyChanged(nameof(CanConfirm));
+        var record = await _records.LoadAsync(cancellationToken).ConfigureAwait(true);
+        return record?.Files.Select(f => f.RelativePath).ToList() ?? [];
     }
 
-    /// <summary>Moves the selected files to quarantine.</summary>
+    /// <summary>Warning → Cleaning: moves the queued files to quarantine.</summary>
     [RelayCommand]
-    private async Task ConfirmAsync()
+    private async Task ProceedAsync()
     {
-        if (!CanConfirm)
+        if (Stage != CleanerStage.Warning || !HasWork)
         {
             return;
         }
 
         Stage = CleanerStage.Cleaning;
+        CleaningInProgress = true;
 
-        var selected = Tiers.SelectMany(t => t.Rows)
-            .Where(r => r.Selected)
-            .Select(r => r.Path)
-            .ToList();
+        var paths = ToRemove.Select(r => r.Path).ToList();
+        var batch = await _quarantine.QuarantineAsync(GamePath, paths).ConfigureAwait(true);
 
-        var batch = await _quarantine.QuarantineAsync(GamePath, selected).ConfigureAwait(true);
-
-        Summary = $"Moved {batch.Entries.Count} file(s) to quarantine. " +
-                  "Nothing was deleted — you can restore this batch in one click from Settings.";
-        Stage = CleanerStage.Done;
+        CleanSummary = $"Moved {batch.Entries.Count} file(s) to quarantine. Nothing was deleted — "
+                       + "you can restore this batch any time from Settings.";
+        CleaningInProgress = false;
     }
 
-    partial void OnScrolledToBottomChanged(bool value) => OnPropertyChanged(nameof(CanConfirm));
-
-    private void BuildTiers(CleanPlan plan)
+    /// <summary>Cleaning → Verify: shows the verify-your-files step.</summary>
+    [RelayCommand]
+    private void Continue()
     {
-        void AddTier(CleanTier tier, string title, string caution)
+        if (Stage == CleanerStage.Cleaning && !CleaningInProgress)
         {
-            var rows = plan.Candidates
-                .Where(c => c.Tier == tier)
-                .Select(c => new CleanRow(c))
-                .ToList();
-
-            foreach (var row in rows)
-            {
-                row.PropertyChanged += (_, e) =>
-                {
-                    if (e.PropertyName == nameof(CleanRow.Selected))
-                    {
-                        OnSelectionChanged();
-                    }
-                };
-            }
-
-            Tiers.Add(new CleanTier_Group(tier, title, caution, rows));
+            Stage = CleanerStage.Verify;
+            RaiseDerived();
         }
+    }
 
-        AddTier(CleanTier.Known, "Known mod files", string.Empty);
-        AddTier(CleanTier.Likely, "Likely mod files", "Matches a mod pattern but is not recognised. Check before removing.");
-        AddTier(CleanTier.Unknown, "Unknown", "Not recognised at all. Selected only if you decide to.");
+    /// <summary>Closes the modal once verification is acknowledged.</summary>
+    [RelayCommand]
+    private void Close()
+    {
+        if (CanClose)
+        {
+            CloseRequested?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    partial void OnStageChanged(CleanerStage value) => RaiseDerived();
+
+    partial void OnVerifyAcknowledgedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanClose));
+        OnPropertyChanged(nameof(ShowVerifyHint));
     }
 
     private void RaiseDerived()
     {
-        OnPropertyChanged(nameof(SelectedCount));
-        OnPropertyChanged(nameof(SelectedSize));
-        OnPropertyChanged(nameof(CanConfirm));
+        OnPropertyChanged(nameof(RemoveCount));
+        OnPropertyChanged(nameof(RemoveSize));
+        OnPropertyChanged(nameof(ProtectedCount));
+        OnPropertyChanged(nameof(HasProtected));
+        OnPropertyChanged(nameof(HasWork));
+        OnPropertyChanged(nameof(ShowCleanButton));
+        OnPropertyChanged(nameof(ShowCloseWhenEmpty));
+        OnPropertyChanged(nameof(VerifyPlatform));
+        OnPropertyChanged(nameof(VerifySteps));
+        OnPropertyChanged(nameof(StepCaption));
+        OnPropertyChanged(nameof(ShowVerifyHint));
+        OnPropertyChanged(nameof(CanClose));
     }
 
     private static string FormatSize(long bytes) => bytes switch

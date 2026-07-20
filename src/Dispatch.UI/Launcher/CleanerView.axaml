@@ -6,15 +6,16 @@
              x:DataType="vm:CleanerViewModel">
 
   <!--
-    The most dangerous feature in the app, so its UI is built to slow the user
-    down: a scan they watch, a grouped preview they must scroll to the bottom of
-    before the confirm button enables, and a result that says plainly nothing
-    was deleted - it went to quarantine and can be restored.
+    A short, guided sequence rather than one dense screen: warn (with an exact
+    list of what Dispatch itself installed), clean, then verify. Detection leans
+    on the install record, so the warning is a statement of fact — these files
+    are ours — not a pile of guesses for the user to sort. Nothing is deleted;
+    it all goes to quarantine.
   -->
 
   <Border Background="{DynamicResource Scrim}">
     <Border VerticalAlignment="Center" HorizontalAlignment="Center"
-            Width="720" MaxHeight="640"
+            Width="660" MaxHeight="620"
             CornerRadius="{DynamicResource RadiusModal}"
             Background="{DynamicResource Navy}"
             BorderBrush="{DynamicResource SteelLight}"
@@ -24,13 +25,13 @@
       <Grid RowDefinitions="Auto,*,Auto">
 
         <!-- ===== Header ======================================== -->
-        <StackPanel Grid.Row="0" Margin="28,24,28,16" Spacing="6">
+        <StackPanel Grid.Row="0" Margin="28,24,28,16" Spacing="4">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <c:Icon Data="{StaticResource IconClean}" Foreground="{DynamicResource Gold}" />
             <TextBlock Text="Clean GTA folder" Classes="h1" VerticalAlignment="Center" />
           </StackPanel>
-          <TextBlock Classes="small" TextWrapping="Wrap"
-                     Text="Removes stale mod files a manual install left behind. Nothing is deleted — everything moves to quarantine, restorable in one click." />
+          <TextBlock Text="{Binding StepCaption}" Classes="micro"
+                     Foreground="{DynamicResource Gold}" Margin="36,0,0,0" />
         </StackPanel>
 
         <Border Grid.Row="0" Height="1" VerticalAlignment="Bottom" Background="{DynamicResource Steel}" />
@@ -42,64 +43,119 @@
           <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20"
                       IsVisible="{Binding Stage, Converter={x:Static vm:CleanerConverters.IsScanning}}">
             <c:RadioWavePulse Width="90" Height="90" HorizontalAlignment="Center" />
-            <TextBlock Text="{Binding FilesScanned, StringFormat='Scanning… {0} files'}"
+            <TextBlock Text="{Binding FilesScanned, StringFormat='Reading your folder… {0} files'}"
                        Classes="body" HorizontalAlignment="Center" />
           </StackPanel>
 
-          <!-- Preview tree -->
-          <ScrollViewer Name="PreviewScroll"
-                        Padding="28,8,28,8"
-                        IsVisible="{Binding Stage, Converter={x:Static vm:CleanerConverters.IsPreview}}">
-            <ItemsControl ItemsSource="{Binding Tiers}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:CleanTier_Group">
-                  <StackPanel Spacing="8" Margin="0,0,0,16" IsVisible="{Binding HasRows}">
-                    <StackPanel Spacing="2">
-                      <TextBlock Text="{Binding Title}" Classes="h2" />
-                      <TextBlock Text="{Binding Caution}" Classes="small warning"
-                                 IsVisible="{Binding HasCaution}" TextWrapping="Wrap" />
-                    </StackPanel>
-                    <ItemsControl ItemsSource="{Binding Rows}">
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:CleanRow">
-                          <Border Padding="12,8" Margin="0,0,0,4"
-                                  CornerRadius="{DynamicResource RadiusInput}"
-                                  Background="{DynamicResource GlassSurface}">
-                            <Grid ColumnDefinitions="Auto,*,Auto">
-                              <CheckBox Grid.Column="0" IsChecked="{Binding Selected}"
-                                        VerticalAlignment="Center" Margin="0,0,10,0" />
-                              <StackPanel Grid.Column="1" Spacing="1">
-                                <TextBlock Text="{Binding Path}" Classes="mono" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{Binding Reason}" Classes="small" TextWrapping="Wrap" />
-                              </StackPanel>
-                              <TextBlock Grid.Column="2" Text="{Binding Size}" Classes="mono"
-                                         VerticalAlignment="Center" Margin="10,0,0,0" />
-                            </Grid>
-                          </Border>
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+          <!-- Step 1: Warning -->
+          <Grid IsVisible="{Binding Stage, Converter={x:Static vm:CleanerConverters.IsWarning}}"
+                RowDefinitions="Auto,*">
+
+            <!-- Warning banner + summary -->
+            <StackPanel Grid.Row="0" Margin="28,20,28,12" Spacing="14">
+              <Border Background="{DynamicResource AmberWash}"
+                      BorderBrush="{DynamicResource Amber}" BorderThickness="1"
+                      CornerRadius="{DynamicResource RadiusInput}" Padding="14,12">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                  <c:Icon Data="{StaticResource IconAlert}" Foreground="{DynamicResource Amber}"
+                          VerticalAlignment="Top" />
+                  <StackPanel Spacing="3" MaxWidth="520">
+                    <TextBlock Classes="body" FontWeight="SemiBold"
+                               Text="{Binding RemoveCount, StringFormat='Ready to move {0} mod files out'}" />
+                    <TextBlock Classes="small" TextWrapping="Wrap"
+                               Text="These go to quarantine — nothing is deleted. You can restore the whole batch in one click from Settings if anything looks wrong." />
                   </StackPanel>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                </StackPanel>
+              </Border>
+
+              <StackPanel Orientation="Horizontal" Spacing="20">
+                <TextBlock Classes="small"
+                           Text="{Binding RemoveSize, StringFormat='Total size: {0}'}" />
+                <TextBlock Classes="small" Foreground="{DynamicResource Green}"
+                           IsVisible="{Binding HasProtected}"
+                           Text="{Binding ProtectedCount, StringFormat='{}{0} protected files (saves, settings) left untouched'}" />
+              </StackPanel>
+            </StackPanel>
+
+            <!-- Nothing to clean -->
+            <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
+                        Spacing="12" MaxWidth="420"
+                        IsVisible="{Binding !HasWork}">
+              <c:Icon Data="{StaticResource IconCheck}" Foreground="{DynamicResource Green}" Size="40"
+                      HorizontalAlignment="Center" />
+              <TextBlock Text="Nothing to clean" Classes="h2" HorizontalAlignment="Center" />
+              <TextBlock Classes="body muted" TextAlignment="Center" TextWrapping="Wrap"
+                         Text="Your folder already looks clean — Dispatch found no mod files to move." />
+            </StackPanel>
+
+            <!-- Exact list of what will move -->
+            <ScrollViewer Grid.Row="1" Padding="28,0,28,12" IsVisible="{Binding HasWork}">
+              <ItemsControl ItemsSource="{Binding ToRemove}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:CleanRow">
+                    <Border Padding="12,7" Margin="0,0,0,4"
+                            CornerRadius="{DynamicResource RadiusInput}"
+                            Background="{DynamicResource GlassSurface}">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="1">
+                          <TextBlock Text="{Binding Path}" Classes="mono" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding Reason}" Classes="small muted" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="{Binding Size}" Classes="mono"
+                                   VerticalAlignment="Center" Margin="10,0,0,0" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Grid>
+
+          <!-- Step 2: Cleaning -->
+          <Panel IsVisible="{Binding Stage, Converter={x:Static vm:CleanerConverters.IsCleaning}}">
+            <!-- In progress -->
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20"
+                        IsVisible="{Binding CleaningInProgress}">
+              <c:RadioWavePulse Width="90" Height="90" HorizontalAlignment="Center" />
+              <TextBlock Text="Moving files to quarantine…" Classes="body" HorizontalAlignment="Center" />
+            </StackPanel>
+            <!-- Done -->
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16" MaxWidth="440"
+                        IsVisible="{Binding !CleaningInProgress}">
+              <c:Icon Data="{StaticResource IconCheck}" Foreground="{DynamicResource Green}" Size="40"
+                      HorizontalAlignment="Center" />
+              <TextBlock Text="Cleaned" Classes="h1" HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding CleanSummary}" Classes="body muted"
+                         TextAlignment="Center" TextWrapping="Wrap" />
+            </StackPanel>
+          </Panel>
+
+          <!-- Step 3: Verify -->
+          <ScrollViewer IsVisible="{Binding Stage, Converter={x:Static vm:CleanerConverters.IsVerify}}"
+                        Padding="28,20,28,12">
+            <StackPanel Spacing="16" MaxWidth="560">
+              <StackPanel Spacing="6">
+                <TextBlock Text="One last step — verify your game files" Classes="h2" />
+                <TextBlock Classes="body" TextWrapping="Wrap"
+                           Text="The mods are out. Some of them overwrite stock game files, so verifying puts the originals back and leaves you with a genuinely clean install." />
+              </StackPanel>
+
+              <ItemsControl ItemsSource="{Binding VerifySteps}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <TextBlock Text="{Binding}" Classes="body" TextWrapping="Wrap" Margin="0,0,0,6" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <Border Background="{DynamicResource GlassSurface}"
+                      CornerRadius="{DynamicResource RadiusInput}" Padding="14,12" Margin="0,4,0,0">
+                <CheckBox IsChecked="{Binding VerifyAcknowledged}">
+                  <TextBlock Text="I've verified my game files" Classes="body" VerticalAlignment="Center" />
+                </CheckBox>
+              </Border>
+            </StackPanel>
           </ScrollViewer>
-
-          <!-- Cleaning -->
-          <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20"
-                      IsVisible="{Binding Stage, Converter={x:Static vm:CleanerConverters.IsCleaning}}">
-            <c:RadioWavePulse Width="90" Height="90" HorizontalAlignment="Center" />
-            <TextBlock Text="Moving files to quarantine…" Classes="body" HorizontalAlignment="Center" />
-          </StackPanel>
-
-          <!-- Done -->
-          <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16" MaxWidth="440"
-                      IsVisible="{Binding Stage, Converter={x:Static vm:CleanerConverters.IsDone}}">
-            <c:Icon Data="{StaticResource IconCheck}" Foreground="{DynamicResource Green}" Size="40"
-                    HorizontalAlignment="Center" />
-            <TextBlock Text="Done" Classes="h1" HorizontalAlignment="Center" />
-            <TextBlock Text="{Binding Summary}" Classes="body muted" TextAlignment="Center" TextWrapping="Wrap" />
-          </StackPanel>
 
         </Panel>
 
@@ -107,26 +163,34 @@
 
         <!-- ===== Footer ======================================== -->
         <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" Margin="28,16">
-          <TextBlock Grid.Column="0" VerticalAlignment="Center"
-                     Classes="small"
-                     IsVisible="{Binding Stage, Converter={x:Static vm:CleanerConverters.IsPreview}}"
-                     Text="{Binding SelectedCount, StringFormat='{}{0} selected'}" />
 
-          <Button Grid.Column="1" Classes="ghost" Content="Close" Name="CloseButton" Margin="0,0,10,0" />
+          <!-- Step 1 footer: Cancel + Clean now (only when there is something to do) -->
+          <Button Grid.Column="1" Classes="ghost" Content="Cancel" Name="CancelButton" Margin="0,0,10,0"
+                  IsVisible="{Binding ShowCleanButton}" />
+          <Button Grid.Column="2" Classes="primary" Content="Clean now"
+                  Command="{Binding ProceedCommand}"
+                  IsVisible="{Binding ShowCleanButton}" />
+          <!-- Step 1, but nothing to do: a plain Close instead of Clean now -->
+          <Button Grid.Column="2" Classes="ghost" Content="Close" Name="CloseWhenEmptyButton"
+                  IsVisible="{Binding ShowCloseWhenEmpty}" />
 
-          <Button Grid.Column="2" Classes="primary"
-                  Content="Move to quarantine"
-                  Command="{Binding ConfirmCommand}"
-                  IsEnabled="{Binding CanConfirm}"
-                  IsVisible="{Binding Stage, Converter={x:Static vm:CleanerConverters.IsPreview}}" />
+          <!-- Step 2 footer: Next (enabled once the move finishes) -->
+          <Button Grid.Column="2" Classes="primary" Content="Next"
+                  Command="{Binding ContinueCommand}"
+                  IsEnabled="{Binding !CleaningInProgress}"
+                  IsVisible="{Binding Stage, Converter={x:Static vm:CleanerConverters.IsCleaning}}" />
+
+          <!-- Step 3 footer: Done (enabled once verify is ticked) -->
+          <Button Grid.Column="2" Classes="primary" Content="Done"
+                  Command="{Binding CloseCommand}"
+                  IsEnabled="{Binding CanClose}"
+                  IsVisible="{Binding Stage, Converter={x:Static vm:CleanerConverters.IsVerify}}" />
+
+          <TextBlock Grid.Column="0" VerticalAlignment="Center" Classes="micro"
+                     Foreground="{DynamicResource Amber}"
+                     Text="TICK VERIFY TO FINISH"
+                     IsVisible="{Binding ShowVerifyHint}" />
         </Grid>
-
-        <!-- Scroll hint over the disabled confirm, until they have looked -->
-        <TextBlock Grid.Row="2" Classes="micro"
-                   HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,-2,0,0"
-                   Foreground="{DynamicResource Amber}"
-                   Text="SCROLL TO THE BOTTOM TO CONFIRM"
-                   IsVisible="{Binding !ScrolledToBottom}" />
 
       </Grid>
     </Border>

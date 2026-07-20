@@ -16,8 +16,14 @@
     <DataTemplate DataType="vm:DashboardViewModel">
       <vm:DashboardView />
     </DataTemplate>
+    <DataTemplate DataType="vm:ProfileViewModel">
+      <vm:ProfileView />
+    </DataTemplate>
     <DataTemplate DataType="vm:ControlsViewModel">
       <vm:ControlsView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:PluginSettingsViewModel">
+      <vm:PluginSettingsView />
     </DataTemplate>
     <DataTemplate DataType="vm:ModsViewModel">
       <vm:ModsView />
@@ -28,6 +34,18 @@
   </UserControl.DataTemplates>
 
   <UserControl.Styles>
+    <Style Selector="Button.profilechip /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Navy}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Steel}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="999" />
+      <Setter Property="Padding" Value="14,5,5,5" />
+    </Style>
+    <Style Selector="Button.profilechip:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource NavyRaised}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Gold}" />
+    </Style>
+
     <Style Selector="ListBox.rail">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
@@ -83,7 +101,7 @@
             BorderBrush="{DynamicResource Steel}" BorderThickness="0,0,1,0">
       <Grid RowDefinitions="Auto,*,Auto">
 
-        <!-- Badge + officer -->
+        <!-- Badge -->
         <StackPanel Grid.Row="0" Margin="20,28,20,24" Spacing="16">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <Viewbox Width="34" Height="40">
@@ -94,13 +112,6 @@
               </Canvas>
             </Viewbox>
             <TextBlock Text="DISPATCH" Classes="micro" VerticalAlignment="Center" />
-          </StackPanel>
-
-          <Border Height="1" Background="{DynamicResource Steel}" />
-
-          <StackPanel Spacing="2">
-            <TextBlock Text="{Binding OfficerName}" Classes="h2" TextTrimming="CharacterEllipsis" />
-            <TextBlock Text="{Binding CallsignLabel}" Classes="mono gold" />
           </StackPanel>
         </StackPanel>
 
@@ -141,11 +152,49 @@
     </Border>
 
     <!-- ===== Section ======================================== -->
-    <TransitioningContentControl Grid.Column="1" Content="{Binding CurrentContent}">
-      <TransitioningContentControl.PageTransition>
-        <CrossFade Duration="0:0:0.22" />
-      </TransitioningContentControl.PageTransition>
-    </TransitioningContentControl>
+    <Grid Grid.Column="1" RowDefinitions="56,*">
+
+      <!-- ===== Top bar ======================================= -->
+      <Border Grid.Row="0" Background="{DynamicResource NavyDeep}"
+              BorderBrush="{DynamicResource Steel}" BorderThickness="0,0,0,1">
+        <Grid ColumnDefinitions="*,Auto,Auto" Margin="26,0,16,0">
+          <TextBlock Grid.Column="0" Text="{Binding HeaderTitle}" Classes="h1" VerticalAlignment="Center" />
+
+          <Button Grid.Column="1" Classes="secondary" VerticalAlignment="Center" Margin="0,0,12,0"
+                  Command="{Binding OpenOpenIvHelpCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <c:Icon Data="{StaticResource IconFile}" Size="15" />
+              <TextBlock Text="How to use OpenIV" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <!-- Profile widget: name + callsign + avatar, click for stats -->
+          <Button Grid.Column="2" Classes="profilechip" VerticalAlignment="Center"
+                  Command="{Binding ShowProfileCommand}" ToolTip.Tip="Open your profile and stats">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <StackPanel VerticalAlignment="Center" Spacing="1">
+                <TextBlock Text="{Binding OfficerName}" Classes="h2" HorizontalAlignment="Right"
+                           TextTrimming="CharacterEllipsis" MaxWidth="180" />
+                <TextBlock Text="{Binding CallsignLabel}" Classes="mono gold" FontSize="10.5" HorizontalAlignment="Right" />
+              </StackPanel>
+              <Border Width="36" Height="36" CornerRadius="18"
+                      Background="{DynamicResource BlueDim}" BorderBrush="{DynamicResource Gold}" BorderThickness="1.5">
+                <TextBlock Text="{Binding Initials}" Classes="display" FontSize="15"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+            </StackPanel>
+          </Button>
+        </Grid>
+      </Border>
+
+      <!-- ===== Section ======================================= -->
+      <TransitioningContentControl Grid.Row="1" Content="{Binding CurrentContent}">
+        <TransitioningContentControl.PageTransition>
+          <CrossFade Duration="0:0:0.22" />
+        </TransitioningContentControl.PageTransition>
+      </TransitioningContentControl>
+
+    </Grid>
 
   </Grid>
 
@@ -209,6 +258,67 @@
         <TextBlock Classes="micro" Margin="20,10"
                    Text="↑↓ TO MOVE · ENTER TO SELECT · ESC TO CLOSE" />
       </StackPanel>
+    </Border>
+  </Border>
+
+  <!-- ===== OpenIV walkthrough ============================= -->
+  <Border Name="OpenIvOverlay"
+          IsVisible="{Binding OpenIvHelpOpen}"
+          Background="{DynamicResource Scrim}">
+    <Border VerticalAlignment="Center" HorizontalAlignment="Center"
+            Width="700" MaxHeight="640" Margin="0,40"
+            CornerRadius="{DynamicResource RadiusModal}"
+            Background="{DynamicResource Navy}"
+            BorderBrush="{DynamicResource SteelLight}"
+            BorderThickness="1"
+            BoxShadow="{DynamicResource ShadowModal}"
+            ClipToBounds="True">
+      <Grid RowDefinitions="Auto,*,Auto">
+
+        <StackPanel Grid.Row="0" Margin="28,24,28,16" Spacing="6">
+          <TextBlock Text="TEXTURES" Classes="micro" />
+          <TextBlock Text="Using OpenIV" Classes="h1" />
+          <TextBlock Classes="small" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap"
+                     Text="Three mods ship textures that go in through OpenIV rather than a file copy. Work down these once and you are done — Dispatch sets the files aside in your import folder ready to drag in." />
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" Padding="28,0">
+          <ItemsControl ItemsSource="{Binding OpenIvSteps}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:OpenIvStep">
+                <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,16">
+                  <Border Grid.Column="0" Width="34" Height="34" CornerRadius="17"
+                          Background="{DynamicResource GoldDim}" BorderBrush="{DynamicResource Gold}"
+                          BorderThickness="1" VerticalAlignment="Top" Margin="0,0,16,0">
+                    <TextBlock Text="{Binding Number}" Classes="h2" Foreground="{DynamicResource GoldBright}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="5">
+                    <TextBlock Text="{Binding Title}" Classes="h2" />
+                    <TextBlock Text="{Binding Detail}" Classes="small" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap" />
+                    <Border IsVisible="{Binding HasPath}" Padding="10,6" Margin="0,2,0,0"
+                            CornerRadius="{DynamicResource RadiusInput}"
+                            Background="{DynamicResource NavyDeep}"
+                            BorderBrush="{DynamicResource Steel}" BorderThickness="1"
+                            HorizontalAlignment="Left">
+                      <TextBlock Text="{Binding Path}" Classes="mono" FontSize="11"
+                                 Foreground="{DynamicResource BlueBright}" TextWrapping="Wrap" />
+                    </Border>
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="28,16,28,24">
+          <TextBlock Grid.Column="0" Classes="micro" VerticalAlignment="Center"
+                     Text="THE FILES ARE WAITING IN YOUR OPENIV IMPORT FOLDER" />
+          <Button Grid.Column="1" Classes="primary" Content="Got it"
+                  Command="{Binding CloseOpenIvHelpCommand}" />
+        </Grid>
+
+      </Grid>
     </Border>
   </Border>
 

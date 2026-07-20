@@ -56,6 +56,12 @@
   <SolidColorBrush x:Key="Amber" Color="{StaticResource AmberColor}" />
   <SolidColorBrush x:Key="Red" Color="{StaticResource RedColor}" />
 
+  <!-- Faint status tints for chips and cards, so the border carries the meaning
+       and the fill only colours the surface behind it. -->
+  <SolidColorBrush x:Key="AmberWash" Color="{StaticResource AmberColor}" Opacity="0.12" />
+  <SolidColorBrush x:Key="GreenWash" Color="{StaticResource GreenColor}" Opacity="0.14" />
+  <SolidColorBrush x:Key="RedWash" Color="{StaticResource RedColor}" Opacity="0.14" />
+
   <!-- Text. Body sits at 4.5:1 or better against Navy; Faint is for
        disabled and tertiary only, never for anything that must be read. -->
   <Color x:Key="TextColor">#E9EFF9</Color>
@@ -181,5 +187,9 @@
   -->
   <BoxShadows x:Key="ShadowRaised">0 2 10 0 #59060A12</BoxShadows>
   <BoxShadows x:Key="ShadowModal">0 18 48 0 #A6060A12</BoxShadows>
+
+  <!-- A green halo for the chosen setup card, pulsed so the selection is
+       impossible to miss. Green reads as "this is the one" against the navy. -->
+  <BoxShadows x:Key="GlowGreen">0 0 24 2 #803ECF8E</BoxShadows>
 
 </ResourceDictionary>

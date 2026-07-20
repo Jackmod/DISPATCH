@@ -108,4 +108,37 @@ public sealed class VersionReaderTests : IDisposable
             .And.Contain("ScriptHookV.dll")
             .And.Contain("RagePluginHook.exe");
     }
+
+    [Fact]
+    public void GTA5_exe_marks_the_folder_as_the_supported_Legacy_edition()
+    {
+        Given("GTA5.exe");
+
+        _reader.ReadEdition(_game).Should().Be(GameEdition.Legacy);
+        _reader.Read(_game).IsLegacy.Should().BeTrue();
+    }
+
+    [Fact]
+    public void The_Enhanced_executable_marks_the_folder_as_Enhanced()
+    {
+        // Enhanced ships a different executable and none of the mod stack runs on
+        // it, so it must be recognised as Enhanced rather than mistaken for Legacy.
+        Given("GTA5_Enhanced.exe");
+
+        _reader.ReadEdition(_game).Should().Be(GameEdition.Enhanced);
+        _reader.Read(_game).IsLegacy.Should().BeFalse();
+    }
+
+    [Fact]
+    public void A_folder_with_neither_executable_has_an_unknown_edition()
+    {
+        _reader.ReadEdition(_game).Should().Be(GameEdition.Unknown);
+    }
+
+    [Fact]
+    public void Edition_names_are_the_words_users_recognise()
+    {
+        VersionReader.EditionName(GameEdition.Legacy).Should().Be("Legacy");
+        VersionReader.EditionName(GameEdition.Enhanced).Should().Be("Enhanced");
+    }
 }

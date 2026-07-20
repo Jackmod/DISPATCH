@@ -94,17 +94,17 @@ public sealed class CommandPaletteViewModelTests
     }
 
     [AvaloniaFact]
-    public void Choosing_a_keybind_from_the_palette_navigates_to_controls_and_searches_it()
+    public void Choosing_a_keybind_from_the_palette_opens_the_settings_hub()
     {
-        // The launcher's job: land on the controls screen with the named action
-        // already filtered, so the palette drops the user on the exact row.
+        // Keybinds live inside the Settings hub now, so the palette drops the user
+        // on Settings (on the keybinds section) rather than a separate screen.
         var launcher = new LauncherViewModel();
         launcher.Palette.Open();
         launcher.Palette.Query = "arrest";
 
         launcher.Palette.ChooseSelected();
 
-        launcher.Current.Key.Should().Be("controls");
+        launcher.Current.Key.Should().Be("settings");
     }
 
     [AvaloniaFact]

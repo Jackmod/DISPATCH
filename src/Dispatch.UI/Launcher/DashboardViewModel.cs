@@ -1,8 +1,17 @@
+using System.Globalization;
+using System.IO;
+using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Dispatch.Core.Controls;
+using Dispatch.Core.Detection;
+using Dispatch.Core.Infrastructure;
+using Dispatch.Core.Maintenance;
 using Dispatch.Core.Profiles;
 using Dispatch.UI.Controls;
 using Dispatch.UI.Imagery;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Dispatch.UI.Launcher;
 
@@ -14,40 +23,97 @@ namespace Dispatch.UI.Launcher;
 public sealed record StatusTile(string Eyebrow, string Value, string Detail, StatusTone Tone);
 
 /// <summary>
-/// The dashboard: officer hero, a go-on-duty button, and a grid of status
-/// tiles.
+/// The dashboard: officer hero, a go-on-duty button, a grid of live status tiles,
+/// a repair pass, and any problems translated out of the game logs.
 /// </summary>
 /// <remarks>
-/// The tiles read from the install record and the game folder in the finished
-/// app. Until detection and the installer land they carry representative
-/// values, so the layout and the wording are settled before there is live data
-/// to hang on them.
+/// Everything reads from the install record, the game folder and the career log —
+/// the tiles show what is really installed, Repair hashes every placed file against
+/// the record to catch a launcher verification or an antivirus deletion, and the
+/// crash-log reader turns RagePluginHook's own phrasing into "this plugin failed,
+/// here is why" instead of a log file to squint at.
 /// </remarks>
 public sealed partial class DashboardViewModel : ObservableObject
 {
+    private readonly Core.Platform.IGameLauncher? _launcher;
+    private readonly IInstallRecordStore _records;
+    private readonly IVersionReader _versions;
+    private readonly IProfileStatsStore _stats;
+    private readonly IntegrityAuditor _auditor;
+    private readonly GameLogReader _logReader;
+    private readonly string? _gamePath;
+
+    private InstallRecord? _record;
+    private ProfileStats _career = new();
+
     /// <summary>Constructs the dashboard for an officer.</summary>
-    public DashboardViewModel(OfficerProfile? officer = null)
+    public DashboardViewModel(
+        OfficerProfile? officer = null,
+        IGameBuildWatch? buildWatch = null,
+        string? gamePath = null,
+        Core.Platform.IGameLauncher? launcher = null,
+        IInstallRecordStore? records = null,
+        IVersionReader? versions = null,
+        IProfileStatsStore? stats = null,
+        IAppPaths? paths = null)
     {
         Officer = officer;
+        _launcher = launcher;
+        _gamePath = gamePath;
 
-        var conflicts = ConflictDetector.Detect(ControlCatalogue.Bind(ControlCatalogue.Suggested)).Count;
+        var appPaths = paths ?? new AppPaths();
+        _records = records ?? new InstallRecordStore(appPaths, NullLogger<InstallRecordStore>.Instance);
+        _versions = versions ?? new VersionReader(NullLogger<VersionReader>.Instance);
+        _stats = stats ?? new ProfileStatsStore(appPaths);
+        _auditor = new IntegrityAuditor();
+        _logReader = new GameLogReader();
 
-        Tiles =
-        [
-            new StatusTile("GAME BUILD", "1.0.3725", "Matches your install", StatusTone.Good),
-            new StatusTile("SCRIPT HOOK V", "1.0.3521.0", "Compatible", StatusTone.Good),
-            new StatusTile("RAGEPLUGINHOOK", "1.114", "Loaded", StatusTone.Good),
-            new StatusTile("LSPDFR", "0.4.9", "Loaded", StatusTone.Good),
-            new StatusTile("PLUGINS", "40 installed", "None errored last session", StatusTone.Neutral),
-            new StatusTile(
-                "KEYBINDS",
-                conflicts == 0 ? "No conflicts" : $"{conflicts} conflicts",
-                "Suggested scheme",
-                conflicts == 0 ? StatusTone.Good : StatusTone.Bad),
-            new StatusTile("LAST SESSION", "1h 12m", "6 callouts · 4 arrests · 2 pursuits", StatusTone.Neutral),
-            new StatusTile("HEALTH", "All good", "Last audit passed", StatusTone.Good),
-        ];
+        Tiles = BuildTiles();
+
+        if (buildWatch is not null && !string.IsNullOrWhiteSpace(gamePath))
+        {
+            _ = CheckBuildAsync(buildWatch, gamePath);
+        }
     }
+
+    /// <summary>The live status tiles.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<StatusTile> _tiles;
+
+    /// <summary>The game-build comparison, once it has run. Null until then.</summary>
+    [ObservableProperty]
+    private ScriptHookStatus? _buildStatus;
+
+    /// <summary>Whether an audit is running.</summary>
+    [ObservableProperty]
+    private bool _isAuditing;
+
+    /// <summary>The last audit's verdict, or null before one has run.</summary>
+    [ObservableProperty]
+    private string? _auditVerdict;
+
+    /// <summary>The last audit's findings.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<AuditFinding> _auditFindings = [];
+
+    /// <summary>Problems translated out of the game logs.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<LogFinding> _logFindings = [];
+
+    /// <summary>Whether an audit report is showing.</summary>
+    public bool HasAudit => AuditFindings.Count > 0;
+
+    /// <summary>Whether the crash-log reader found anything.</summary>
+    public bool HasLogFindings => LogFindings.Count > 0;
+
+    /// <summary>Whether to show the "your game updated" banner.</summary>
+    public bool ShowUpdateAlert => BuildStatus?.NeedsUpdate == true;
+
+    /// <summary>Alert headline.</summary>
+    public string AlertHeadline => BuildStatus?.Headline ?? string.Empty;
+
+    /// <summary>Alert explanation.</summary>
+    public string AlertDetail => BuildStatus?.Detail ?? string.Empty;
 
     /// <summary>The officer on duty.</summary>
     public OfficerProfile? Officer { get; }
@@ -61,18 +127,192 @@ public sealed partial class DashboardViewModel : ObservableObject
     /// <summary>Agency code.</summary>
     public string Agency => Officer?.AgencyCode ?? "LSPD";
 
-    /// <summary>The status tiles.</summary>
-    public IReadOnlyList<StatusTile> Tiles { get; }
-
     /// <summary>A backdrop photograph, if any are compiled in.</summary>
     public Avalonia.Media.IImage? Hero { get; } = ImageCatalog.For("dashboard", 0);
 
     /// <summary>True when there is a hero photograph.</summary>
     public bool HasHero => Hero is not null;
+
+    /// <summary>Whether going on duty can actually launch anything.</summary>
+    public bool CanGoOnDuty => _launcher?.IsAvailable == true && !string.IsNullOrWhiteSpace(_gamePath);
+
+    private bool _loaded;
+
+    /// <summary>Loads once, on first appearance; repeat visits are free.</summary>
+    public async Task EnsureLoadedAsync()
+    {
+        if (_loaded)
+        {
+            return;
+        }
+
+        _loaded = true;
+        await LoadAsync().ConfigureAwait(true);
+    }
+
+    /// <summary>Loads the real install record, career and any logged problems.</summary>
+    public async Task LoadAsync()
+    {
+        _record = await _records.LoadAsync().ConfigureAwait(true);
+        _career = await _stats.LoadAsync().ConfigureAwait(true);
+        Tiles = BuildTiles();
+
+        ReadCrashLogs();
+    }
+
+    /// <summary>
+    /// Runs the integrity audit: hashes every placed file against the record and
+    /// names anything a Rockstar update or antivirus removed.
+    /// </summary>
+    [RelayCommand]
+    private async Task RunAuditAsync()
+    {
+        if (IsAuditing)
+        {
+            return;
+        }
+
+        IsAuditing = true;
+        try
+        {
+            _record ??= await _records.LoadAsync().ConfigureAwait(true);
+
+            if (_record is null || !_record.IsInstalled || string.IsNullOrWhiteSpace(_gamePath))
+            {
+                AuditFindings = [new AuditFinding(AuditSeverity.Ok, "Nothing installed yet",
+                    "Run the installer, then Repair can verify every placed file.")];
+                AuditVerdict = "Nothing to check";
+            }
+            else
+            {
+                var currentBuild = _versions.Read(_gamePath).GameBuild;
+                var report = await _auditor.AuditAsync(_gamePath, _record, currentBuild).ConfigureAwait(true);
+                AuditFindings = report.Findings;
+                AuditVerdict = report.Verdict;
+            }
+
+            OnPropertyChanged(nameof(HasAudit));
+            Tiles = BuildTiles();
+        }
+        finally
+        {
+            IsAuditing = false;
+        }
+    }
+
+    /// <summary>Starts RagePluginHook. Returns false when it could not be launched.</summary>
+    public bool GoOnDuty() =>
+        _launcher is not null
+        && !string.IsNullOrWhiteSpace(_gamePath)
+        && _launcher.LaunchRagePluginHook(_gamePath);
+
+    private void ReadCrashLogs()
+    {
+        if (string.IsNullOrWhiteSpace(_gamePath))
+        {
+            return;
+        }
+
+        var findings = new List<LogFinding>();
+        foreach (var name in new[] { "RagePluginHook.log", "LSPDFR.log" })
+        {
+            var path = Path.Combine(_gamePath, name);
+            if (!File.Exists(path))
+            {
+                continue;
+            }
+
+            try
+            {
+                findings.AddRange(_logReader.Translate(File.ReadAllText(path)));
+            }
+            catch (IOException)
+            {
+                // A log held open by a running game is not worth failing over.
+            }
+        }
+
+        LogFindings = findings;
+        OnPropertyChanged(nameof(HasLogFindings));
+    }
+
+    private IReadOnlyList<StatusTile> BuildTiles()
+    {
+        var conflicts = ConflictDetector.Detect(ControlCatalogue.Bind(ControlCatalogue.Suggested)).Count;
+        var tiles = new List<StatusTile>();
+
+        if (_record is { IsInstalled: true } record)
+        {
+            tiles.Add(new StatusTile("GAME BUILD", record.GameBuild ?? "Unknown",
+                BuildDetail(), BuildTone()));
+            tiles.Add(new StatusTile("MODS", record.ModIds.Count.ToString(CultureInfo.InvariantCulture),
+                $"{record.Files.Count} files placed", StatusTone.Neutral));
+            tiles.Add(new StatusTile("INSTALLED",
+                record.InstalledAt.ToLocalTime().ToString("d MMM yyyy", CultureInfo.InvariantCulture),
+                string.IsNullOrWhiteSpace(record.PresetId) ? "Custom selection" : record.PresetId,
+                StatusTone.Neutral));
+        }
+        else
+        {
+            tiles.Add(new StatusTile("SETUP", "Not installed", "Run the installer to begin", StatusTone.Neutral));
+        }
+
+        tiles.Add(new StatusTile("KEYBINDS",
+            conflicts == 0 ? "No conflicts" : $"{conflicts} conflicts",
+            "Suggested scheme",
+            conflicts == 0 ? StatusTone.Good : StatusTone.Bad));
+
+        if (_career.LastSession is { } last)
+        {
+            tiles.Add(new StatusTile("LAST SESSION", $"{(int)last.Minutes}m",
+                $"{last.Callouts} callouts · {last.Arrests} arrests · {last.Pursuits} pursuits",
+                StatusTone.Neutral));
+        }
+        else
+        {
+            tiles.Add(new StatusTile("CAREER", $"{_career.TotalHours}h",
+                $"{_career.SessionCount} shift(s) on record", StatusTone.Neutral));
+        }
+
+        tiles.Add(new StatusTile("HEALTH",
+            AuditVerdict ?? "Not checked",
+            AuditVerdict is null ? "Run a repair check" : $"{AuditFindings.Count} finding(s)",
+            AuditVerdict switch
+            {
+                "All good" => StatusTone.Good,
+                "Problems found" => StatusTone.Bad,
+                "Needs attention" => StatusTone.Warning,
+                _ => StatusTone.Neutral,
+            }));
+
+        return tiles;
+    }
+
+    private string BuildDetail() => BuildStatus?.State switch
+    {
+        GameBuildState.GameUpdated => "Game updated — Script Hook outdated",
+        GameBuildState.UpToDate => "Matches your install",
+        _ => "Installed against this build",
+    };
+
+    private StatusTone BuildTone() => BuildStatus?.State switch
+    {
+        GameBuildState.GameUpdated => StatusTone.Bad,
+        GameBuildState.UpToDate => StatusTone.Good,
+        _ => StatusTone.Neutral,
+    };
+
+    private async Task CheckBuildAsync(IGameBuildWatch watch, string gamePath)
+    {
+        var status = await watch.CheckAsync(gamePath).ConfigureAwait(true);
+        Dispatcher.UIThread.Post(() => BuildStatus = status);
+    }
+
+    partial void OnBuildStatusChanged(ScriptHookStatus? value)
+    {
+        OnPropertyChanged(nameof(ShowUpdateAlert));
+        OnPropertyChanged(nameof(AlertHeadline));
+        OnPropertyChanged(nameof(AlertDetail));
+        Tiles = BuildTiles();
+    }
 }
-
-/// <summary>Placeholder for the Mods section until it is built.</summary>
-public sealed class ModsViewModel;
-
-/// <summary>Placeholder for the Settings section until it is built.</summary>
-public sealed class SettingsViewModel;

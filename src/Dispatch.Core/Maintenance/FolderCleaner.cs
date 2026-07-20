@@ -87,6 +87,29 @@ public sealed class FolderCleaner
         "plugins", "scripts", "lspdfr", "mods", "ragepluginhook",
     };
 
+    /// <summary>
+    /// Loaders and tools universally known to be mods when found at the game
+    /// root, so they can be recognised even when Dispatch did not install them.
+    /// </summary>
+    /// <remarks>
+    /// The game root is the one place stock files and mod files sit side by side —
+    /// a loose <c>.dll</c> there is as likely to be a graphics or launcher library
+    /// as a mod. So only files on this list are treated as mods at the root; every
+    /// other unrecognised root file is left for the user to judge rather than
+    /// preselected. This is the difference between offering to remove
+    /// <c>ScriptHookV.dll</c> and offering to remove <c>libcurl.dll</c>.
+    /// </remarks>
+    private static readonly HashSet<string> KnownRootModFiles = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "dinput8.dll", "scripthookv.dll", "scripthookv.ini",
+        "scripthookvdotnet.asi", "scripthookvdotnet2.dll", "scripthookvdotnet3.dll",
+        "scripthookvdotnet.ini", "scripthookvdotnet.json",
+        "openiv.asi", "asiloader.dll", "packfilelimitadjuster.asi",
+        "trainerv.asi", "trainerv.ini", "nativetrainer.asi", "menyoo.asi",
+        "ragenativeui.dll", "ragepluginhook.exe", "rageplugin.hook.exe",
+        "iplloader.asi", "gtavlauncher_orig.exe", "community_races.asi",
+    };
+
     /// <summary>Constructs the cleaner.</summary>
     /// <param name="logger">Diagnostics.</param>
     /// <param name="knownModFiles">
@@ -201,10 +224,21 @@ public sealed class FolderCleaner
             return CleanTier.Likely;
         }
 
+        // A loose file at the root is only treated as a mod when it is one of the
+        // loaders everyone recognises. Every other unrecognised root file is left
+        // Unknown, because the root also holds stock game and launcher libraries
+        // that must never be preselected for removal.
         if (segments.Length == 1 && ModExtensions.Contains(extension))
         {
-            reason = $"A loose {extension} at the game root, which is where mods load from.";
-            return CleanTier.Likely;
+            if (KnownRootModFiles.Contains(segments[0]))
+            {
+                reason = "A known mod loader or tool at the game root.";
+                return CleanTier.Likely;
+            }
+
+            reason = "A loose file at the game root, where stock game files also live. "
+                     + "Dispatch will not guess — decide for yourself.";
+            return CleanTier.Unknown;
         }
 
         reason = "Not part of a stock install, and not recognised. Dispatch will not guess.";

@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="clr-namespace:Dispatch.UI.Controls"
              xmlns:vm="clr-namespace:Dispatch.UI.Launcher"
+             xmlns:mnt="clr-namespace:Dispatch.Core.Maintenance;assembly=Dispatch.Core"
              x:Class="Dispatch.UI.Launcher.DashboardView"
              x:DataType="vm:DashboardViewModel">
 
@@ -42,7 +43,8 @@
                 </StackPanel>
               </StackPanel>
 
-              <Button Grid.Column="1" Classes="primary" VerticalAlignment="Center" Padding="24,14">
+              <Button Grid.Column="1" Classes="primary" VerticalAlignment="Center" Padding="24,14"
+                      Name="GoOnDutyButton">
                 <StackPanel Orientation="Horizontal" Spacing="10">
                   <c:Icon Data="{StaticResource IconPlay}" Foreground="{DynamicResource Ink}" />
                   <TextBlock Text="Go on duty" VerticalAlignment="Center" FontSize="15" />
@@ -50,6 +52,34 @@
               </Button>
             </Grid>
           </Panel>
+        </Border>
+
+        <!-- ===== Game-update alert ============================= -->
+        <!-- The single most common way a working setup dies: Rockstar patched the
+             game and Script Hook V no longer matches. Shown only when detected. -->
+        <Border IsVisible="{Binding ShowUpdateAlert}"
+                Padding="22,18"
+                CornerRadius="{DynamicResource RadiusCard}"
+                Background="{DynamicResource GlassSurface}"
+                BorderBrush="{DynamicResource GlassBorderGold}"
+                BorderThickness="1.5">
+          <Grid ColumnDefinitions="Auto,*,Auto" >
+            <Border Grid.Column="0"
+                    Width="40" Height="40" CornerRadius="20"
+                    Background="{DynamicResource GoldDim}"
+                    VerticalAlignment="Top" Margin="0,0,16,0">
+              <c:Icon Data="{StaticResource IconClean}" Foreground="{DynamicResource Gold}"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Grid.Column="1" Spacing="5" VerticalAlignment="Center">
+              <TextBlock Text="{Binding AlertHeadline}" Classes="h2" Foreground="{DynamicResource Gold}" />
+              <TextBlock Text="{Binding AlertDetail}" Classes="small muted" TextWrapping="Wrap" MaxWidth="720" />
+            </StackPanel>
+            <Button Grid.Column="2" Classes="primary" VerticalAlignment="Center"
+                    Name="UpdateScriptHookButton" Padding="18,12">
+              <TextBlock Text="Fix it" VerticalAlignment="Center" />
+            </Button>
+          </Grid>
         </Border>
 
         <!-- ===== Status grid =================================== -->
@@ -82,6 +112,81 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
+
+        <!-- ===== System health / repair ======================= -->
+        <Border Padding="24"
+                CornerRadius="{DynamicResource RadiusCard}"
+                Background="{DynamicResource GlassSurface}"
+                BorderBrush="{DynamicResource GlassBorder}"
+                BorderThickness="1">
+          <StackPanel Spacing="14">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+                <TextBlock Text="System health" Classes="h1" />
+                <TextBlock Classes="small" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap"
+                           Text="Verify every installed file against the record. Catches a Steam/Epic verification or an antivirus deletion that silently wiped your mods." />
+              </StackPanel>
+              <Button Grid.Column="1" Classes="primary" VerticalAlignment="Center"
+                      Command="{Binding RunAuditCommand}"
+                      IsEnabled="{Binding !IsAuditing}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <c:Icon Data="{StaticResource IconRefresh}" Size="16" Foreground="{DynamicResource Ink}" />
+                  <TextBlock Text="Repair / Verify" VerticalAlignment="Center"
+                             IsVisible="{Binding !IsAuditing}" />
+                  <TextBlock Text="Checking…" VerticalAlignment="Center"
+                             IsVisible="{Binding IsAuditing}" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <ItemsControl ItemsSource="{Binding AuditFindings}" IsVisible="{Binding HasAudit}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="mnt:AuditFinding">
+                  <Border Margin="0,0,0,8" Padding="14,12"
+                          CornerRadius="{DynamicResource RadiusInput}"
+                          Background="{DynamicResource NavyDeep}"
+                          BorderBrush="{DynamicResource Steel}" BorderThickness="1">
+                    <Grid ColumnDefinitions="Auto,*">
+                      <Border Grid.Column="0" Width="4" CornerRadius="2" Margin="0,0,12,0"
+                              Background="{Binding Severity, Converter={StaticResource SeverityToBrush}}" />
+                      <StackPanel Grid.Column="1" Spacing="3">
+                        <TextBlock Text="{Binding Title}" Classes="h2" />
+                        <TextBlock Text="{Binding Detail}" Classes="small" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <!-- ===== From your logs =============================== -->
+        <Border Padding="24"
+                IsVisible="{Binding HasLogFindings}"
+                CornerRadius="{DynamicResource RadiusCard}"
+                Background="{DynamicResource GlassSurface}"
+                BorderBrush="{DynamicResource GlassBorderGold}"
+                BorderThickness="1.5">
+          <StackPanel Spacing="12">
+            <TextBlock Text="From your last session's logs" Classes="h1" />
+            <ItemsControl ItemsSource="{Binding LogFindings}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="mnt:LogFinding">
+                  <Border Margin="0,0,0,8" Padding="14,12"
+                          CornerRadius="{DynamicResource RadiusInput}"
+                          Background="{DynamicResource NavyDeep}"
+                          BorderBrush="{DynamicResource Steel}" BorderThickness="1">
+                    <StackPanel Spacing="3">
+                      <TextBlock Text="{Binding Title}" Classes="h2" Foreground="{DynamicResource Gold}" />
+                      <TextBlock Text="{Binding Explanation}" Classes="small" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
 
       </StackPanel>
     </ScrollViewer>

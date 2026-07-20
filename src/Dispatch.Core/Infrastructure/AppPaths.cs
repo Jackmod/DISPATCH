@@ -27,6 +27,20 @@ public interface IAppPaths
     /// <summary>Downloaded mod archives, kept so a repair needs no network.</summary>
     string ArchivesDirectory { get; }
 
+    /// <summary>
+    /// User-supplied mod archives for the sources that cannot be fetched
+    /// automatically — LSPDFR and the lcpdfr/gta5-mods plugins. Dropped here
+    /// once, they install without a network round-trip.
+    /// </summary>
+    string ModPackDirectory { get; }
+
+    /// <summary>
+    /// Files that must be imported through OpenIV rather than copied into the game
+    /// folder — textures and RPF content. The installer sets them aside here,
+    /// organised by mod, for the user to bring in by hand.
+    /// </summary>
+    string OpenIvImportDirectory { get; }
+
     /// <summary>Rolling Serilog output.</summary>
     string LogsDirectory { get; }
 
@@ -41,8 +55,21 @@ public interface IAppPaths
 public sealed class AppPaths : IAppPaths
 {
     private const string AppFolderName = "Dispatch";
+    private const string DesktopImportFolderName = "Dispatch OpenIV Import";
 
-    /// <summary>Uses the current user's local application data and temp directories.</summary>
+    private readonly string _openIvImport;
+
+    /// <summary>
+    /// Keeps the machinery — logs, backups, quarantine, journals — in the usual
+    /// hidden <c>%LOCALAPPDATA%</c>, but puts the one folder the user has to work
+    /// with by hand, the OpenIV import set, on the Desktop for quick access.
+    /// </summary>
+    /// <remarks>
+    /// Backups and journals live where they cannot be deleted by accident; the
+    /// import folder lives where it cannot be missed. A clearly named Desktop
+    /// folder rather than the whole working directory keeps the desktop tidy and
+    /// avoids colliding with a folder that happens to share the app's name.
+    /// </remarks>
     public AppPaths()
         : this(
             Path.Combine(
@@ -50,18 +77,30 @@ public sealed class AppPaths : IAppPaths
                     Environment.SpecialFolder.LocalApplicationData,
                     Environment.SpecialFolderOption.DoNotVerify),
                 AppFolderName),
-            Path.Combine(Path.GetTempPath(), AppFolderName))
+            Path.Combine(Path.GetTempPath(), AppFolderName),
+            Path.Combine(
+                Environment.GetFolderPath(
+                    Environment.SpecialFolder.DesktopDirectory,
+                    Environment.SpecialFolderOption.DoNotVerify),
+                DesktopImportFolderName))
     {
     }
 
-    /// <summary>Roots both trees explicitly. Tests use this to stay inside a temp directory.</summary>
-    public AppPaths(string root, string tempRoot)
+    /// <summary>Roots the trees explicitly. Tests use this to stay inside a temp directory.</summary>
+    /// <param name="root">The working-data root.</param>
+    /// <param name="tempRoot">The temp root for staging.</param>
+    /// <param name="openIvImport">
+    /// Where OpenIV files are set aside. Null keeps them under <paramref name="root"/>,
+    /// which is what tests want; production points this at the Desktop.
+    /// </param>
+    public AppPaths(string root, string tempRoot, string? openIvImport = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(root);
         ArgumentException.ThrowIfNullOrWhiteSpace(tempRoot);
 
         Root = root;
         StagingRoot = Path.Combine(tempRoot, "staging");
+        _openIvImport = openIvImport ?? Path.Combine(root, "OpenIV Import");
     }
 
     /// <inheritdoc />
@@ -89,6 +128,12 @@ public sealed class AppPaths : IAppPaths
     public string ArchivesDirectory => Path.Combine(Root, "archives");
 
     /// <inheritdoc />
+    public string ModPackDirectory => Path.Combine(Root, "modpack");
+
+    /// <inheritdoc />
+    public string OpenIvImportDirectory => _openIvImport;
+
+    /// <inheritdoc />
     public string LogsDirectory => Path.Combine(Root, "logs");
 
     /// <inheritdoc />
@@ -101,6 +146,8 @@ public sealed class AppPaths : IAppPaths
                      BackupsDirectory,
                      QuarantineDirectory,
                      ArchivesDirectory,
+                     ModPackDirectory,
+                     OpenIvImportDirectory,
                      LogsDirectory,
                      StagingRoot,
                  })

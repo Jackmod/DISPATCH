@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="clr-namespace:Dispatch.UI.Controls"
              xmlns:steps="clr-namespace:Dispatch.UI.Wizard.Steps"
+             xmlns:launcher="clr-namespace:Dispatch.UI.Launcher"
              x:Class="Dispatch.UI.Wizard.Views.LocateGameView"
              x:DataType="steps:LocateGameStep">
 
@@ -108,10 +109,24 @@
 
                 <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <TextBlock Text="{Binding Platform}" Classes="h2" />
+                    <TextBlock Text="{Binding Platform}" Classes="h2" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding Build, StringFormat='build {0}'}"
                                Classes="mono"
                                VerticalAlignment="Center" />
+
+                    <!-- Edition chip: green for the supported Legacy, red for Enhanced. -->
+                    <Border VerticalAlignment="Center" Padding="8,3" CornerRadius="6"
+                            IsVisible="{Binding IsLegacyEdition}"
+                            Background="{DynamicResource GreenWash}"
+                            BorderBrush="{DynamicResource Green}" BorderThickness="1">
+                      <TextBlock Text="LEGACY" Classes="micro" Foreground="{DynamicResource Green}" />
+                    </Border>
+                    <Border VerticalAlignment="Center" Padding="8,3" CornerRadius="6"
+                            IsVisible="{Binding IsEnhancedEdition}"
+                            Background="{DynamicResource RedWash}"
+                            BorderBrush="{DynamicResource Red}" BorderThickness="1">
+                      <TextBlock Text="ENHANCED" Classes="micro" Foreground="{DynamicResource Red}" />
+                    </Border>
                   </StackPanel>
                   <TextBlock Text="{Binding Path}" Classes="mono" TextTrimming="CharacterEllipsis" />
                   <TextBlock Text="{Binding StateDetail}" Classes="small" TextWrapping="Wrap" />
@@ -124,7 +139,7 @@
         </ListBox>
 
         <StackPanel Orientation="Horizontal" Spacing="12">
-          <Button Classes="secondary">
+          <Button Classes="secondary" Click="OnBrowse">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <c:Icon Data="{StaticResource IconFolder}" Size="16" />
               <TextBlock Text="Browse for another folder" VerticalAlignment="Center" />
@@ -134,13 +149,88 @@
           <!-- The cleaner lives here and nowhere else. It only makes sense
                against a chosen folder, and offering it mid-install would be
                offering to delete the files being written. -->
-          <Button Classes="ghost">
+          <Button Classes="ghost" Click="OnClean">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <c:Icon Data="{StaticResource IconClean}" Size="16" />
               <TextBlock Text="Clean GTA folder" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
         </StackPanel>
+
+        <!-- ===== Verify game files (required before continuing) ===== -->
+        <Border Margin="0,8,0,0"
+                Padding="24,20"
+                CornerRadius="{DynamicResource RadiusCard}"
+                Background="{DynamicResource GlassSurface}"
+                BorderBrush="{DynamicResource GlassBorderGold}"
+                BorderThickness="1">
+          <StackPanel Spacing="14">
+
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <c:Icon Data="{StaticResource IconClean}" Size="18" Foreground="{DynamicResource Gold}" />
+              <TextBlock Text="First, verify your game files" Classes="h2" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <TextBlock Classes="body muted" TextWrapping="Wrap"
+                       Text="This repairs anything missing or altered so mods install onto a clean, known-good copy. Skipping it causes a large share of the crashes that are impossible to diagnose later. It only takes a few minutes." />
+
+            <TextBlock Classes="small"
+                       Text="{Binding VerifyPlatform, StringFormat='In {0}:'}" />
+
+            <ItemsControl ItemsSource="{Binding VerifySteps}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="steps:VerifyStep">
+                  <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,10">
+                    <Border Grid.Column="0"
+                            Width="22" Height="22"
+                            CornerRadius="11"
+                            Background="{DynamicResource BlueDim}"
+                            VerticalAlignment="Top"
+                            Margin="0,0,12,0">
+                      <TextBlock Text="{Binding Number}"
+                                 Classes="micro"
+                                 Foreground="{DynamicResource Blue}"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding Text}"
+                               Classes="body"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Center" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <CheckBox IsChecked="{Binding IntegrityVerified}"
+                      Content="I've verified my game files"
+                      Margin="0,4,0,0" />
+
+          </StackPanel>
+        </Border>
+
+        <!-- ===== Defender exclusion (optional but recommended) ===== -->
+        <Border IsVisible="{Binding ShowDefenderOffer}"
+                Padding="24,20"
+                CornerRadius="{DynamicResource RadiusCard}"
+                Background="{DynamicResource GlassSurface}"
+                BorderBrush="{DynamicResource GlassBorder}"
+                BorderThickness="1">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Spacing="5" VerticalAlignment="Center" Margin="0,0,16,0">
+              <TextBlock Text="Protect the mods from Windows Defender" Classes="h2" />
+              <TextBlock Text="{Binding DefenderStatus}" Classes="small muted" TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Grid.Column="1"
+                    Classes="secondary"
+                    VerticalAlignment="Center"
+                    Content="Add exclusion"
+                    Name="DefenderButton"
+                    IsEnabled="{Binding !DefenderBusy}"
+                    IsVisible="{Binding !DefenderDone}" />
+          </Grid>
+        </Border>
 
       </StackPanel>
     </ScrollViewer>
@@ -169,7 +259,8 @@
 
         <Button Grid.Column="2"
                 Classes="secondary"
-                IsVisible="{Binding ShowCleanOffer}">
+                IsVisible="{Binding ShowCleanOffer}"
+                Click="OnClean">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <c:Icon Data="{StaticResource IconClean}" Size="16" />
             <TextBlock Text="Clean it first" VerticalAlignment="Center" />
@@ -178,6 +269,14 @@
 
       </Grid>
     </Border>
+
+    <!-- The folder cleaner, shown over the whole screen when opened. It carries
+         its own scrim and close button; the code-behind relays its close. The
+         wrapper keeps the step as its data context so IsCleanerOpen resolves,
+         while the view itself binds to the cleaner view model. -->
+    <Panel Grid.Row="0" Grid.RowSpan="3" IsVisible="{Binding IsCleanerOpen}">
+      <launcher:CleanerView x:Name="CleanerOverlay" DataContext="{Binding Cleaner}" />
+    </Panel>
 
   </Grid>
 

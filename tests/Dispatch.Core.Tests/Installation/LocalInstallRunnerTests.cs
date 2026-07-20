@@ -101,26 +101,28 @@ public sealed class LocalInstallRunnerTests : IDisposable
     public async Task Folder_contents_land_at_the_destination()
     {
         // Charges & Citations goes to plugins/lspdfr/Compulite.
-        var compulite = Stage("compulite", ("config.ini", "settings"), ("Compulite.dll", "code"));
+        var charges = Stage("charges", ("config.ini", "settings"), ("citations.xml", "data"));
 
-        await _runner.RunAsync("run-1", _game, "full-duty", "1.0.3725", [compulite]);
+        await _runner.RunAsync("run-1", _game, "full-duty", "1.0.3725", [charges]);
 
         InGame("plugins/lspdfr/Compulite/config.ini").Should().BeTrue();
-        InGame("plugins/lspdfr/Compulite/Compulite.dll").Should().BeTrue();
+        InGame("plugins/lspdfr/Compulite/citations.xml").Should().BeTrue();
     }
 
     [Fact]
     public async Task A_bundled_ragenativeui_is_stripped_before_placement()
     {
         // Grammar Police ships its own RageNativeUI; the root copy must win, so
-        // the bundled one is stripped and never placed.
+        // the bundled one is stripped and never placed. Its archive nests its
+        // folders under a "Grand Theft Auto V" folder, which is its content root.
         var grammar = Stage("grammarpolice",
-            ("GrammarPolice.dll", "code"), ("RageNativeUI.dll", "stale bundled copy"));
+            ("Grand Theft Auto V/plugins/GrammarPolice.dll", "code"),
+            ("Grand Theft Auto V/plugins/RageNativeUI.dll", "stale bundled copy"));
 
         await _runner.RunAsync("run-1", _game, "full-duty", "1.0.3725", [grammar]);
 
-        InGame("GrammarPolice.dll").Should().BeTrue();
-        InGame("RageNativeUI.dll").Should().BeFalse("the bundled copy is stripped");
+        InGame("plugins/GrammarPolice.dll").Should().BeTrue();
+        InGame("plugins/RageNativeUI.dll").Should().BeFalse("the bundled copy is stripped");
     }
 
     [Fact]

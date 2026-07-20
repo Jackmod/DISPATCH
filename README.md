@@ -11,7 +11,8 @@
 <br>
 
 [![Build](https://img.shields.io/github/actions/workflow/status/Jackmod/dispatch/ci.yml?branch=main&style=for-the-badge&labelColor=0B1220&color=E8B44A&label=BUILD)](../../actions)
-[![Tests](https://img.shields.io/badge/TESTS-396%20passing-3ECF8E?style=for-the-badge&labelColor=0B1220)](../../actions)
+[![Tests](https://img.shields.io/badge/TESTS-556%20passing-3ECF8E?style=for-the-badge&labelColor=0B1220)](../../actions)
+[![Edition](https://img.shields.io/badge/GTA%20V-LEGACY%20ONLY-3ECF8E?style=for-the-badge&labelColor=0B1220)](#)
 [![.NET](https://img.shields.io/badge/.NET-8.0-4C8DFF?style=for-the-badge&labelColor=0B1220)](https://dotnet.microsoft.com)
 [![Platform](https://img.shields.io/badge/WINDOWS-10%2F11-93A6C4?style=for-the-badge&labelColor=0B1220)](#)
 
@@ -65,33 +66,41 @@ Then it stays on as the launcher and control panel for the setup it built.
 ## Status
 
 > [!IMPORTANT]
-> **The wizard install is still a simulation, and nothing writes to a real
-> game folder in normal use.** The placement engine underneath it *is* real
-> and fully tested — it backs up, journals, verifies and rolls back to a
-> byte-identical state — but it only runs against temp fixtures, because the
-> acquisition layer that would feed it real downloaded mods is not built yet.
-> Running Dispatch today is completely safe: it will not touch your game.
+> **GTA V Legacy only.** LSPDFR, RagePluginHook and Script Hook V do not run on
+> the 2025 Enhanced edition. Dispatch detects the edition from the executable and
+> refuses to install onto Enhanced, so the whole flow is Legacy end to end.
+
+> [!NOTE]
+> The install is **real and wired**: acquisition feeds the placement engine, which
+> backs up, journals, hash-verifies and can roll back to a byte-identical state.
+> `--offline` performs a complete real install sourced entirely from the bundled
+> pack with no network; `--demo` runs a write-nothing simulation. Every file
+> placement in the pack is verified by running the real engine over each archive.
+> The one thing only you can confirm is that the mods *load* — that needs a real
+> game launch.
 
 | Stage | | |
 |---|---|---|
-| Solution, DI, logging | âœ… | Four projects, Serilog, warnings-as-errors |
-| Design system | âœ… | Palette, type scale, motion, 30 hand-drawn icons, gallery |
-| Intro animation | âœ… | Scan sweep, wordmark draw-on, patrol lights |
-| Wizard | âœ… | Six full-bleed screens, end to end |
-| Install simulation | âœ… | Seven phases, live log, completion report |
-| Profiles + persistence | âœ… | Atomic writes, schema migration, corrupt-file quarantine |
-| Key translation | âœ… | Per-mod dialects, both directions |
-| Conflict detection | âœ… | Modifier layers, per-device, free-key suggestions |
+| Solution, DI, logging | ✅ | Four projects, Serilog, warnings-as-errors |
+| Design system | ✅ | Palette, type scale, motion, 30 hand-drawn icons, gallery |
+| Intro animation | ✅ | Siren-length, unskippable, plays every launch |
+| Wizard | ✅ | Full-bleed screens, Legacy-aware, end to end |
+| Install run | ✅ | Real placement, phases, live log, elapsed/remaining, report |
+| Profiles + persistence | ✅ | Atomic writes, schema migration, corrupt-file quarantine |
+| Key translation | ✅ | Per-mod dialects, both directions |
+| Conflict detection | ✅ | Modifier layers, per-device, free-key suggestions |
 | Config engine | ✅ | Comment-preserving ini, byte-exact round trips |
 | Controls screen | ✅ | Keyboard map, capture, conflict resolution, staged diffs |
 | Launcher | ✅ | Nav rail, dashboard, command palette, empty states |
-| Game detection | ✅ | Steam VDF, Epic manifests, version reader |
-| Folder cleaner | ✅ | Scanner, three-tier modal, quarantine with byte-identical restore |
+| Game detection | ✅ | Steam VDF, Epic manifests, version + edition reader |
+| Folder cleaner | ✅ | Install-record aware, staged modal, quarantine with byte-identical restore |
 | Resilience layer | ✅ | Journal, staging, preflight, retry, error catalogue |
 | Install engine | ✅ | Catalogue-driven placement, backup, reversible rollback |
+| Acquisition | ✅ | Bundled pack, GitHub releases, direct HTTP; offline mode |
+| Mod pack | ✅ | ~70 mods across three tiers, every placement verified by the real engine |
+| OpenIV hand-off | ✅ | .oiv / DLC / map mods set aside to an import folder with a walkthrough |
 | Audit + log translation | ✅ | Integrity, compatibility, plain-English log findings |
-| Acquisition | ⬜ | GitHub, direct HTTP, embedded browser |
-| Wire acquisition to the engine | ⬜ | Real unattended install, OpenIV, Defender |
+| In-game verified | ⬜ | Only a real launch confirms the mods load — that part is on you |
 
 ---
 
@@ -105,7 +114,8 @@ cd dispatch
 
 Requires the **.NET 8 or 10 SDK**. The helper script finds `dotnet` even when
 your shell's PATH is stale, closes any running instance before building, and
-takes `build`, `test`, `run`, `watch` or `clean`.
+takes `build`, `test`, `run`, `demo` (write-nothing simulation), `offline` (real
+install from the bundled pack, no network), `watch` or `clean`.
 
 <details>
 <summary><b>If <code>dotnet</code> isn't recognised</b></summary>
@@ -136,9 +146,9 @@ Or just use `./tools/dispatch.ps1`, which resolves `dotnet` by looking for it.
 | `F12` | Toggle the design-system gallery |
 | `Ctrl` `â†’` | Step the wizard forward, ignoring validation |
 | `Ctrl` `â†` | Step backward |
-| any key | Skip the intro |
 
-Debug builds only. Nothing in the shipped navigation reaches them.
+Debug builds only. Nothing in the shipped navigation reaches them. The intro is
+deliberately unskippable — it plays in full, timed to the siren, every launch.
 
 </details>
 
@@ -225,12 +235,14 @@ Apache-2.0 release.
 </details>
 
 <details>
-<summary><b>The install is simulated, and the class says so</b></summary>
+<summary><b>The real runner is the default; the simulation names itself</b></summary>
 
-`SimulatedInstallRunner`, not `InstallRunner`. A class with the latter name
-that silently did nothing would be a genuinely dangerous thing to leave lying
-in this codebase. Swapping in the real implementation is a container
-registration, not a UI change.
+`RealInstallRunner` is now the registered `IInstallRunner`. The write-nothing
+runner is `SimulatedInstallRunner` — never `InstallRunner`, because a class with
+that name silently doing nothing would be a genuinely dangerous thing to leave
+lying in this codebase. `--demo` swaps the simulation back in via one container
+registration; `--offline` keeps the real runner but sources every mod from the
+bundled pack instead of the network.
 
 </details>
 
@@ -280,7 +292,7 @@ nothing looks missing â€” images are an enhancement, not a dependency.
 ./tools/dispatch.ps1 test
 ```
 
-396 tests. The ones worth knowing about:
+556 tests. The ones worth knowing about:
 
 - **Font resolution** â€” each type style is asserted to land on the *genuinely
   drawn* weight. Avalonia resolves an unmatched weight to the nearest one

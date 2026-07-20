@@ -5,12 +5,12 @@
              Focusable="True">
 
   <!--
-    1400ms, in four overlapping movements:
+    Timed to the launch siren, in four overlapping movements:
 
-      0-560     a scan line crosses the field
-      120-980   the wordmark draws on, letter by letter, 60ms apart
-      900-1180  the lightbar pulses once: blue, blue, gold, blue, blue
-      1150-1400 the whole composition lifts 8px and fades into the app
+      the wordmark draws on, letter by letter, 60ms apart
+      the lightbar pulses once: blue, blue, gold, blue, blue
+      the finished mark holds under the patrol lights for the body of the siren
+      the whole composition lifts 8px and fades into the app as the siren ends
 
     The letters draw via StrokeDashOffset. Avalonia measures StrokeDashArray
     and StrokeDashOffset in multiples of StrokeThickness, not pixels, so at 3px
@@ -58,6 +58,12 @@
              Opacity="0" />
 
     <Panel Name="Composition" VerticalAlignment="Center" HorizontalAlignment="Center">
+      <!-- An explicit translate transform for the closing lift to animate. Without
+           a concrete TranslateTransform here the transform animator has nothing to
+           drive and faults, so the lift is set up rather than left implicit. -->
+      <Panel.RenderTransform>
+        <TranslateTransform />
+      </Panel.RenderTransform>
       <StackPanel Spacing="28" HorizontalAlignment="Center">
 
         <!-- ===== Wordmark ======================================== -->
@@ -116,14 +122,6 @@
 
       </StackPanel>
     </Panel>
-
-    <TextBlock Name="SkipHint"
-               Text="PRESS ANY KEY TO SKIP"
-               Classes="micro"
-               HorizontalAlignment="Center"
-               VerticalAlignment="Bottom"
-               Margin="0,0,0,40"
-               Opacity="0" />
 
   </Panel>
 

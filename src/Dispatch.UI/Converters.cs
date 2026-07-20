@@ -2,6 +2,7 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
+using Dispatch.Core.Maintenance;
 using Dispatch.UI.Controls;
 using Dispatch.UI.Launcher;
 
@@ -31,6 +32,32 @@ public sealed class ToneToBrushConverter : IValueConverter
             StatusTone.Bad => "Red",
             StatusTone.Active => "Gold",
             _ => "TextMuted",
+        };
+
+        return Application.Current?.TryGetResource(key, null, out var brush) == true
+            ? brush as IBrush
+            : Brushes.Gray;
+    }
+
+    /// <inheritdoc />
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>Maps an <see cref="AuditSeverity"/> to its theme brush, for the repair report.</summary>
+public sealed class SeverityToBrushConverter : IValueConverter
+{
+    /// <summary>The shared instance referenced from XAML.</summary>
+    public static readonly SeverityToBrushConverter Instance = new();
+
+    /// <inheritdoc />
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var key = value switch
+        {
+            AuditSeverity.Problem => "Red",
+            AuditSeverity.Warning => "Amber",
+            _ => "Green",
         };
 
         return Application.Current?.TryGetResource(key, null, out var brush) == true

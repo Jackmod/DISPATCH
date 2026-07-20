@@ -37,4 +37,44 @@
     <PackageReference Include="Avalonia.Diagnostics" />
   </ItemGroup>
 
+  <!--
+    The mod pack ships beside the executable. Its archives are large and are
+    other authors' work, so they are not committed to the repo (see
+    modpack/.gitignore) — they are dropped in locally and mirrored into the
+    output here, on both build and publish, so a downloaded release is
+    self-contained. Only what the user selects is ever unpacked, so carrying the
+    whole pack costs disk in the release but nothing in the game folder.
+
+    SkipUnchangedFiles keeps rebuilds fast; the drop markers and pack metadata
+    are excluded so only real archives (and the README) travel.
+  -->
+  <PropertyGroup>
+    <ModPackDir>$(MSBuildProjectDirectory)\..\..\modpack</ModPackDir>
+  </PropertyGroup>
+
+  <Target Name="CopyModPackToBuild" AfterTargets="Build">
+    <ItemGroup>
+      <ModPackFiles Include="$(ModPackDir)\**\*"
+                    Exclude="$(ModPackDir)\**\_WHAT-GOES-HERE.txt;$(ModPackDir)\.gitignore" />
+    </ItemGroup>
+    <Message Importance="high"
+             Text="Dispatch: mirroring mod pack to $(OutDir)modpack"
+             Condition="'@(ModPackFiles)' != ''" />
+    <Copy SourceFiles="@(ModPackFiles)"
+          DestinationFiles="@(ModPackFiles->'$(OutDir)modpack\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          Condition="'@(ModPackFiles)' != ''" />
+  </Target>
+
+  <Target Name="CopyModPackToPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <ModPackFiles Include="$(ModPackDir)\**\*"
+                    Exclude="$(ModPackDir)\**\_WHAT-GOES-HERE.txt;$(ModPackDir)\.gitignore" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ModPackFiles)"
+          DestinationFiles="@(ModPackFiles->'$(PublishDir)modpack\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true"
+          Condition="'@(ModPackFiles)' != ''" />
+  </Target>
+
 </Project>

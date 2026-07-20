@@ -51,8 +51,13 @@ public sealed class KeyboardMap : TemplatedControl
         AvaloniaProperty.Register<KeyboardMap, KeyModifier>(nameof(Layer));
 
     /// <summary>Defines the <see cref="SelectedKey"/> property.</summary>
+    /// <remarks>
+    /// Two-way by default: a click sets it on the control, and the view model
+    /// reads it to open the mapping panel, so both directions have to flow.
+    /// </remarks>
     public static readonly StyledProperty<KeyToken?> SelectedKeyProperty =
-        AvaloniaProperty.Register<KeyboardMap, KeyToken?>(nameof(SelectedKey));
+        AvaloniaProperty.Register<KeyboardMap, KeyToken?>(
+            nameof(SelectedKey), defaultBindingMode: Avalonia.Data.BindingMode.TwoWay);
 
     /// <summary>Defines the <see cref="FreeKeysOnly"/> property.</summary>
     public static readonly StyledProperty<bool> FreeKeysOnlyProperty =

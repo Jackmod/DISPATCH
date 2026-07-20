@@ -1,0 +1,33 @@
+DISPATCH MOD PACK — 2 - Plugins
+
+Download each mod below and drop its archive (.zip, .rar or .7z) straight into
+this folder. Do NOT rename or unzip them — Dispatch matches each archive to its
+mod by name and unpacks only what the user selects.
+
+  - Script Hook V   (Alexander Blade)
+  - LSPD First Response   (G17 Media)
+  - Simple Trainer   (sjaak327)
+  - Callout Interface   (Ryst)
+  - Ambient Effects   (Community)
+  - Bait Car   (Community)
+  - Charges & Citations   (Compulite)
+  - Clear The Way V   (Albo1125)
+  - Clipboard   (Community)
+  - Custom Env Lighting   (Community)
+  - Dash Cam V   (MrKrumpNasty)
+  - ELS   (Lt.Caine)
+  - Fast Draw   (Community)
+  - Grammar Police   (TheDeadRiser)
+  - Heli Assistance   (PNWParksFan)
+  - Immersive Effects   (Community)
+  - In-Game Screenshot   (Community)
+  - LIAR   (Community)
+  - Radio Realism Alpha   (Community)
+  - Restrain   (Community)
+  - Simple HUD   (Community)
+  - Skin Control   (Community)
+  - Spotlight   (Yard1)
+  - Stop The Ped   (Nifty)
+  - Better ELS Reflections   (Community)
+  - Search Items Reborn   (Community)
+  - Ultimate Backup   (Albo1125)

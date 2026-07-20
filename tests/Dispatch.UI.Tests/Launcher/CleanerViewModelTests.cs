@@ -1,5 +1,6 @@
 using Avalonia.Headless.XUnit;
 using Dispatch.Core.Maintenance;
+using Dispatch.Core.Profiles;
 using Dispatch.UI.Launcher;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -8,10 +9,11 @@ using Xunit;
 namespace Dispatch.UI.Tests.Launcher;
 
 /// <summary>
-/// The cleaner VM gates confirmation on both having scrolled to the bottom and
-/// having something selected, and it moves files to quarantine rather than
-/// deleting. These are the interaction rules that keep the most dangerous
-/// feature from acting on a glance.
+/// The cleaner runs as a short guided sequence: scan against the install record,
+/// warn with the exact list, clean to quarantine, then gate the close on the
+/// user confirming they verified their game files. These tests cover that flow
+/// and the safety rules that survive the redesign — unknown files are never
+/// queued, and files move rather than delete.
 /// </summary>
 public sealed class CleanerViewModelTests : IDisposable
 {
@@ -19,16 +21,13 @@ public sealed class CleanerViewModelTests : IDisposable
         Path.Combine(Path.GetTempPath(), "dispatch-cleaner-vm", Guid.NewGuid().ToString("N"));
 
     private readonly string _quarantineRoot;
-    private readonly CleanerViewModel _vm;
+    private readonly Quarantine _quarantine;
 
     public CleanerViewModelTests()
     {
         Directory.CreateDirectory(_game);
         _quarantineRoot = Path.Combine(_game, "..", "q-" + Guid.NewGuid().ToString("N"));
-
-        var cleaner = new FolderCleaner(NullLogger<FolderCleaner>.Instance, ["plugins/Known.dll"]);
-        var quarantine = new Quarantine(_quarantineRoot, NullLogger<Quarantine>.Instance);
-        _vm = new CleanerViewModel(cleaner, quarantine);
+        _quarantine = new Quarantine(_quarantineRoot, NullLogger<Quarantine>.Instance);
     }
 
     public void Dispose()
@@ -40,6 +39,9 @@ public sealed class CleanerViewModelTests : IDisposable
         }
     }
 
+    private CleanerViewModel Vm(params string[] recordedFiles) =>
+        new(_quarantine, new FakeRecords(recordedFiles));
+
     private void Given(string relative, string content = "x")
     {
         var full = Path.Combine(_game, relative.Replace('/', Path.DirectorySeparatorChar));
@@ -48,88 +50,110 @@ public sealed class CleanerViewModelTests : IDisposable
     }
 
     [AvaloniaFact]
-    public async Task Scanning_populates_the_three_tiers()
+    public async Task Scanning_lands_on_the_warning_step_and_queues_only_mod_files()
+    {
+        Given("GTA5.exe");            // stock
+        Given("plugins/mod.dll");     // likely
+        Given("mystery.dat");         // unknown
+
+        var vm = Vm();
+        await vm.ScanAsync(_game);
+
+        vm.Stage.Should().Be(CleanerStage.Warning);
+        vm.HasWork.Should().BeTrue();
+        vm.ToRemove.Select(r => r.Path).Should().Contain("plugins/mod.dll");
+        vm.ToRemove.Select(r => r.Path).Should().NotContain("mystery.dat", "unknown files are never queued");
+        vm.ToRemove.Select(r => r.Path).Should().NotContain("gta5.exe");
+    }
+
+    [AvaloniaFact]
+    public async Task The_install_record_makes_its_own_files_known()
+    {
+        Given("plugins/StopThePed.dll");
+
+        var vm = Vm("plugins/StopThePed.dll");
+        await vm.ScanAsync(_game);
+
+        var row = vm.ToRemove.Single();
+        row.Candidate.Tier.Should().Be(CleanTier.Known, "the record proves Dispatch placed it");
+    }
+
+    [AvaloniaFact]
+    public async Task A_clean_folder_reports_nothing_to_do()
     {
         Given("GTA5.exe");
-        Given("plugins/Known.dll");
-        Given("plugins/Unknown.dll");
-        Given("mystery.dat");
+        Given("update/update.rpf");
+        Given("x64a.rpf"); // a root archive the manifest now recognises as stock
 
-        await _vm.ScanAsync(_game);
+        var vm = Vm();
+        await vm.ScanAsync(_game);
 
-        _vm.Stage.Should().Be(CleanerStage.Preview);
-        _vm.Tiers.Should().HaveCount(3);
-        _vm.Tiers.Single(t => t.Tier == CleanTier.Known).Rows.Should().ContainSingle();
-        _vm.Tiers.Single(t => t.Tier == CleanTier.Unknown).Rows.Should().ContainSingle();
+        vm.Stage.Should().Be(CleanerStage.Warning);
+        vm.HasWork.Should().BeFalse();
+        vm.ToRemove.Should().BeEmpty();
     }
 
     [AvaloniaFact]
-    public async Task Known_and_likely_are_preselected_unknown_is_not()
+    public async Task Proceeding_moves_files_to_quarantine_not_the_bin()
     {
-        Given("plugins/Known.dll");
-        Given("plugins/Unknown.dll");
-        Given("mystery.dat");
+        Given("plugins/mod.dll", "payload");
 
-        await _vm.ScanAsync(_game);
+        var vm = Vm();
+        await vm.ScanAsync(_game);
 
-        var unknown = _vm.Tiers.Single(t => t.Tier == CleanTier.Unknown).Rows[0];
-        unknown.Selected.Should().BeFalse("the unknown tier is never preselected");
+        await vm.ProceedCommand.ExecuteAsync(null);
 
-        var known = _vm.Tiers.Single(t => t.Tier == CleanTier.Known).Rows[0];
-        known.Selected.Should().BeTrue();
+        vm.Stage.Should().Be(CleanerStage.Cleaning);
+        vm.CleaningInProgress.Should().BeFalse("the move has finished");
+        File.Exists(Path.Combine(_game, "plugins", "mod.dll")).Should().BeFalse("it was moved out");
+        vm.CleanSummary.Should().Contain("quarantine").And.Contain("restore");
     }
 
     [AvaloniaFact]
-    public async Task Confirm_is_blocked_until_scrolled_to_the_bottom()
+    public async Task Continue_advances_from_cleaning_to_verify()
     {
-        Given("plugins/Known.dll");
-        await _vm.ScanAsync(_game);
+        Given("plugins/mod.dll");
 
-        _vm.SelectedCount.Should().BeGreaterThan(0);
-        _vm.CanConfirm.Should().BeFalse("the user has not scrolled to the bottom yet");
+        var vm = Vm();
+        await vm.ScanAsync(_game);
+        await vm.ProceedCommand.ExecuteAsync(null);
 
-        _vm.MarkScrolledToBottomCommand.Execute(null);
+        vm.ContinueCommand.Execute(null);
 
-        _vm.CanConfirm.Should().BeTrue();
+        vm.Stage.Should().Be(CleanerStage.Verify);
     }
 
     [AvaloniaFact]
-    public async Task Confirm_is_blocked_when_nothing_is_selected()
+    public async Task Closing_is_gated_on_acknowledging_the_verify_step()
     {
-        Given("mystery.dat"); // unknown, not preselected
-        await _vm.ScanAsync(_game);
-        _vm.MarkScrolledToBottomCommand.Execute(null);
+        Given("plugins/mod.dll");
 
-        _vm.CanConfirm.Should().BeFalse("nothing is selected to remove");
+        var vm = Vm();
+        await vm.ScanAsync(_game);
+        await vm.ProceedCommand.ExecuteAsync(null);
+        vm.ContinueCommand.Execute(null);
+
+        var closed = false;
+        vm.CloseRequested += (_, _) => closed = true;
+
+        vm.CanClose.Should().BeFalse("verify has not been ticked");
+        vm.CloseCommand.Execute(null);
+        closed.Should().BeFalse();
+
+        vm.VerifyAcknowledged = true;
+
+        vm.CanClose.Should().BeTrue();
+        vm.CloseCommand.Execute(null);
+        closed.Should().BeTrue();
     }
 
-    [AvaloniaFact]
-    public async Task Confirming_moves_selected_files_to_quarantine_not_the_bin()
+    /// <summary>An install record store returning a fixed file list.</summary>
+    private sealed class FakeRecords(params string[] files) : IInstallRecordStore
     {
-        Given("plugins/Known.dll", "payload");
-        await _vm.ScanAsync(_game);
-        _vm.MarkScrolledToBottomCommand.Execute(null);
-
-        await _vm.ConfirmCommand.ExecuteAsync(null);
-
-        _vm.Stage.Should().Be(CleanerStage.Done);
-        File.Exists(Path.Combine(_game, "plugins", "Known.dll")).Should().BeFalse("it was moved out");
-        _vm.Summary.Should().Contain("quarantine").And.Contain("restore");
-    }
-
-    [AvaloniaFact]
-    public async Task Deselecting_everything_disables_confirm_again()
-    {
-        Given("plugins/Known.dll");
-        await _vm.ScanAsync(_game);
-        _vm.MarkScrolledToBottomCommand.Execute(null);
-        _vm.CanConfirm.Should().BeTrue();
-
-        foreach (var row in _vm.Tiers.SelectMany(t => t.Rows))
-        {
-            row.Selected = false;
-        }
-
-        _vm.CanConfirm.Should().BeFalse("nothing remains selected");
+        public Task<InstallRecord?> LoadAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<InstallRecord?>(new InstallRecord
+            {
+                Files = files.Select(f => new PlacedFile(f, "hash", "mod")).ToList(),
+            });
     }
 }

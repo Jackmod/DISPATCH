@@ -64,6 +64,18 @@
             <c:Icon Data="{StaticResource IconShield}" Foreground="{DynamicResource Gold}" Size="22" />
             <TextBlock Text="DISPATCH" Classes="micro" VerticalAlignment="Center"
                        Foreground="{DynamicResource TextMuted}" />
+
+            <!-- Standing reminder that this whole flow targets GTA V Legacy — the
+                 only edition the police-mod stack runs on. Present on every step. -->
+            <Border VerticalAlignment="Center" Padding="9,4" CornerRadius="6"
+                    Background="{DynamicResource GreenWash}"
+                    BorderBrush="{DynamicResource Green}" BorderThickness="1"
+                    ToolTip.Tip="Dispatch installs the police-mod stack for GTA V Legacy. The Enhanced edition is not supported by LSPDFR.">
+              <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                <Ellipse Width="6" Height="6" Fill="{DynamicResource Green}" VerticalAlignment="Center" />
+                <TextBlock Text="GTA V · LEGACY" Classes="micro" Foreground="{DynamicResource Green}" />
+              </StackPanel>
+            </Border>
           </StackPanel>
 
           <TextBlock Grid.Column="1"

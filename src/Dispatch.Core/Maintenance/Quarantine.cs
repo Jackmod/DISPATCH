@@ -112,61 +112,84 @@ public sealed class Quarantine : IQuarantine
         ArgumentNullException.ThrowIfNull(relativePaths);
 
         var fullGamePath = Path.GetFullPath(gamePath);
+        var gamePrefix = fullGamePath.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
         var batchId = NewBatchId();
         var batchDir = Path.Combine(_root, batchId);
         Directory.CreateDirectory(batchDir);
 
         var entries = new List<QuarantineEntry>();
+        var batch = new QuarantineBatch(batchId, fullGamePath, DateTimeOffset.UtcNow, entries);
         var index = 0;
 
-        foreach (var relative in relativePaths)
+        // The manifest is written in a finally, so whatever was moved before a
+        // cancellation, a locked file, or any other mid-batch failure is still
+        // recorded and therefore still restorable. A partial clean that left
+        // files in the batch folder with no manifest would be the one way this
+        // class could strand a file the user cannot get back.
+        try
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var normalised = StockManifest.Normalise(relative);
-
-            // Nothing protected is ever moved, whatever a caller passes. This is
-            // a second wall behind the scanner: even a bug that put a save in
-            // the removal list cannot act on it here.
-            if (StockManifest.IsProtected(normalised))
+            foreach (var relative in relativePaths)
             {
-                _logger.LogWarning("Refused to quarantine protected path {Path}", normalised);
-                continue;
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var normalised = StockManifest.Normalise(relative);
+
+                // Nothing protected is ever moved, whatever a caller passes. This
+                // is a second wall behind the scanner: even a bug that put a save
+                // in the removal list cannot act on it here.
+                if (StockManifest.IsProtected(normalised))
+                {
+                    _logger.LogWarning("Refused to quarantine protected path {Path}", normalised);
+                    continue;
+                }
+
+                var source = Path.GetFullPath(Path.Combine(fullGamePath, normalised));
+
+                // Path-traversal defence: a crafted relative path must not reach
+                // outside the game folder and move something arbitrary off the disk.
+                if (!source.StartsWith(gamePrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning("Refused to quarantine out-of-tree path {Path}", source);
+                    continue;
+                }
+
+                if (!File.Exists(source))
+                {
+                    continue;
+                }
+
+                // Refuse a symlink or junction: moving it could relocate a file
+                // that physically lives outside the game folder, and the target
+                // is not ours to touch. The stock scanner already skips reparse
+                // points; this is the wall on the acting side.
+                if ((File.GetAttributes(source) & FileAttributes.ReparsePoint) != 0)
+                {
+                    _logger.LogWarning("Refused to quarantine reparse point {Path}", source);
+                    continue;
+                }
+
+                progress?.Report(normalised);
+
+                // Flatten the path so leaf-name collisions across folders cannot
+                // overwrite each other inside the batch.
+                var quarantinedName = $"{index:D4}__{Flatten(normalised)}";
+                var destination = Path.Combine(batchDir, quarantinedName);
+
+                var hash = await Hashing.Sha256Async(source, cancellationToken).ConfigureAwait(false);
+                var size = new FileInfo(source).Length;
+
+                File.Move(source, destination, overwrite: false);
+
+                entries.Add(new QuarantineEntry(normalised, quarantinedName, size, hash));
+                index++;
             }
-
-            var source = Path.GetFullPath(Path.Combine(fullGamePath, normalised));
-
-            // Path-traversal defence: a crafted relative path must not reach
-            // outside the game folder and move something arbitrary off the disk.
-            if (!source.StartsWith(fullGamePath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-            {
-                _logger.LogWarning("Refused to quarantine out-of-tree path {Path}", source);
-                continue;
-            }
-
-            if (!File.Exists(source))
-            {
-                continue;
-            }
-
-            progress?.Report(normalised);
-
-            // Flatten the path so leaf-name collisions across folders cannot
-            // overwrite each other inside the batch.
-            var quarantinedName = $"{index:D4}__{Flatten(normalised)}";
-            var destination = Path.Combine(batchDir, quarantinedName);
-
-            var hash = await Hashing.Sha256Async(source, cancellationToken).ConfigureAwait(false);
-            var size = new FileInfo(source).Length;
-
-            File.Move(source, destination, overwrite: false);
-
-            entries.Add(new QuarantineEntry(normalised, quarantinedName, size, hash));
-            index++;
         }
-
-        var batch = new QuarantineBatch(batchId, fullGamePath, DateTimeOffset.UtcNow, entries);
-        await WriteManifestAsync(batchDir, batch, cancellationToken).ConfigureAwait(false);
+        finally
+        {
+            // CancellationToken.None: the record must be written even when the
+            // reason we are here is that the token was cancelled.
+            await WriteManifestAsync(batchDir, batch, CancellationToken.None).ConfigureAwait(false);
+        }
 
         _logger.LogInformation("Quarantined {Count} file(s) into batch {Batch}", entries.Count, batchId);
         return batch;
@@ -238,7 +261,19 @@ public sealed class Quarantine : IQuarantine
             cancellationToken.ThrowIfCancellationRequested();
 
             var quarantined = Path.Combine(batchDir, entry.QuarantinedName);
-            var destination = Path.Combine(batch.GamePath, entry.OriginalRelativePath.Replace('/', Path.DirectorySeparatorChar));
+            var gamePrefix = Path.GetFullPath(batch.GamePath).TrimEnd(Path.DirectorySeparatorChar)
+                             + Path.DirectorySeparatorChar;
+            var destination = Path.GetFullPath(
+                Path.Combine(batch.GamePath, entry.OriginalRelativePath.Replace('/', Path.DirectorySeparatorChar)));
+
+            // Defence in depth: even the manifest is not trusted to send a file
+            // outside the folder it came from. A restore only ever writes back
+            // inside the recorded game folder.
+            if (!destination.StartsWith(gamePrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                failures.Add($"{entry.OriginalRelativePath}: resolves outside the game folder, left in quarantine");
+                continue;
+            }
 
             if (!File.Exists(quarantined))
             {

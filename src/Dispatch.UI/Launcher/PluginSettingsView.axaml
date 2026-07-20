@@ -1,0 +1,174 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Dispatch.UI.Controls"
+             xmlns:vm="clr-namespace:Dispatch.UI.Launcher"
+             xmlns:cfg="clr-namespace:Dispatch.Core.Configuration;assembly=Dispatch.Core"
+             x:Class="Dispatch.UI.Launcher.PluginSettingsView"
+             x:DataType="vm:PluginSettingsViewModel">
+
+  <!--
+    Every mod config value in an editable, searchable form. Switches, sliders and
+    dropdowns instead of raw ini lines. Nothing writes until Apply, and every file
+    is backed up before it is touched.
+  -->
+
+  <Panel>
+    <c:AmbientBackdrop Intensity="0.6" />
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="32,24,32,0">
+
+      <!-- ===== Header ========================================== -->
+      <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+        <StackPanel Grid.Column="0" Spacing="6">
+          <TextBlock Text="PLUGIN SETTINGS" Classes="micro" />
+          <TextBlock Text="Everything else" Classes="display" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+          <Button Classes="secondary" Content="Scan for plugins"
+                  Command="{Binding ScanCommand}"
+                  ToolTip.Tip="Search every mod folder for config files and add any new settings found." />
+          <Button Classes="ghost" Content="Read from game"
+                  Command="{Binding ReadFromGameCommand}"
+                  ToolTip.Tip="Load the current values out of your config files." />
+          <ComboBox ItemsSource="{Binding PluginFilters}"
+                    SelectedItem="{Binding PluginFilter}"
+                    Width="200" />
+        </StackPanel>
+      </Grid>
+
+      <!-- ===== Search ========================================== -->
+      <TextBox Grid.Row="1"
+               Name="SearchBox"
+               Text="{Binding Search}"
+               Watermark="Search by plugin, setting name, or what it does"
+               Margin="0,0,0,16" />
+
+      <!-- ===== Grouped settings =============================== -->
+      <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding Groups}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:SettingGroup">
+              <StackPanel Margin="0,0,0,20" Spacing="10">
+
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <TextBlock Text="{Binding Plugin}" Classes="h1" />
+                  <Border VerticalAlignment="Center" Height="1" Width="200"
+                          Background="{DynamicResource SteelLight}" />
+                </StackPanel>
+
+                <ItemsControl ItemsSource="{Binding Rows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:SettingRow">
+                      <Border Margin="0,0,0,8"
+                              Padding="16,12"
+                              CornerRadius="{DynamicResource RadiusCard}"
+                              Background="{DynamicResource GlassSurface}"
+                              BorderBrush="{DynamicResource GlassBorder}"
+                              BorderThickness="1">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+
+                          <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                              <TextBlock Text="{Binding Setting.Name}" Classes="h2" />
+                              <c:StatusPill Text="CHANGED" Tone="Active" IsVisible="{Binding IsChanged}" />
+                              <c:StatusPill Text="DISCOVERED" Tone="Neutral" IsVisible="{Binding Setting.Discovered}" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding Setting.Description}" Classes="small" TextWrapping="Wrap" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                              <TextBlock Text="{Binding Setting.Category}" Classes="micro" />
+                              <TextBlock Text="·" Classes="micro" />
+                              <TextBlock Text="{Binding Setting.ConfigFile}" Classes="mono" />
+                            </StackPanel>
+                          </StackPanel>
+
+                          <!-- ===== Editor: one per kind ===================== -->
+                          <StackPanel Grid.Column="1" MinWidth="180" Margin="16,0"
+                                      VerticalAlignment="Center" Orientation="Horizontal"
+                                      HorizontalAlignment="Right" Spacing="8">
+
+                            <ToggleSwitch IsChecked="{Binding BoolValue}"
+                                          OnContent="On" OffContent="Off"
+                                          IsVisible="{Binding IsToggle}" />
+
+                            <NumericUpDown Value="{Binding NumberValue}"
+                                           Minimum="{Binding Minimum}"
+                                           Maximum="{Binding Maximum}"
+                                           Increment="{Binding Increment}"
+                                           Width="150"
+                                           FormatString="0"
+                                           IsVisible="{Binding IsNumber}" />
+                            <TextBlock Text="{Binding Unit}" Classes="small"
+                                       VerticalAlignment="Center"
+                                       IsVisible="{Binding IsNumber}" />
+
+                            <ComboBox ItemsSource="{Binding Options}"
+                                      SelectedItem="{Binding SelectedOption}"
+                                      MinWidth="170"
+                                      IsVisible="{Binding IsChoice}">
+                              <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="cfg:SettingOption">
+                                  <TextBlock Text="{Binding Label}" />
+                                </DataTemplate>
+                              </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <TextBox Text="{Binding TextValue}"
+                                     MinWidth="180"
+                                     IsVisible="{Binding IsText}" />
+                          </StackPanel>
+
+                          <Button Grid.Column="2" Classes="ghost" Content="Reset"
+                                  VerticalAlignment="Center"
+                                  Command="{Binding $parent[UserControl].((vm:PluginSettingsViewModel)DataContext).ResetRowCommand}"
+                                  CommandParameter="{Binding}"
+                                  ToolTip.Tip="Set this back to the recommended default." />
+
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+              </StackPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
+      <!-- ===== Status + pending bar =========================== -->
+      <StackPanel Grid.Row="3" Spacing="8" Margin="0,12,0,16">
+
+        <TextBlock Classes="small"
+                   Foreground="{DynamicResource TextMuted}"
+                   TextWrapping="Wrap"
+                   Text="{Binding StatusMessage}"
+                   IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+        <Border IsVisible="{Binding HasPending}"
+                Padding="20,14"
+                CornerRadius="{DynamicResource RadiusCard}"
+                Background="{DynamicResource GoldDim}"
+                BorderBrush="{DynamicResource Gold}"
+                BorderThickness="1">
+          <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+            <c:Icon Grid.Column="0" Data="{StaticResource IconInfo}"
+                    Foreground="{DynamicResource Gold}" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1"
+                       Classes="body"
+                       Margin="14,0"
+                       VerticalAlignment="Center"
+                       Text="{Binding PendingCount, StringFormat='{}{0} change(s) staged. Nothing is written until you apply.'}" />
+            <Button Grid.Column="2" Classes="ghost" Content="Discard"
+                    Command="{Binding DiscardCommand}" Margin="0,0,10,0" />
+            <Button Grid.Column="3" Classes="primary" Content="Apply"
+                    Command="{Binding ApplyCommand}" />
+          </Grid>
+        </Border>
+
+      </StackPanel>
+
+    </Grid>
+  </Panel>
+
+</UserControl>

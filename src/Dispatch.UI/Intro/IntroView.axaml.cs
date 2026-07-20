@@ -1,29 +1,47 @@
-﻿using Avalonia;
+﻿using System.Diagnostics;
+using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
-using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Platform;
 using Avalonia.Styling;
+using Dispatch.Core.Audio;
 
 namespace Dispatch.UI.Intro;
 
 /// <summary>
-/// The launch animation. Raises <see cref="Completed"/> when it has finished,
-/// been skipped, or been cut short by reduced motion.
+/// The launch animation. Runs for the full length of the launch siren, cannot be
+/// skipped, and raises <see cref="Completed"/> when it finishes.
 /// </summary>
 /// <remarks>
 /// Driven from code rather than from styles because it is one precisely-timed
 /// sequence rather than a set of state responses. Expressing it as styles would
 /// scatter four overlapping movements across a dozen selectors and make the
 /// timing impossible to read in one place.
+///
+/// <para>
+/// The intro is deliberately unskippable and lasts exactly as long as the siren:
+/// the wordmark draws on, the lightbar pulses, then the finished mark holds under
+/// the patrol lights until the siren fades, and the two end together.
+/// </para>
 /// </remarks>
 public partial class IntroView : UserControl
 {
     private readonly CancellationTokenSource _cancellation = new();
     private bool _finished;
+
+    // The siren bytes, loaded once, and the length the whole intro is timed to.
+    private byte[]? _sirenBytes;
+    private TimeSpan _introLength = FallbackLength;
+
+    // Used only if the siren asset is missing, so the intro still feels whole.
+    private static readonly TimeSpan FallbackLength = TimeSpan.FromSeconds(3.5);
+
+    // The siren plays at half its recorded amplitude.
+    private const double SirenVolume = 0.5;
 
     /// <summary>Constructs the intro.</summary>
     public IntroView()
@@ -31,27 +49,48 @@ public partial class IntroView : UserControl
         InitializeComponent();
 
         Loaded += OnLoaded;
-        PointerPressed += (_, _) => Skip();
-        KeyDown += (_, _) => Skip();
+
+        // Cancel in-flight animations if the window closes mid-intro, so nothing
+        // runs on a torn-down control. This is not a user skip — there is none.
+        Unloaded += (_, _) => _cancellation.Cancel();
     }
 
     /// <summary>Raised once the intro is done and the shell should take over.</summary>
     public event EventHandler? Completed;
+
+    /// <summary>
+    /// The sound player used for the launch cue.
+    /// </summary>
+    /// <remarks>
+    /// A settable property rather than a constructor parameter because the intro
+    /// is instantiated from XAML with no injection point. The composition root
+    /// assigns the real player before the window shows; left null, the intro is
+    /// simply silent.
+    /// </remarks>
+    public static ISoundPlayer? SoundPlayer { get; set; }
+
+    private static readonly Uri SirenAsset = new("avares://Dispatch.UI/Assets/Sounds/intro-siren.wav");
 
     private bool ReducedMotion =>
         this.TryFindResource("MotionEnabled", ThemeVariant.Dark, out var enabled) && enabled is false;
 
     private async void OnLoaded(object? sender, RoutedEventArgs e)
     {
-        Focus();
+        // The siren asset is what the whole intro is timed to, so it is read
+        // before anything animates, whether or not it can actually be played.
+        LoadSiren();
 
-        // Reduced motion cuts straight to the app rather than playing a
-        // shortened version of the same thing.
+        // Reduced motion cuts straight to the app rather than holding a static
+        // frame for several seconds — that is an accessibility setting, not a
+        // user skip, and forcing motion-sensitive users to sit through it would
+        // be the wrong call.
         if (ReducedMotion)
         {
             Finish();
             return;
         }
+
+        PlaySiren();
 
         try
         {
@@ -59,40 +98,100 @@ public partial class IntroView : UserControl
         }
         catch (OperationCanceledException)
         {
-            // Skipped. Finish() has already run or is about to.
+            // The window closed mid-intro. Finish() is a no-op after teardown.
         }
 
         Finish();
     }
 
+    /// <summary>
+    /// Reads the siren asset once and times the intro to it. A missing or
+    /// unreadable asset must never fail the launch, so the intro keeps its
+    /// fallback length and simply plays no sound.
+    /// </summary>
+    private void LoadSiren()
+    {
+        try
+        {
+            using var stream = AssetLoader.Open(SirenAsset);
+            using var memory = new MemoryStream();
+            stream.CopyTo(memory);
+            _sirenBytes = memory.ToArray();
+
+            var pcm = WavAudio.Read(_sirenBytes);
+            if (pcm.SampleRate > 0 && pcm.Samples.Length > 0)
+            {
+                _introLength = TimeSpan.FromSeconds(pcm.Samples.Length / (double)pcm.SampleRate);
+
+                // Play the siren at half volume: every sample scaled to 50% of its
+                // amplitude. Re-encoded so the player still receives a plain WAV.
+                var quieter = new short[pcm.Samples.Length];
+                for (var i = 0; i < quieter.Length; i++)
+                {
+                    quieter[i] = (short)(pcm.Samples[i] * SirenVolume);
+                }
+
+                _sirenBytes = WavAudio.Write(new PcmAudio(quieter, pcm.SampleRate));
+            }
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or IOException or FormatException)
+        {
+            _sirenBytes = null;
+        }
+    }
+
+    /// <summary>
+    /// Plays the launch siren, whose fade-in and fade-out are baked into the
+    /// audio so it rises and falls with the intro.
+    /// </summary>
+    private void PlaySiren()
+    {
+        var player = SoundPlayer;
+        if (player is not null && player.IsAvailable && _sirenBytes is not null)
+        {
+            player.Play(_sirenBytes);
+        }
+    }
+
     private async Task PlayAsync(CancellationToken token)
     {
+        // Everything is timed against this clock so the closing fade can be
+        // placed to land exactly as the siren ends.
+        var clock = Stopwatch.StartNew();
+
         // The glow comes up under everything so the field is never flat black.
         var glow = Animate(GlowFadeIn(), Glow, token);
 
-        // Patrol lights run for the whole intro, in opposite phase.
-        var redLight = Animate(PatrolFlash(TimeSpan.Zero), PatrolRedLight, token);
-        var blueLight = Animate(PatrolFlash(TimeSpan.FromMilliseconds(190)), PatrolBlueLight, token);
+        // Patrol lights run for the whole intro, in opposite phase — enough
+        // cycles to cover the siren rather than a fixed four.
+        var cycles = Math.Max(4, (int)Math.Ceiling(_introLength.TotalMilliseconds / 380.0));
+        _ = Animate(PatrolFlash(TimeSpan.Zero, cycles), PatrolRedLight, token);
+        _ = Animate(PatrolFlash(TimeSpan.FromMilliseconds(190), cycles), PatrolBlueLight, token);
 
-        // 120-980ms: letters draw on, 60ms apart.
+        // Letters draw on, 60ms apart.
         var letters = DrawLettersAsync(token);
 
         await Task.WhenAll(glow, letters);
         token.ThrowIfCancellationRequested();
 
-        // The lights are on their own long loop; they end with the fade rather
-        // than being awaited here.
-        _ = redLight;
-        _ = blueLight;
-
-        // 900-1180ms: the lightbar pulses once.
+        // The lightbar pulses once.
         await PulseLightbarAsync(token);
         token.ThrowIfCancellationRequested();
 
-        // 1150-1400ms: lift and fade into the app.
+        // Hold on the finished wordmark, patrol lights still washing over it,
+        // until the siren is almost done — then lift and fade so the intro and
+        // the siren end on the same beat.
+        var fade = TimeSpan.FromMilliseconds(700);
+        var holdUntil = _introLength - fade;
+        var remaining = holdUntil - clock.Elapsed;
+        if (remaining > TimeSpan.Zero)
+        {
+            await Task.Delay(remaining, token);
+        }
+
         await Task.WhenAll(
-            Animate(Lift(), Composition, token),
-            Animate(FadeOut(), Root, token));
+            Animate(Lift(fade), Composition, token),
+            Animate(FadeOut(fade), Root, token));
     }
 
     private async Task DrawLettersAsync(CancellationToken token)
@@ -105,10 +204,6 @@ public partial class IntroView : UserControl
             Animate(LetterDraw(TimeSpan.FromMilliseconds(120 + (index * 60))), letter, token));
 
         await Task.WhenAll(draws);
-
-        // The skip hint only appears once the wordmark is legible; offering to
-        // skip something the viewer has not yet seen is just noise.
-        await Animate(HintFadeIn(), SkipHint, token);
     }
 
     private async Task PulseLightbarAsync(CancellationToken token)
@@ -159,11 +254,11 @@ public partial class IntroView : UserControl
     /// as patrol lighting. Keeping a standing wash under the flashes reads
     /// correctly and still leaves the double-tap obvious.
     /// </remarks>
-    private static Animation PatrolFlash(TimeSpan delay) => new()
+    private static Animation PatrolFlash(TimeSpan delay, int iterations) => new()
     {
         Duration = TimeSpan.FromMilliseconds(380),
         Delay = delay,
-        IterationCount = new IterationCount(4),
+        IterationCount = new IterationCount((ulong)iterations),
         FillMode = FillMode.Both,
         Children =
         {
@@ -205,20 +300,9 @@ public partial class IntroView : UserControl
         },
     };
 
-    private static Animation HintFadeIn() => new()
+    private static Animation Lift(TimeSpan duration) => new()
     {
-        Duration = TimeSpan.FromMilliseconds(200),
-        FillMode = FillMode.Forward,
-        Children =
-        {
-            Frame(0d, (OpacityProperty, 0d)),
-            Frame(1d, (OpacityProperty, 1d)),
-        },
-    };
-
-    private static Animation Lift() => new()
-    {
-        Duration = TimeSpan.FromMilliseconds(250),
+        Duration = duration,
         Easing = new CubicEaseIn(),
         FillMode = FillMode.Forward,
         Children =
@@ -228,9 +312,10 @@ public partial class IntroView : UserControl
         },
     };
 
-    private static Animation FadeOut() => new()
+    private static Animation FadeOut(TimeSpan duration) => new()
     {
-        Duration = TimeSpan.FromMilliseconds(250),
+        Duration = duration,
+        Easing = new SineEaseInOut(),
         FillMode = FillMode.Forward,
         Children =
         {
@@ -251,18 +336,7 @@ public partial class IntroView : UserControl
         return frame;
     }
 
-    // ===== Skip and completion ===========================================
-
-    private void Skip()
-    {
-        if (_finished)
-        {
-            return;
-        }
-
-        _cancellation.Cancel();
-        Finish();
-    }
+    // ===== Completion ====================================================
 
     private void Finish()
     {

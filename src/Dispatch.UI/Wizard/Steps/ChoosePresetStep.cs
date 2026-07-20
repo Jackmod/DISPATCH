@@ -2,10 +2,64 @@ using System.Collections.ObjectModel;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Dispatch.Core.Acquisition;
+using Dispatch.Core.Catalogue;
 using Dispatch.Core.Imagery;
+using Dispatch.Core.Infrastructure;
 using Dispatch.UI.Imagery;
 
 namespace Dispatch.UI.Wizard.Steps;
+
+/// <summary>One mod in the customise list, with its tick state.</summary>
+public sealed partial class ModPick : ObservableObject
+{
+    [ObservableProperty]
+    private bool _isSelected;
+
+    /// <summary>Constructs a pick from a catalogue definition.</summary>
+    public ModPick(ModDefinition mod, bool selected)
+    {
+        Id = mod.Id;
+        Name = mod.Name;
+        Author = string.IsNullOrWhiteSpace(mod.Author) ? "Community" : mod.Author;
+        AutoFetched = ModPackScaffolder.IsAutoFetched(mod);
+        IsRequired = mod.Required;
+
+        // A required mod is always on, whatever the preset asked for — nothing
+        // else loads without it.
+        IsSelected = mod.Required || selected;
+    }
+
+    /// <summary>Whether this is a core dependency that cannot be turned off.</summary>
+    public bool IsRequired { get; }
+
+    /// <summary>Whether the row's checkbox can be toggled. Required mods are locked on.</summary>
+    public bool CanToggle => !IsRequired;
+
+    partial void OnIsSelectedChanged(bool value)
+    {
+        // Guard against any attempt to clear a required mod.
+        if (IsRequired && !value)
+        {
+            IsSelected = true;
+        }
+    }
+
+    /// <summary>Stable mod id.</summary>
+    public string Id { get; }
+
+    /// <summary>Display name.</summary>
+    public string Name { get; }
+
+    /// <summary>Author.</summary>
+    public string Author { get; }
+
+    /// <summary>True when GitHub fetches it automatically; false when it comes from the pack.</summary>
+    public bool AutoFetched { get; }
+
+    /// <summary>Where it comes from, for the badge.</summary>
+    public string SourceLabel => AutoFetched ? "GITHUB" : "PACK";
+}
 
 /// <summary>How much of the setup a preset installs.</summary>
 public enum PresetTier
@@ -71,13 +125,16 @@ public sealed partial class PresetOption : ObservableObject
     /// <summary>Whether the preset is not yet populated.</summary>
     public bool ComingSoon { get; }
 
-    /// <summary>Key used to look up a user-supplied background image.</summary>
-    public string BackgroundKey => Tier switch
+    /// <summary>Catalogue preset id, used for both the background key and mod lookup.</summary>
+    public string PresetId => Tier switch
     {
         PresetTier.Standard => "standard",
         PresetTier.FullDuty => "full-duty",
         _ => "realism",
     };
+
+    /// <summary>Key used to look up a user-supplied background image.</summary>
+    public string BackgroundKey => PresetId;
 
     /// <summary>
     /// A user-supplied background, when one has been dropped in the backgrounds
@@ -149,12 +206,32 @@ public sealed partial class ChoosePresetStep : WizardStep
                 PresetTier.Realism,
                 "Realism",
                 "MOST COMPLETE",
-                "Everything in Full Duty plus an extended realism layer.",
-                "pending",
-                "—",
-                ["Everything in Full Duty", "Extended realism layer"],
-                comingSoon: true),
+                "Everything in Full Duty plus the extended realism layer — extra callouts, traffic AI, sirens and more.",
+                "~65 mods",
+                "about 25 minutes",
+                ["Everything in Full Duty", "Extra callout packs", "Traffic AI & sirens", "Immersion mods"]),
         ];
+
+        // Every installable mod, in install order, as a tickable pick. The
+        // superset lives here once; selecting a preset ticks the right subset.
+        Mods = new ObservableCollection<ModPick>(
+            ModCatalogue.Mods.Values
+                .OrderBy(m => m.Order)
+                .ThenBy(m => m.Name, StringComparer.Ordinal)
+                .Select(m => new ModPick(m, selected: false)));
+
+        foreach (var pick in Mods)
+        {
+            pick.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(ModPick.IsSelected))
+                {
+                    OnPropertyChanged(nameof(CanAdvance));
+                    OnPropertyChanged(nameof(SelectedCount));
+                    OnPropertyChanged(nameof(SelectionSummary));
+                }
+            };
+        }
 
         LoadBackgrounds();
 
@@ -167,6 +244,51 @@ public sealed partial class ChoosePresetStep : WizardStep
     /// <summary>The three setups.</summary>
     public ObservableCollection<PresetOption> Presets { get; }
 
+    /// <summary>Every installable mod as a tickable pick, for the customise list.</summary>
+    public ObservableCollection<ModPick> Mods { get; }
+
+    /// <summary>The mods shown in the customise list after the search filter.</summary>
+    public IEnumerable<ModPick> VisibleMods =>
+        string.IsNullOrWhiteSpace(ModSearch)
+            ? Mods
+            : Mods.Where(m =>
+                m.Name.Contains(ModSearch, StringComparison.OrdinalIgnoreCase)
+                || m.Author.Contains(ModSearch, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Filter text for the customise list.</summary>
+    [ObservableProperty]
+    private string _modSearch = string.Empty;
+
+    partial void OnModSearchChanged(string value) => OnPropertyChanged(nameof(VisibleMods));
+
+    /// <summary>Whether the per-mod customise list is open.</summary>
+    [ObservableProperty]
+    private bool _isCustomizing;
+
+    private long? _freeBytes;
+
+    /// <summary>Records the game drive so free space and the disk-fit check are real.</summary>
+    public void SetGameDrive(string? path)
+    {
+        _freeBytes = string.IsNullOrWhiteSpace(path) ? null : DiskSpace.FreeBytes(path);
+        OnPropertyChanged(nameof(DiskAvailable));
+        OnPropertyChanged(nameof(FitsOnDisk));
+    }
+
+    /// <summary>The ids of every ticked mod — exactly what the install will unpack.</summary>
+    public IReadOnlyList<string> SelectedModIds =>
+        Mods.Where(m => m.IsSelected).Select(m => m.Id).ToList();
+
+    /// <summary>How many mods are ticked.</summary>
+    public int SelectedCount => Mods.Count(m => m.IsSelected);
+
+    /// <summary>Ticked count, as "12 mods selected".</summary>
+    public string SelectionSummary =>
+        SelectedCount == 1 ? "1 mod selected" : $"{SelectedCount} mods selected";
+
+    /// <summary>Opens or closes the customise list.</summary>
+    public void ToggleCustomize() => IsCustomizing = !IsCustomizing;
+
     /// <inheritdoc />
     public override string Title => "Choose a setup";
 
@@ -174,7 +296,11 @@ public sealed partial class ChoosePresetStep : WizardStep
     public override string AdvanceLabel => "Install";
 
     /// <inheritdoc />
-    public override bool CanAdvance => Selected is { ComingSoon: false };
+    /// <remarks>
+    /// A coming-soon preset cannot be installed even though the required core is
+    /// always ticked — its own lineup does not exist yet.
+    /// </remarks>
+    public override bool CanAdvance => SelectedCount > 0 && Selected is not { ComingSoon: true };
 
     /// <summary>Total download for the current selection.</summary>
     public string DownloadSize => Selected?.Tier switch
@@ -192,13 +318,25 @@ public sealed partial class ChoosePresetStep : WizardStep
         _ => "—",
     };
 
-    /// <summary>Free space on the game drive.</summary>
-    public string DiskAvailable => "184 GB";
+    /// <summary>Free space on the game drive, read live.</summary>
+    public string DiskAvailable => DiskSpace.Format(_freeBytes);
 
-    /// <summary>Whether the selection fits. Drives the red state on free space.</summary>
-    public bool FitsOnDisk => true;
+    /// <summary>
+    /// Whether the selection fits. Unknown free space is treated as fitting
+    /// rather than blocking — a missing reading is not a reason to stop.
+    /// </summary>
+    public bool FitsOnDisk => _freeBytes is null || _freeBytes >= RequiredBytes();
 
-    /// <summary>Selects a preset, clearing the others.</summary>
+    /// <summary>A rough disk estimate for the current selection, for the fit check.</summary>
+    private long RequiredBytes()
+    {
+        // ~50 MB per mod plus staging headroom; deliberately generous so the
+        // check warns early rather than late.
+        const long perMod = 50L * 1024 * 1024;
+        return Math.Max(1, SelectedCount) * perMod + 512L * 1024 * 1024;
+    }
+
+    /// <summary>Selects a preset, clearing the others and ticking its mods.</summary>
     public void Select(PresetOption preset)
     {
         ArgumentNullException.ThrowIfNull(preset);
@@ -208,7 +346,30 @@ public sealed partial class ChoosePresetStep : WizardStep
             option.IsSelected = ReferenceEquals(option, preset);
         }
 
+        // Setting Selected drives the ticking through OnSelectedChanged, so a
+        // card clicked via the list binding and a programmatic Select behave the
+        // same.
         Selected = preset;
+    }
+
+    /// <summary>Reticks the list to a preset's mods.</summary>
+    /// <remarks>
+    /// An empty or coming-soon preset — Realism has no contents yet — clears the
+    /// selection, so choosing it installs nothing until the user ticks mods by
+    /// hand in the customise list. That is what keeps a coming-soon card from
+    /// silently carrying the previous card's selection forward.
+    /// </remarks>
+    private void TickPresetMods(PresetOption preset)
+    {
+        var wanted = ModCatalogue.ModsFor(preset.PresetId)
+            .Select(m => m.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var pick in Mods)
+        {
+            // Required mods stay on no matter which preset is chosen.
+            pick.IsSelected = pick.IsRequired || wanted.Contains(pick.Id);
+        }
     }
 
     /// <summary>
@@ -254,6 +415,11 @@ public sealed partial class ChoosePresetStep : WizardStep
 
     partial void OnSelectedChanged(PresetOption? value)
     {
+        if (value is not null)
+        {
+            TickPresetMods(value);
+        }
+
         OnPropertyChanged(nameof(CanAdvance));
         OnPropertyChanged(nameof(DownloadSize));
         OnPropertyChanged(nameof(DiskRequired));

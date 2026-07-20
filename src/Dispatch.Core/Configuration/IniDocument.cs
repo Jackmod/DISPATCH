@@ -156,6 +156,55 @@ public sealed class IniDocument
         return true;
     }
 
+    /// <summary>
+    /// Reads a value by key alone, ignoring which section holds it, or null when
+    /// no section contains the key.
+    /// </summary>
+    /// <remarks>
+    /// Mod config files put their settings under section names the app has no
+    /// reason to model — <c>[General]</c>, <c>[Keys]</c>, the mod's own name — and
+    /// within one file a key is unique in practice. Matching by key alone lets the
+    /// control catalogue name a setting without also having to track the section
+    /// it happens to live in, which no two of these mods spell the same way.
+    /// </remarks>
+    public string? GetAnywhere(string key)
+    {
+        var index = FindValueLineAnywhere(key);
+        return index >= 0 ? _lines[index].Value : null;
+    }
+
+    /// <summary>True when any section contains the key.</summary>
+    public bool HasAnywhere(string key) => FindValueLineAnywhere(key) >= 0;
+
+    /// <summary>
+    /// Sets a value by key alone, wherever the key already lives; if it is absent
+    /// the key is added to the root. Returns true when the file changed.
+    /// </summary>
+    /// <remarks>
+    /// A no-op write returns false and touches nothing, so the staged-changes
+    /// diff never lists a line that did not actually move.
+    /// </remarks>
+    public bool SetAnywhere(string key, string value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+
+        var index = FindValueLineAnywhere(key);
+
+        if (index >= 0)
+        {
+            if (string.Equals(_lines[index].Value, value, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            _lines[index] = _lines[index].WithValue(value);
+            return true;
+        }
+
+        InsertKey(string.Empty, key, value);
+        return true;
+    }
+
     /// <summary>Every key in a section, in file order.</summary>
     public IReadOnlyList<string> KeysIn(string section)
     {
@@ -221,6 +270,19 @@ public sealed class IniDocument
                 inSection = SectionEquals(line.Section, section);
             }
             else if (inSection && line.Kind == LineKind.KeyValue && KeyEquals(line.Key, key))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private int FindValueLineAnywhere(string key)
+    {
+        for (var i = 0; i < _lines.Count; i++)
+        {
+            if (_lines[i].Kind == LineKind.KeyValue && KeyEquals(_lines[i].Key, key))
             {
                 return i;
             }

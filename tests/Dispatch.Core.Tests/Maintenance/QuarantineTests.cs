@@ -295,4 +295,90 @@ public sealed class QuarantineTests : IDisposable
 
         await act.Should().ThrowAsync<OperationCanceledException>();
     }
+
+    // ===== Partial-batch recoverability (the sensitive case) ==============
+
+    [Fact]
+    public async Task A_clean_cancelled_midway_still_records_what_moved_so_it_can_be_restored()
+    {
+        // This is the case that would strand a file: cancel after some files have
+        // moved but before the batch "finishes". Everything moved must still be
+        // recorded and fully restorable — a partial clean is never a lost file.
+        for (var i = 0; i < 6; i++)
+        {
+            Given($"file{i}.dll", $"contents-{i}");
+        }
+
+        using var cancellation = new CancellationTokenSource();
+
+        // Let the first file move fully, then cancel as the second is reported.
+        // The move is atomic per file (the current file is never half-moved), so
+        // this abandons the batch after exactly one file has moved.
+        var reports = 0;
+        var progress = new SyncProgress(_ =>
+        {
+            if (++reports == 2)
+            {
+                cancellation.Cancel();
+            }
+        });
+
+        var act = async () => await _quarantine.QuarantineAsync(
+            _game,
+            Enumerable.Range(0, 6).Select(i => $"file{i}.dll").ToList(),
+            progress,
+            cancellation.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+
+        // The batch exists, has a manifest, and lists what was actually moved.
+        var batches = await _quarantine.ListBatchesAsync();
+        batches.Should().ContainSingle("the partial batch must be recorded, not orphaned");
+        var moved = batches[0].Entries.Select(e => e.OriginalRelativePath).ToList();
+        moved.Should().NotBeEmpty();
+
+        // Every moved file is gone from the game folder...
+        foreach (var path in moved)
+        {
+            Exists(path).Should().BeFalse();
+        }
+
+        // ...and every one restores byte-identical.
+        var failures = await _quarantine.RestoreAsync(batches[0].Id);
+        failures.Should().BeEmpty();
+        foreach (var path in moved)
+        {
+            var index = int.Parse(path[4].ToString());
+            Read(path).Should().Be($"contents-{index}");
+        }
+    }
+
+    [Fact]
+    public async Task A_symlinked_file_is_refused_rather_than_followed()
+    {
+        Given("real-target-outside.dll", "secret");
+        var link = Path.Combine(_game, "link.dll");
+
+        try
+        {
+            File.CreateSymbolicLink(link, Path.Combine(_root, "real-target-outside.dll"));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Creating symlinks needs privilege on Windows; if unavailable the
+            // guard cannot be exercised here, so skip rather than fail.
+            return;
+        }
+
+        var batch = await _quarantine.QuarantineAsync(_game, ["link.dll"], null, CancellationToken.None);
+
+        batch.Entries.Should().BeEmpty("a reparse point must not be moved");
+        File.Exists(link).Should().BeTrue("the link is left where it was");
+    }
+
+    /// <summary>An IProgress whose callback runs synchronously on Report.</summary>
+    private sealed class SyncProgress(Action<string> onReport) : IProgress<string>
+    {
+        public void Report(string value) => onReport(value);
+    }
 }

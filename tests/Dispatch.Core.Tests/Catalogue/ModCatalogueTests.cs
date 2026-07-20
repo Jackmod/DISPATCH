@@ -37,12 +37,14 @@ public sealed class ModCatalogueTests
     }
 
     [Fact]
-    public void Realism_is_a_coming_soon_placeholder()
+    public void Realism_is_full_duty_plus_the_extras()
     {
-        var realism = ModCatalogue.Presets.Single(p => p.Id == "realism");
+        var fullDuty = ModCatalogue.ModsFor("full-duty").Select(m => m.Id).ToHashSet();
+        var realism = ModCatalogue.ModsFor("realism").Select(m => m.Id).ToHashSet();
 
-        realism.ComingSoon.Should().BeTrue();
-        ModCatalogue.ModsFor("realism").Should().BeEmpty();
+        // Realism is a superset of Full Duty.
+        realism.IsSupersetOf(fullDuty).Should().BeTrue();
+        realism.Count.Should().BeGreaterThan(fullDuty.Count, "realism adds the extended layer");
     }
 
     [Fact]

@@ -18,15 +18,35 @@ public static class CoreServiceCollectionExtensions
         // rooted IAppPaths, and a test host certainly will.
         services.TryAddSingleton<IAppPaths, AppPaths>();
         services.TryAddSingleton<Profiles.IProfileStore, Profiles.ProfileStore>();
-        services.TryAddSingleton<Installation.IInstallRunner, Installation.SimulatedInstallRunner>();
+        services.TryAddSingleton<Profiles.IInstallRecordStore, Profiles.InstallRecordStore>();
+        services.TryAddSingleton<Detection.IGameBuildWatch, Detection.GameBuildWatch>();
         services.TryAddSingleton<Imagery.IUserBackgrounds, Imagery.UserBackgrounds>();
+
+        AddAcquisition(services);
+
+        // The real, file-writing runner is the default now the acquisition and
+        // placement layers exist. A test host that wants the dry-run simulation
+        // registers SimulatedInstallRunner before calling this and TryAdd keeps it.
+        services.TryAddSingleton<Configuration.IniConfigWriter>();
+        services.TryAddSingleton<Configuration.ConfigInstaller>();
+
+        services.TryAddSingleton<Installation.FilePlacer>();
+        services.TryAddSingleton<Installation.LocalInstallRunner>();
+        services.TryAddSingleton<Installation.IRunIdFactory, Installation.RunIdFactory>();
+        services.TryAddSingleton<Installation.IInstallRunner, Installation.RealInstallRunner>();
 
         // Speech is Windows-only; the platform project overrides this with the
         // real implementation. Registered here so Core alone is still usable.
         services.TryAddSingleton<Audio.ICallsignVoice, Audio.SilentCallsignVoice>();
+        services.TryAddSingleton<Audio.ISoundPlayer, Audio.SilentSoundPlayer>();
         services.TryAddSingleton<Detection.IFileSystemProbe, Detection.RealFileSystemProbe>();
         services.TryAddSingleton<Detection.IGameLocator, Detection.GameLocator>();
         services.TryAddSingleton<Detection.IVersionReader, Detection.VersionReader>();
+        services.TryAddSingleton<Detection.IGameProcessGuard, Detection.GameProcessGuard>();
+
+        // Platform services default to no-ops; the Windows project overrides them.
+        services.TryAddSingleton<Platform.IDefenderService, Platform.NoDefenderService>();
+        services.TryAddSingleton<Platform.IGameLauncher, Platform.NoGameLauncher>();
 
         services.TryAddSingleton<Maintenance.IQuarantine>(sp =>
             new Maintenance.Quarantine(
@@ -40,4 +60,63 @@ public static class CoreServiceCollectionExtensions
 
         return services;
     }
+
+    /// <summary>
+    /// Registers the acquisition graph: the shared HTTP client, the downloader,
+    /// the archive extractor, every automated source, and the acquirer that picks
+    /// between them.
+    /// </summary>
+    private static void AddAcquisition(IServiceCollection services)
+    {
+        // One long-lived client for the whole app. GitHub's API rejects requests
+        // with no User-Agent, and the ten-minute timeout covers a large archive
+        // on a slow line. A desktop app with a single client does not need the
+        // factory machinery a server would.
+        services.TryAddSingleton(_ =>
+        {
+            var client = new System.Net.Http.HttpClient
+            {
+                Timeout = TimeSpan.FromMinutes(10),
+            };
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Dispatch/1.0 (+https://github.com/Jackmod/DISPATCH)");
+            client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+            return client;
+        });
+
+        services.TryAddSingleton<Acquisition.HttpFileDownloader>();
+        services.TryAddSingleton<Acquisition.IArchiveExtractor, Acquisition.ArchiveExtractor>();
+
+        // The pack roots as an injectable options value, computed from paths.
+        services.TryAddSingleton(sp => new Acquisition.ModPackRoots(ModPackRoots(sp.GetRequiredService<IAppPaths>())));
+
+        // TryAddEnumerable so the acquirer receives every source exactly once,
+        // even if AddDispatchCore is called more than once in a host. Order is
+        // preserved and the acquirer takes the first source that can handle a mod,
+        // so the bundled pack is registered first: a mod present in the pack
+        // installs from it, and anything absent falls through to the network.
+        // Each is a concrete implementation type so TryAddEnumerable can tell them
+        // apart.
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<Acquisition.IDownloadSource, Acquisition.BundledModSource>());
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<Acquisition.IDownloadSource, Acquisition.GitHubReleaseSource>());
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<Acquisition.IDownloadSource, Acquisition.DirectHttpSource>());
+
+        // Default to online; the composition root overrides this with an offline
+        // options value when --offline is set.
+        services.TryAddSingleton(new Acquisition.AcquisitionOptions());
+        services.TryAddSingleton<Acquisition.Acquirer>();
+    }
+
+    /// <summary>
+    /// The mod pack roots, most specific first: the user's writable pack under
+    /// LOCALAPPDATA, then the pack shipped beside the executable. The first that
+    /// holds a mod wins, so a user drop overrides the shipped copy.
+    /// </summary>
+    private static IReadOnlyList<string> ModPackRoots(IAppPaths paths) =>
+    [
+        paths.ModPackDirectory,
+        Path.Combine(AppContext.BaseDirectory, "modpack"),
+    ];
 }

@@ -157,11 +157,41 @@ public sealed class FolderCleanerTests : IDisposable
     [InlineData("dinput8.dll")]
     [InlineData("ScriptHookV.dll")]
     [InlineData("OpenIV.asi")]
-    public void Loose_mod_shaped_files_at_the_root_are_Likely(string path)
+    public void Recognised_mod_loaders_at_the_root_are_Likely(string path)
     {
         Given(path);
 
         Scan().Candidates[0].Tier.Should().Be(CleanTier.Likely);
+    }
+
+    [Theory]
+    [InlineData("libcurl.dll")]         // stock / launcher library
+    [InlineData("gpuperfapidx11-x64.dll")]
+    [InlineData("discord-rpc.dll")]
+    [InlineData("some-random-tool.dll")]
+    public void Unrecognised_loose_files_at_the_root_are_Unknown_and_not_preselected(string path)
+    {
+        // The root mixes stock game/launcher libraries with mods, so an
+        // unrecognised loose file there must never be ticked on the user's behalf.
+        // This is the fix for the cleaner offering to delete libcurl.dll.
+        Given(path);
+
+        var plan = Scan();
+
+        plan.Candidates[0].Tier.Should().Be(CleanTier.Unknown);
+        plan.Candidates[0].IsPreselected.Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("BattlEye/beservice_x64.exe")]
+    [InlineData("battleye/beclient_x64.dll")]
+    public void BattlEye_is_stock_and_never_offered(string path)
+    {
+        // Anti-cheat. Removing it can break launch and GTA Online, so it must be
+        // recognised as stock and not appear in the plan at all.
+        Given(path);
+
+        Scan().Candidates.Should().BeEmpty();
     }
 
     [Theory]

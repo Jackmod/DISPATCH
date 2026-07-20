@@ -144,14 +144,18 @@ public sealed class WizardNavigationTests
     }
 
     [AvaloniaFact]
-    public void A_coming_soon_preset_cannot_be_installed()
+    public void Every_selectable_preset_can_be_installed()
     {
         var wizard = Create();
         var presets = wizard.Steps.OfType<ChoosePresetStep>().Single();
 
-        presets.Select(presets.Presets.Single(p => p.Tier == PresetTier.Realism));
-
-        presets.CanAdvance.Should().BeFalse("Realism has no contents yet");
+        // Every preset now has a real lineup — selecting any of them lets the
+        // flow advance (the required core is always ticked).
+        foreach (var option in presets.Presets)
+        {
+            presets.Select(option);
+            presets.CanAdvance.Should().BeTrue($"{option.Name} has a real mod lineup");
+        }
     }
 
     [AvaloniaFact]
