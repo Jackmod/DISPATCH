@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
+using Velopack;
 
 namespace Dispatch.App;
 
@@ -19,6 +20,12 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        // Velopack first, before anything else runs. During an install, update or
+        // uninstall the launcher re-invokes the executable with hidden hook
+        // arguments; this handles them and exits, so those hooks never touch the
+        // app's real startup. On a normal launch it does nothing and returns.
+        VelopackApp.Build().Run();
+
         // Dry-run mode: walk the whole UI without downloading a mod or writing a
         // file to the game. The simulated runner just plays the phases.
         var demo = args.Any(a => a is "--demo" or "--dry-run")
