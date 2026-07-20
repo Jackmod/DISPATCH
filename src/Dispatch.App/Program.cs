@@ -60,15 +60,19 @@ internal static class Program
             using var host = BuildHost(paths, demo, offline);
             host.Start();
 
-            // Pull the current hosted-pack manifest in the background, so a thin
-            // install picks up mods added or renamed since this installer was built —
-            // the same installer keeps working as the pack changes. Best-effort: a
-            // failure leaves the shipped manifest in place, and demo touches nothing.
+            // Two background best-effort tasks, so the one installer keeps working
+            // as things change: refresh the hosted-pack manifest (new/renamed mods
+            // reach this copy), and check for a newer app version (staged to apply
+            // when Dispatch next closes). Both swallow every failure; demo does neither.
             if (!demo)
             {
                 _ = host.Services
                     .GetRequiredService<Dispatch.Core.Acquisition.RemotePackRefresher>()
                     .RefreshAsync();
+
+                _ = host.Services
+                    .GetRequiredService<Dispatch.Core.Platform.IAppUpdater>()
+                    .CheckDownloadAndStageAsync();
             }
 
             var exitCode = BuildAvaloniaApp(host.Services)
@@ -122,6 +126,11 @@ internal static class Program
             // Real install, but every mod is sourced from the bundled pack.
             builder.Services.AddSingleton(new Dispatch.Core.Acquisition.AcquisitionOptions(Offline: true));
         }
+
+        // The real self-updater, overriding Core's no-op default. Registered here
+        // because only the composition root references the packaging framework; on a
+        // dev build it reports unsupported and does nothing.
+        builder.Services.AddSingleton<Dispatch.Core.Platform.IAppUpdater, VelopackAppUpdater>();
 
         // Platform layer before Core, for the same reason as the overrides above:
         // Core registers silent audio fallbacks with TryAdd, so the real winmm

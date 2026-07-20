@@ -44,9 +44,12 @@ public static class CoreServiceCollectionExtensions
         services.TryAddSingleton<Detection.IVersionReader, Detection.VersionReader>();
         services.TryAddSingleton<Detection.IGameProcessGuard, Detection.GameProcessGuard>();
 
-        // Platform services default to no-ops; the Windows project overrides them.
+        // Platform services default to no-ops; the Windows project or the composition
+        // root overrides them (the app updater needs the packaging framework, which
+        // only the composition root references).
         services.TryAddSingleton<Platform.IDefenderService, Platform.NoDefenderService>();
         services.TryAddSingleton<Platform.IGameLauncher, Platform.NoGameLauncher>();
+        services.TryAddSingleton<Platform.IAppUpdater, Platform.NoAppUpdater>();
 
         services.TryAddSingleton<Maintenance.IQuarantine>(sp =>
             new Maintenance.Quarantine(
