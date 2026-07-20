@@ -14,6 +14,10 @@
     <RootNamespace>Dispatch.App</RootNamespace>
     <AssemblyName>Dispatch</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Embedded in the .exe: the badge mark shown in Explorer, on pinned and
+         desktop shortcuts, and on the taskbar before the window's runtime icon
+         loads. Generated from the ArtBadge geometry by tools/Make-AppIcon.ps1. -->
+    <ApplicationIcon>app.ico</ApplicationIcon>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>false</SelfContained>
