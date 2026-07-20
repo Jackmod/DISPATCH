@@ -89,15 +89,24 @@ public static class CoreServiceCollectionExtensions
         // The pack roots as an injectable options value, computed from paths.
         services.TryAddSingleton(sp => new Acquisition.ModPackRoots(ModPackRoots(sp.GetRequiredService<IAppPaths>())));
 
+        // The hosted pack index, loaded once from the small remote-pack.json that
+        // ships beside the executable. Absent (or empty) in a fat build that bundles
+        // the whole pack; populated in a thin build that downloads on demand.
+        services.TryAddSingleton(_ => LoadRemotePackIndex());
+
         // TryAddEnumerable so the acquirer receives every source exactly once,
         // even if AddDispatchCore is called more than once in a host. Order is
         // preserved and the acquirer takes the first source that can handle a mod,
         // so the bundled pack is registered first: a mod present in the pack
-        // installs from it, and anything absent falls through to the network.
+        // installs from it. The hosted remote pack comes next, so a thin install
+        // fetches on demand what the local pack does not have; anything neither
+        // holds falls through to the per-mod network sources.
         // Each is a concrete implementation type so TryAddEnumerable can tell them
         // apart.
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<Acquisition.IDownloadSource, Acquisition.BundledModSource>());
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<Acquisition.IDownloadSource, Acquisition.RemotePackSource>());
         services.TryAddEnumerable(
             ServiceDescriptor.Singleton<Acquisition.IDownloadSource, Acquisition.GitHubReleaseSource>());
         services.TryAddEnumerable(
@@ -119,4 +128,30 @@ public static class CoreServiceCollectionExtensions
         paths.ModPackDirectory,
         Path.Combine(AppContext.BaseDirectory, "modpack"),
     ];
+
+    /// <summary>
+    /// Loads the hosted pack index from <c>remote-pack.json</c> beside the
+    /// executable. A missing, empty or malformed file yields an empty index — the
+    /// remote source then simply handles nothing, exactly as a fat build wants.
+    /// </summary>
+    private static Acquisition.RemotePackIndex LoadRemotePackIndex()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "remote-pack.json");
+        if (!File.Exists(path))
+        {
+            return new Acquisition.RemotePackIndex([]);
+        }
+
+        try
+        {
+            var json = File.ReadAllText(path);
+            var entries = System.Text.Json.JsonSerializer.Deserialize<List<Acquisition.RemotePackEntry>>(
+                json, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            return new Acquisition.RemotePackIndex(entries ?? []);
+        }
+        catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException)
+        {
+            return new Acquisition.RemotePackIndex([]);
+        }
+    }
 }

@@ -46,3 +46,9 @@ desktop.ini
 
 ## Release output
 /release/
+
+## Dispatch build/publish output (thin + fat installer staging)
+/publish/
+/publish-thin/
+/releases/
+*.local.zip
