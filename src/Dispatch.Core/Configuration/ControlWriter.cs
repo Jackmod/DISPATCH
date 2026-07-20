@@ -301,7 +301,12 @@ public sealed class ControlWriter : IControlWriter
         return string.Join(" + ", parts);
     }
 
-    private static KeyModifier ParseModifier(string? raw)
+    /// <summary>
+    /// Reads a modifier field's raw value into flags, tolerant of every spelling
+    /// these files use. Shared with the scanner so a discovered keybind folds in its
+    /// companion modifier exactly as a write would emit it.
+    /// </summary>
+    internal static KeyModifier ParseModifier(string? raw)
     {
         if (string.IsNullOrWhiteSpace(raw))
         {

@@ -76,8 +76,14 @@ public sealed partial class ControlsViewModel : ObservableObject
 {
     private readonly List<BindingRow> _all = [];
     private readonly IControlWriter _writer;
+    private readonly IIniScanner _scanner;
     private readonly string? _gamePath;
     private readonly OfficerProfile? _officer;
+
+    // File|key of every keybind discovered by scanning, so a re-scan never adds the
+    // same bind twice.
+    private readonly HashSet<string> _discoveredKeybindKeys = new(StringComparer.OrdinalIgnoreCase);
+    private bool _loaded;
 
     [ObservableProperty]
     private string _search = string.Empty;
@@ -124,10 +130,12 @@ public sealed partial class ControlsViewModel : ObservableObject
         IReadOnlyDictionary<string, KeyBinding>? scheme = null,
         string? gamePath = null,
         IControlWriter? writer = null,
-        OfficerProfile? officer = null)
+        OfficerProfile? officer = null,
+        IIniScanner? scanner = null)
     {
         _gamePath = gamePath;
         _writer = writer ?? new ControlWriter();
+        _scanner = scanner ?? new IniScanner();
         _officer = officer;
 
         foreach (var bound in ControlCatalogue.Bind(scheme ?? ControlCatalogue.Suggested))
@@ -145,9 +153,11 @@ public sealed partial class ControlsViewModel : ObservableObject
     /// <summary>The schemes offered in the profile picker.</summary>
     public IReadOnlyList<string> ProfileNames { get; } = ["Default", "Suggested", "Custom"];
 
-    /// <summary>The plugin filter options, "All plugins" first.</summary>
-    public IReadOnlyList<string> PluginFilters { get; } =
-        new[] { AllPlugins }.Concat(ControlCatalogue.Plugins).ToList();
+    /// <summary>The plugin filter options, "All plugins" first, including discovered mods.</summary>
+    public IReadOnlyList<string> PluginFilters =>
+        new[] { AllPlugins }
+            .Concat(_all.Select(row => row.Action.Plugin).Distinct().OrderBy(p => p, StringComparer.Ordinal))
+            .ToList();
 
     /// <summary>Every binding, for the keyboard map.</summary>
     public IReadOnlyList<BoundAction> AllBindings =>
@@ -296,9 +306,11 @@ public sealed partial class ControlsViewModel : ObservableObject
             return;
         }
 
+        // A discovered bind has no suggested default, so "reset" puts it back to the
+        // value it was loaded with from disk.
         row.Binding = ControlCatalogue.Suggested.TryGetValue(row.Action.Id, out var binding)
             ? binding
-            : KeyBinding.Unbound;
+            : row.Original;
         Refresh();
     }
 
@@ -427,7 +439,9 @@ public sealed partial class ControlsViewModel : ObservableObject
             return;
         }
 
-        var onDisk = await _writer.ReadAsync(_gamePath, ControlCatalogue.Actions).ConfigureAwait(true);
+        // Read back every action on screen — curated and discovered — so an
+        // in-game change to any of them is reconciled, not just the catalogued ones.
+        var onDisk = await _writer.ReadAsync(_gamePath, _all.Select(row => row.Action).ToList()).ConfigureAwait(true);
 
         var changed = 0;
         foreach (var row in _all)
@@ -439,11 +453,97 @@ public sealed partial class ControlsViewModel : ObservableObject
             }
         }
 
-        StatusMessage = changed == 0
-            ? "The config files match your profile — nothing changed in-game."
-            : $"{changed} setting(s) were changed in-game. Review the staged changes, then apply to keep them.";
+        // A mod added since the last look brings new binds; fold them in too.
+        var discovered = await ScanKeybindsAsync().ConfigureAwait(true);
+
+        StatusMessage = (changed, discovered) switch
+        {
+            (0, 0) => "The config files match your profile — nothing changed in-game.",
+            (_, 0) => $"{changed} bind(s) were changed in-game. Review the staged changes, then apply to keep them.",
+            (0, _) => $"Found {discovered} new bind(s) from a mod that was not here before.",
+            _ => $"{changed} bind(s) changed in-game and {discovered} new bind(s) were found. Review, then apply.",
+        };
 
         Refresh();
+    }
+
+    /// <summary>
+    /// Loads once, on first appearance: reads the real bindings off disk as the
+    /// baseline and folds in every keybind a scan finds beyond the catalogue.
+    /// </summary>
+    /// <remarks>
+    /// This is what makes the screen show what the game will actually read, and what
+    /// lets an uncatalogued mod's keys — keyboard on the keyboard tab, controller on
+    /// the controller tab — appear without anyone having to add them by hand.
+    /// </remarks>
+    public async Task EnsureLoadedAsync()
+    {
+        if (_loaded)
+        {
+            return;
+        }
+
+        _loaded = true;
+        await LoadFromDiskAsync().ConfigureAwait(true);
+    }
+
+    private async Task LoadFromDiskAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_gamePath) || !Directory.Exists(_gamePath))
+        {
+            return;
+        }
+
+        // Curated binds: adopt the on-disk value as the baseline, so the screen opens
+        // showing reality rather than the suggested scheme with nothing to apply.
+        var onDisk = await _writer.ReadAsync(_gamePath, ControlCatalogue.Actions).ConfigureAwait(true);
+        foreach (var row in _all)
+        {
+            if (onDisk.TryGetValue(row.Action.Id, out var binding))
+            {
+                row.Binding = binding;
+                row.Commit();
+            }
+        }
+
+        await ScanKeybindsAsync().ConfigureAwait(true);
+        Refresh();
+    }
+
+    /// <summary>
+    /// Adds every keybind a scan found that the catalogue does not already own, bound
+    /// to its on-disk value. Already-seen binds are skipped. Returns how many were new.
+    /// </summary>
+    private async Task<int> ScanKeybindsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_gamePath) || !Directory.Exists(_gamePath))
+        {
+            return 0;
+        }
+
+        var scan = await _scanner.ScanAllAsync(_gamePath).ConfigureAwait(true);
+
+        // Anything the curated catalogue already presents in a nicer form is left to it.
+        var curated = ControlCatalogue.Actions
+            .Select(action => $"{action.ConfigFile}|{action.ConfigKey}")
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var added = 0;
+        foreach (var found in scan.Keybinds)
+        {
+            var key = $"{found.Action.ConfigFile}|{found.Action.ConfigKey}";
+            if (curated.Contains(key) || !_discoveredKeybindKeys.Add(key))
+            {
+                continue;
+            }
+
+            // The row's baseline is the on-disk value, so a discovered bind opens
+            // unchanged and only stages once the user edits it.
+            _all.Add(new BindingRow(found.Action, found.Binding));
+            added++;
+        }
+
+        return added;
     }
 
     /// <summary>The current scheme as a printable Markdown cheat sheet.</summary>
@@ -606,6 +706,7 @@ public sealed partial class ControlsViewModel : ObservableObject
         }
 
         OnPropertyChanged(nameof(AllBindings));
+        OnPropertyChanged(nameof(PluginFilters));
         OnPropertyChanged(nameof(Conflicts));
         OnPropertyChanged(nameof(ConflictSummary));
         OnPropertyChanged(nameof(IsClean));

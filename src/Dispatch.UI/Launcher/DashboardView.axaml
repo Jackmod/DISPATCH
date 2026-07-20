@@ -54,6 +54,23 @@
           </Panel>
         </Border>
 
+        <!-- ===== Launch status ================================ -->
+        <!-- Go on duty starts RagePluginHook; this says what happened so a launch
+             that could not find the loader or the game folder is never silent. -->
+        <Border IsVisible="{Binding HasLaunchStatus}"
+                Padding="20,14"
+                CornerRadius="{DynamicResource RadiusCard}"
+                Background="{DynamicResource GlassSurface}"
+                BorderBrush="{DynamicResource GlassBorderGold}"
+                BorderThickness="1">
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <c:Icon Data="{StaticResource IconPlay}" Foreground="{DynamicResource Gold}"
+                    VerticalAlignment="Top" />
+            <TextBlock Text="{Binding LaunchStatus}" TextWrapping="Wrap" FontSize="13"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </Border>
+
         <!-- ===== Game-update alert ============================= -->
         <!-- The single most common way a working setup dies: Rockstar patched the
              game and Script Hook V no longer matches. Shown only when detected. -->

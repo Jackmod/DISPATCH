@@ -36,6 +36,7 @@ public sealed record StatusTile(string Eyebrow, string Value, string Detail, Sta
 public sealed partial class DashboardViewModel : ObservableObject
 {
     private readonly Core.Platform.IGameLauncher? _launcher;
+    private readonly IGameProcessGuard _guard;
     private readonly IInstallRecordStore _records;
     private readonly IVersionReader _versions;
     private readonly IProfileStatsStore _stats;
@@ -55,11 +56,13 @@ public sealed partial class DashboardViewModel : ObservableObject
         IInstallRecordStore? records = null,
         IVersionReader? versions = null,
         IProfileStatsStore? stats = null,
-        IAppPaths? paths = null)
+        IAppPaths? paths = null,
+        IGameProcessGuard? guard = null)
     {
         Officer = officer;
         _launcher = launcher;
         _gamePath = gamePath;
+        _guard = guard ?? new GameProcessGuard();
 
         var appPaths = paths ?? new AppPaths();
         _records = records ?? new InstallRecordStore(appPaths, NullLogger<InstallRecordStore>.Instance);
@@ -200,11 +203,52 @@ public sealed partial class DashboardViewModel : ObservableObject
         }
     }
 
-    /// <summary>Starts RagePluginHook. Returns false when it could not be launched.</summary>
-    public bool GoOnDuty() =>
-        _launcher is not null
-        && !string.IsNullOrWhiteSpace(_gamePath)
-        && _launcher.LaunchRagePluginHook(_gamePath);
+    /// <summary>The result of the last go-on-duty attempt, for the user to read. Null before one.</summary>
+    [ObservableProperty]
+    private string? _launchStatus;
+
+    /// <summary>Whether there is a launch status to show.</summary>
+    public bool HasLaunchStatus => !string.IsNullOrWhiteSpace(LaunchStatus);
+
+    /// <summary>
+    /// Starts RagePluginHook, which hooks GTA V and brings the plugins up, and sets
+    /// <see cref="LaunchStatus"/> to exactly what happened so a failure is never silent.
+    /// </summary>
+    public void GoOnDuty()
+    {
+        if (string.IsNullOrWhiteSpace(_gamePath) || !Directory.Exists(_gamePath))
+        {
+            LaunchStatus = "No game folder is set. Point Dispatch at your GTA V folder in Settings, then try again.";
+            return;
+        }
+
+        if (_launcher is null || !_launcher.IsAvailable)
+        {
+            LaunchStatus = "Launching is only available on Windows.";
+            return;
+        }
+
+        // Don't start a second loader over a session that is already up.
+        if (_guard.IsGameRunning(out var process))
+        {
+            LaunchStatus = $"{process ?? "The game"} is already running — you're on duty.";
+            return;
+        }
+
+        LaunchStatus = _launcher.LaunchRagePluginHook(_gamePath) switch
+        {
+            Core.Platform.LaunchOutcome.Launched =>
+                "RagePluginHook is starting. Hold Left Shift for the plugin list, tick your plugins, then Save and Launch.",
+            Core.Platform.LaunchOutcome.LoaderNotFound =>
+                "RagePluginHook.exe isn't in your game folder. Install LSPDFR (it ships RagePluginHook) and try again.",
+            Core.Platform.LaunchOutcome.Unavailable =>
+                "Launching is only available on Windows.",
+            _ =>
+                "RagePluginHook could not be started. Try launching it from the game folder by hand to see what it reports.",
+        };
+    }
+
+    partial void OnLaunchStatusChanged(string? value) => OnPropertyChanged(nameof(HasLaunchStatus));
 
     private void ReadCrashLogs()
     {

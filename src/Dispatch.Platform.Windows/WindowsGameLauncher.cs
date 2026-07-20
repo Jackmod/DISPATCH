@@ -24,11 +24,11 @@ public sealed class WindowsGameLauncher : IGameLauncher
     public bool IsAvailable { get; }
 
     /// <inheritdoc />
-    public bool LaunchRagePluginHook(string gamePath)
+    public LaunchOutcome LaunchRagePluginHook(string gamePath)
     {
         if (!IsAvailable || string.IsNullOrWhiteSpace(gamePath))
         {
-            return false;
+            return LaunchOutcome.Unavailable;
         }
 
         var exe = LoaderNames
@@ -38,13 +38,16 @@ public sealed class WindowsGameLauncher : IGameLauncher
         if (exe is null)
         {
             _logger.LogInformation("RagePluginHook not found in {Path}", gamePath);
-            return false;
+            return LaunchOutcome.LoaderNotFound;
         }
 
         try
         {
-            // Started from the game folder so RagePluginHook finds the game and
-            // its plugins beside it, exactly as launching it by hand would.
+            // Started from the game folder so RagePluginHook finds the game and its
+            // plugins beside it, exactly as launching it by hand would.
+            // UseShellExecute honours the loader's own manifest, so if RagePluginHook
+            // asks for administrator rights Windows elevates it — without Dispatch
+            // forcing a UAC prompt on a build that does not need one.
             Process.Start(new ProcessStartInfo
             {
                 FileName = exe,
@@ -53,12 +56,12 @@ public sealed class WindowsGameLauncher : IGameLauncher
             });
 
             _logger.LogInformation("Launched RagePluginHook from {Exe}", exe);
-            return true;
+            return LaunchOutcome.Launched;
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
         {
             _logger.LogWarning(ex, "Could not start RagePluginHook");
-            return false;
+            return LaunchOutcome.Failed;
         }
     }
 }

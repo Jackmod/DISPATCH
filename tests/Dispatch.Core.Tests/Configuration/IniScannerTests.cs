@@ -1,4 +1,5 @@
 using Dispatch.Core.Configuration;
+using Dispatch.Core.Controls;
 using FluentAssertions;
 using Xunit;
 
@@ -82,13 +83,14 @@ public sealed class IniScannerTests : IDisposable
     }
 
     [Theory]
-    [InlineData("PatDownKey", "Pat down")]
     [InlineData("InitialSpeedThreshold", "Initial speed threshold")]
     [InlineData("MDTPositionX", "MDT position X")]
     [InlineData("use_siren", "Use siren")]
     public async Task Keys_become_readable_names(string key, string expected)
     {
-        Write("plugins/M.ini", $"{key} = 1\n");
+        // A plain numeric value keeps these as settings; a key-shaped name would be
+        // read as a bind instead, which is covered separately.
+        Write("plugins/M.ini", $"{key} = 42\n");
 
         var setting = (await _scanner.ScanAsync(_root)).First();
 
@@ -113,8 +115,8 @@ public sealed class IniScannerTests : IDisposable
     [Fact]
     public async Task It_skips_our_own_backup_files()
     {
-        Write("plugins/M.ini", "Key = 1\n");
-        Write("plugins/M.ini.bak", "Key = 999\n");
+        Write("plugins/M.ini", "Volume = 1\n");
+        Write("plugins/M.ini.bak", "Volume = 999\n");
 
         var found = await _scanner.ScanAsync(_root);
 
@@ -141,5 +143,118 @@ public sealed class IniScannerTests : IDisposable
     {
         (await _scanner.ScanAsync(_root)).Should().BeEmpty();
         (await _scanner.ScanAsync(Path.Combine(_root, "does-not-exist"))).Should().BeEmpty();
+    }
+
+    // ===== Keybind classification ========================================
+
+    [Fact]
+    public async Task One_ini_splits_across_keyboard_controller_and_settings()
+    {
+        // A single file with a keyboard bind, a controller bind and a plain setting:
+        // each must land in the right place, which is the whole point.
+        Write("plugins/SomeMod.ini",
+            "[General]\n" +
+            "OpenMenuKey = F6\n" +
+            "OpenMenuButton = DPadRight\n" +
+            "EnableFeature = true\n");
+
+        var scan = await _scanner.ScanAllAsync(_root);
+
+        scan.Keybinds.Should().Contain(k =>
+            k.Action.ConfigKey == "OpenMenuKey" && k.Action.Device == InputDevice.Keyboard);
+        scan.Keybinds.Should().Contain(k =>
+            k.Action.ConfigKey == "OpenMenuButton" && k.Action.Device == InputDevice.Controller);
+        scan.Settings.Should().Contain(s => s.ConfigKey == "EnableFeature" && s.Kind == SettingKind.Toggle);
+
+        // And the binds never leak into the settings list.
+        scan.Settings.Should().NotContain(s => s.ConfigKey == "OpenMenuKey" || s.ConfigKey == "OpenMenuButton");
+        (await _scanner.ScanAsync(_root)).Should().NotContain(s => s.ConfigKey == "OpenMenuKey" || s.ConfigKey == "OpenMenuButton");
+    }
+
+    [Fact]
+    public async Task A_discovered_keyboard_bind_reads_its_value_and_name()
+    {
+        Write("plugins/M.ini", "PatDownKey = F9\n");
+
+        var bind = (await _scanner.ScanAllAsync(_root)).Keybinds.Single();
+
+        bind.Action.Name.Should().Be("Pat down");
+        bind.Action.Device.Should().Be(InputDevice.Keyboard);
+        bind.Binding.Key.Canonical.Should().Be("F9");
+    }
+
+    [Fact]
+    public async Task A_key_named_bind_holding_a_bool_stays_a_setting()
+    {
+        // "MonitorKey = true" looks like a bind by name but its value is a bool, so it
+        // must stay an editable toggle, never a keybind.
+        Write("plugins/M.ini", "MonitorKey = true\n");
+
+        var scan = await _scanner.ScanAllAsync(_root);
+
+        scan.Keybinds.Should().BeEmpty();
+        scan.Settings.Should().ContainSingle(s => s.ConfigKey == "MonitorKey" && s.Kind == SettingKind.Toggle);
+    }
+
+    [Fact]
+    public async Task A_controller_bind_is_recognised_by_its_value_alone()
+    {
+        // No "Button" suffix, but the value is unmistakably a D-pad direction.
+        Write("plugins/M.ini", "Pursuit = DPadDown\n");
+
+        var bind = (await _scanner.ScanAllAsync(_root)).Keybinds.Single();
+
+        bind.Action.Device.Should().Be(InputDevice.Controller);
+        bind.Binding.Key.Canonical.Should().Be("DPadDown");
+    }
+
+    [Fact]
+    public async Task A_bind_folds_in_its_modifier_companion()
+    {
+        Write("lspdfr/Keys.ini", "TRAFFIC_STOP_Key = X\nTRAFFIC_STOP_KeyModifier = Left Shift\n");
+
+        var scan = await _scanner.ScanAllAsync(_root);
+
+        var bind = scan.Keybinds.Single(k => k.Action.ConfigKey == "TRAFFIC_STOP_Key");
+        bind.Binding.Key.Canonical.Should().Be("X");
+        bind.Binding.Modifier.Should().Be(KeyModifier.Shift);
+
+        // The companion is absorbed, not shown as its own setting or bind.
+        scan.Settings.Should().NotContain(s => s.ConfigKey == "TRAFFIC_STOP_KeyModifier");
+        scan.Keybinds.Should().NotContain(k => k.Action.ConfigKey == "TRAFFIC_STOP_KeyModifier");
+    }
+
+    [Fact]
+    public async Task A_discovered_keyboard_bind_round_trips_through_the_control_writer()
+    {
+        Write("plugins/M.ini", "SomeActionKey = F9\n");
+        var writer = new ControlWriter();
+
+        var bind = (await _scanner.ScanAllAsync(_root)).Keybinds.Single();
+
+        // Rebind to Left Control + G and confirm the file holds the new value and modifier.
+        var moved = new BoundAction(bind.Action, new KeyBinding(new KeyToken("G"), KeyModifier.Control));
+        await writer.WriteAsync(_root, [moved]);
+
+        var document = await IniDocument.LoadAsync(Path.Combine(_root, "plugins", "M.ini"));
+        document.GetAnywhere("SomeActionKey").Should().Be("G");
+        document.GetAnywhere("SomeActionKeyModifier").Should().Be("Left Control");
+    }
+
+    [Fact]
+    public async Task A_bare_number_row_bind_keeps_its_bare_spelling_on_write()
+    {
+        // Written bare as "9"; a rebind to another number-row key must stay bare (not "D8").
+        Write("plugins/M.ini", "MenuKey = 9\n");
+        var writer = new ControlWriter();
+
+        var bind = (await _scanner.ScanAllAsync(_root)).Keybinds.Single();
+        bind.Binding.Key.Canonical.Should().Be("D9");
+
+        var moved = new BoundAction(bind.Action, new KeyBinding(new KeyToken("D8")));
+        await writer.WriteAsync(_root, [moved]);
+
+        var document = await IniDocument.LoadAsync(Path.Combine(_root, "plugins", "M.ini"));
+        document.GetAnywhere("MenuKey").Should().Be("8");
     }
 }

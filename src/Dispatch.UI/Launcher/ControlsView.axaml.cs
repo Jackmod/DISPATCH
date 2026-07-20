@@ -19,6 +19,17 @@ public partial class ControlsView : UserControl
         // Tunnelling, so capture sees the key before focus navigation or a
         // text box consumes it.
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
+
+        // Read the real bindings off disk and fold in discovered binds on first show.
+        Loaded += OnLoaded;
+    }
+
+    private async void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is ControlsViewModel model)
+        {
+            await model.EnsureLoadedAsync();
+        }
     }
 
     private void OnKeyDown(object? sender, KeyEventArgs e)
