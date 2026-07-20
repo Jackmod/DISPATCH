@@ -117,6 +117,22 @@ your shell's PATH is stale, closes any running instance before building, and
 takes `build`, `test`, `run`, `demo` (write-nothing simulation), `offline` (real
 install from the bundled pack, no network), `watch` or `clean`.
 
+> [!TIP]
+> **On Command Prompt (`cmd.exe`) rather than PowerShell?** The `./tools/dispatch.ps1`
+> line is PowerShell syntax — `cmd` reports `'.' is not recognized`. Run it through
+> PowerShell instead:
+>
+> ```
+> powershell -ExecutionPolicy Bypass -File tools\dispatch.ps1 run
+> ```
+>
+> Or skip the helper script entirely — this works from **either** shell when the
+> .NET SDK is on your PATH:
+>
+> ```
+> dotnet run --project src/Dispatch.App/Dispatch.App.csproj
+> ```
+
 <details>
 <summary><b>If <code>dotnet</code> isn't recognised</b></summary>
 
