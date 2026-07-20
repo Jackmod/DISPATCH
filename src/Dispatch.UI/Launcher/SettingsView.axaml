@@ -31,6 +31,25 @@
     <Style Selector="Button.nav.active /template/ ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource BlueDim}" />
     </Style>
+
+    <Style Selector="Button.danger">
+      <Setter Property="Foreground" Value="{DynamicResource Ink}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.danger /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Red}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusInput}" />
+    </Style>
+    <Style Selector="Button.danger:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#FF6B70" />
+    </Style>
+    <Style Selector="Border.danger">
+      <Setter Property="Padding" Value="24" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+      <Setter Property="Background" Value="{DynamicResource GlassSurface}" />
+      <Setter Property="BorderBrush" Value="#55F0555A" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
   </UserControl.Styles>
 
   <Panel>
@@ -59,6 +78,8 @@
                   Command="{Binding SetSectionCommand}" CommandParameter="folders" />
           <Button Classes="nav" Classes.active="{Binding IsQuarantine}" Content="Quarantine"
                   Command="{Binding SetSectionCommand}" CommandParameter="quarantine" />
+          <Button Classes="nav" Classes.active="{Binding IsUninstall}" Content="Uninstall"
+                  Command="{Binding SetSectionCommand}" CommandParameter="uninstall" />
           <Button Classes="nav" Classes.active="{Binding IsAbout}" Content="About"
                   Command="{Binding SetSectionCommand}" CommandParameter="about" />
         </StackPanel>
@@ -181,6 +202,69 @@
                 </ItemsControl>
               </StackPanel>
             </Border>
+          </ScrollViewer>
+
+          <!-- Uninstall -->
+          <ScrollViewer IsVisible="{Binding IsUninstall}" VerticalScrollBarVisibility="Auto" Margin="0,0,32,0">
+            <StackPanel MaxWidth="720" HorizontalAlignment="Left" Spacing="16">
+
+              <!-- Remove Dispatch's data -->
+              <Border Classes="danger">
+                <StackPanel Spacing="14">
+                  <TextBlock Text="Remove Dispatch" Classes="h1" />
+                  <TextBlock Classes="small" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap"
+                             Text="Wipes everything Dispatch keeps on this PC — your profile, install record, backups, quarantine, journals, logs, the mod pack and the Desktop shortcut. Your GTA V folder and its mods are left exactly as they are." />
+
+                  <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding !ConfirmingWipe}">
+                    <Button Classes="danger" Content="Remove all Dispatch data" Command="{Binding RequestWipeCommand}" />
+                  </StackPanel>
+
+                  <Border IsVisible="{Binding ConfirmingWipe}" Padding="14,12"
+                          CornerRadius="{DynamicResource RadiusInput}"
+                          Background="{DynamicResource NavyDeep}" BorderBrush="{DynamicResource Red}" BorderThickness="1">
+                    <StackPanel Spacing="10">
+                      <TextBlock Classes="body" TextWrapping="Wrap"
+                                 Text="This removes Dispatch's data permanently and cannot be undone. Your game folder is not touched. Continue?" />
+                      <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Classes="danger" Content="Yes, remove everything" Command="{Binding ConfirmWipeCommand}" />
+                        <Button Classes="ghost" Content="Cancel" Command="{Binding CancelWipeCommand}" />
+                      </StackPanel>
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </Border>
+
+              <!-- Return GTA V to stock -->
+              <Border Classes="section">
+                <StackPanel Spacing="14">
+                  <TextBlock Text="Return GTA V to stock" Classes="h1" />
+                  <TextBlock Classes="small" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap"
+                             Text="Optional. Reverses the install in your game folder — files Dispatch overwrote are restored from backup, files it added are moved to quarantine (restorable until you wipe Dispatch's data). Only files Dispatch placed are touched, and only while they still match what it installed, so anything you changed yourself is left alone." />
+
+                  <StackPanel IsVisible="{Binding !ConfirmingStock}">
+                    <Button Classes="secondary" Content="Return game to stock" Command="{Binding RequestStockCommand}" HorizontalAlignment="Left" />
+                  </StackPanel>
+
+                  <Border IsVisible="{Binding ConfirmingStock}" Padding="14,12"
+                          CornerRadius="{DynamicResource RadiusInput}"
+                          Background="{DynamicResource NavyDeep}" BorderBrush="{DynamicResource Amber}" BorderThickness="1">
+                    <StackPanel Spacing="10">
+                      <TextBlock Classes="body" TextWrapping="Wrap"
+                                 Text="This removes the LSPDFR setup from your game and returns it to vanilla. It is reversible from Quarantine until you wipe Dispatch's data. Continue?" />
+                      <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Classes="primary" Content="Yes, return to stock" Command="{Binding ConfirmStockCommand}" />
+                        <Button Classes="ghost" Content="Cancel" Command="{Binding CancelStockCommand}" />
+                      </StackPanel>
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </Border>
+
+              <TextBlock Classes="small" Foreground="{DynamicResource Gold}" TextWrapping="Wrap"
+                         Text="{Binding UninstallStatus}"
+                         IsVisible="{Binding UninstallStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+            </StackPanel>
           </ScrollViewer>
 
           <!-- About -->

@@ -69,6 +69,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly IAppPaths _paths;
     private readonly IQuarantine _quarantine;
     private readonly ISettingsWriter _settingsWriter;
+    private readonly IUninstaller _uninstaller;
     private readonly string? _gamePath;
 
     private DispatchProfile _profile = new();
@@ -127,6 +128,11 @@ public sealed partial class SettingsViewModel : ObservableObject
         _profiles = profiles ?? new ProfileStore(_paths, NullLogger<ProfileStore>.Instance);
         _quarantine = quarantine ?? new Quarantine(_paths.QuarantineDirectory, NullLogger<Quarantine>.Instance);
         _settingsWriter = settingsWriter ?? new SettingsWriter();
+        _uninstaller = new Uninstaller(
+            _paths,
+            new InstallRecordStore(_paths, NullLogger<InstallRecordStore>.Instance),
+            new BackupStore(_paths.BackupsDirectory, NullLogger<BackupStore>.Instance),
+            _quarantine);
 
         // Settings is the hub: keybinds and plugin settings live inside it as their
         // own full screens rather than as separate rail destinations.
@@ -156,6 +162,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         new("officer", "Officer"),
         new("folders", "Folders"),
         new("quarantine", "Quarantine"),
+        new("uninstall", "Uninstall"),
         new("about", "About"),
     ];
 
@@ -177,6 +184,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>Whether the quarantine section is showing.</summary>
     public bool IsQuarantine => Section == "quarantine";
 
+    /// <summary>Whether the uninstall section is showing.</summary>
+    public bool IsUninstall => Section == "uninstall";
+
     /// <summary>Whether the about section is showing.</summary>
     public bool IsAbout => Section == "about";
 
@@ -192,8 +202,104 @@ public sealed partial class SettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(IsOfficer));
         OnPropertyChanged(nameof(IsFolders));
         OnPropertyChanged(nameof(IsQuarantine));
+        OnPropertyChanged(nameof(IsUninstall));
         OnPropertyChanged(nameof(IsAbout));
     }
+
+    // ===== Uninstall =========================================
+
+    /// <summary>Whether the "remove all data" confirmation is showing.</summary>
+    [ObservableProperty]
+    private bool _confirmingWipe;
+
+    /// <summary>Whether the "return to stock" confirmation is showing.</summary>
+    [ObservableProperty]
+    private bool _confirmingStock;
+
+    /// <summary>The result of the last uninstall action.</summary>
+    [ObservableProperty]
+    private string? _uninstallStatus;
+
+    /// <summary>Asks for confirmation before wiping Dispatch's data.</summary>
+    [RelayCommand]
+    private void RequestWipe()
+    {
+        ConfirmingStock = false;
+        ConfirmingWipe = true;
+    }
+
+    /// <summary>Backs out of the data wipe.</summary>
+    [RelayCommand]
+    private void CancelWipe() => ConfirmingWipe = false;
+
+    /// <summary>
+    /// Wipes every trace of Dispatch from the machine — profile, backups,
+    /// quarantine, journals, logs, the mod pack, the OpenIV import folder and the
+    /// Desktop shortcut. The game folder is not touched.
+    /// </summary>
+    [RelayCommand]
+    private async Task ConfirmWipeAsync()
+    {
+        ConfirmingWipe = false;
+        var report = await _uninstaller.RemoveAppDataAsync().ConfigureAwait(true);
+        UninstallStatus = report.Count == 0
+            ? "Nothing to remove — Dispatch had no data on this machine."
+            : $"Removed {report.Count} location(s), {Bytes(report.TotalBytes)} freed. "
+              + "Your game folder was not touched. Close Dispatch to finish.";
+    }
+
+    /// <summary>Asks for confirmation before returning the game to stock.</summary>
+    [RelayCommand]
+    private void RequestStock()
+    {
+        ConfirmingWipe = false;
+        ConfirmingStock = true;
+    }
+
+    /// <summary>Backs out of the return-to-stock.</summary>
+    [RelayCommand]
+    private void CancelStock() => ConfirmingStock = false;
+
+    /// <summary>
+    /// Returns the game folder to stock: restores every file Dispatch overwrote and
+    /// moves every file it added into quarantine. Only files the install record
+    /// names are touched, and only while they still match what Dispatch placed.
+    /// </summary>
+    [RelayCommand]
+    private async Task ConfirmStockAsync()
+    {
+        ConfirmingStock = false;
+
+        if (string.IsNullOrWhiteSpace(_gamePath) || !Directory.Exists(_gamePath))
+        {
+            UninstallStatus = "No game folder is set, so there is nothing to return to stock.";
+            return;
+        }
+
+        var report = await _uninstaller.ReturnGameToStockAsync(_gamePath).ConfigureAwait(true);
+
+        if (!report.DidAnything && report.Problems.Count == 0)
+        {
+            UninstallStatus = "Nothing installed — the game folder is already stock.";
+            return;
+        }
+
+        var summary = $"Returned to stock: restored {report.FilesRestored} file(s), "
+            + $"moved {report.FilesRemoved} mod file(s) to quarantine (restorable until you wipe Dispatch's data).";
+        UninstallStatus = report.Problems.Count == 0
+            ? summary
+            : summary + $" {report.Problems.Count} file(s) needed attention: {report.Problems[0]}";
+
+        await RefreshQuarantineAsync().ConfigureAwait(true);
+    }
+
+    private static string Bytes(long bytes) => bytes switch
+    {
+        >= 1L << 30 => $"{bytes / (double)(1L << 30):0.0} GB",
+        >= 1L << 20 => $"{bytes / (double)(1L << 20):0.0} MB",
+        >= 1L << 10 => $"{bytes / (double)(1L << 10):0.0} KB",
+        _ => $"{bytes} B",
+    };
 
     /// <summary>The phonetic alphabet for the callsign picker.</summary>
     public IReadOnlyList<string> PhoneticOptions => Phonetics;
