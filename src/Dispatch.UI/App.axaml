@@ -46,6 +46,7 @@
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/NumberDial.axaml" />
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/ProgressBarSolid.axaml" />
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/KeyboardMap.axaml" />
+        <ResourceInclude Source="avares://Dispatch.UI/Theme/Controls/RadioWavePulse.axaml" />
 
         <!-- Motion stays last: SetReducedMotion layers its override after it. -->
         <ResourceInclude Source="avares://Dispatch.UI/Theme/Motion.axaml" />

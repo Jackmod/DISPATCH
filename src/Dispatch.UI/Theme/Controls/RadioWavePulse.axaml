@@ -1,0 +1,82 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:Dispatch.UI.Controls">
+
+  <!--
+    Three rings expanding and fading outward on staggered loops, over a steady
+    centre dot. The stagger is what makes it read as a wave rather than a pulse.
+  -->
+
+  <ControlTheme x:Key="{x:Type controls:RadioWavePulse}" TargetType="controls:RadioWavePulse">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel>
+          <Ellipse Name="Ring1" Stroke="{DynamicResource Blue}" StrokeThickness="2"
+                   Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Opacity="0" RenderTransformOrigin="50%,50%" />
+          <Ellipse Name="Ring2" Stroke="{DynamicResource Blue}" StrokeThickness="2"
+                   Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Opacity="0" RenderTransformOrigin="50%,50%" />
+          <Ellipse Name="Ring3" Stroke="{DynamicResource Blue}" StrokeThickness="2"
+                   Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Opacity="0" RenderTransformOrigin="50%,50%" />
+          <Ellipse Width="10" Height="10" Fill="{DynamicResource Gold}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+
+    <Style Selector="^ /template/ Ellipse#Ring1">
+      <Style.Animations>
+        <Animation Duration="0:0:2" IterationCount="INFINITE" Easing="CubicEaseOut">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="0.9" />
+            <Setter Property="ScaleTransform.ScaleX" Value="0.3" />
+            <Setter Property="ScaleTransform.ScaleY" Value="0.3" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="ScaleTransform.ScaleX" Value="4.2" />
+            <Setter Property="ScaleTransform.ScaleY" Value="4.2" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+
+    <Style Selector="^ /template/ Ellipse#Ring2">
+      <Style.Animations>
+        <Animation Duration="0:0:2" IterationCount="INFINITE" Easing="CubicEaseOut" Delay="0:0:0.66">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="0.9" />
+            <Setter Property="ScaleTransform.ScaleX" Value="0.3" />
+            <Setter Property="ScaleTransform.ScaleY" Value="0.3" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="ScaleTransform.ScaleX" Value="4.2" />
+            <Setter Property="ScaleTransform.ScaleY" Value="4.2" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+
+    <Style Selector="^ /template/ Ellipse#Ring3">
+      <Style.Animations>
+        <Animation Duration="0:0:2" IterationCount="INFINITE" Easing="CubicEaseOut" Delay="0:0:1.33">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="0.9" />
+            <Setter Property="ScaleTransform.ScaleX" Value="0.3" />
+            <Setter Property="ScaleTransform.ScaleY" Value="0.3" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="0" />
+            <Setter Property="ScaleTransform.ScaleX" Value="4.2" />
+            <Setter Property="ScaleTransform.ScaleY" Value="4.2" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+
+  </ControlTheme>
+
+</ResourceDictionary>

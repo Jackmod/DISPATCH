@@ -75,7 +75,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Panel>
+  <Panel Name="Root">
   <Grid ColumnDefinitions="240,*">
 
     <!-- ===== Rail ============================================ -->
@@ -148,6 +148,12 @@
     </TransitioningContentControl>
 
   </Grid>
+
+  <!-- ===== Cleaner modal ================================== -->
+  <!-- Visibility comes from the launcher; content from the cleaner's own VM. -->
+  <vm:CleanerView Name="Cleaner"
+                  IsVisible="{Binding #Root.((vm:LauncherViewModel)DataContext).CleanerOpen}"
+                  DataContext="{Binding Cleaner}" />
 
   <!-- ===== Command palette ================================= -->
   <Border Name="PaletteOverlay"

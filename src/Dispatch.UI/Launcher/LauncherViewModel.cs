@@ -61,6 +61,8 @@ public sealed partial class LauncherViewModel : ObservableObject
         _mods = new ModsViewModel();
         _settings = new SettingsViewModel();
 
+        Cleaner = new CleanerViewModel();
+
         Palette = new CommandPaletteViewModel();
         Palette.Chosen += OnPaletteChosen;
 
@@ -81,6 +83,62 @@ public sealed partial class LauncherViewModel : ObservableObject
 
     /// <summary>The Ctrl+K command palette.</summary>
     public CommandPaletteViewModel Palette { get; }
+
+    /// <summary>The Clean GTA folder modal.</summary>
+    public CleanerViewModel Cleaner { get; }
+
+    /// <summary>Whether the cleaner modal is showing.</summary>
+    [ObservableProperty]
+    private bool _cleanerOpen;
+
+    /// <summary>Opens the cleaner against the active game folder.</summary>
+    public async Task OpenCleanerAsync()
+    {
+        CleanerOpen = true;
+        var gamePath = Officer is null ? string.Empty : Cleaner.GamePath;
+
+        // Nothing to scan without a folder; the modal still opens so its empty
+        // state can explain that. A real game path arrives from the profile.
+        if (!string.IsNullOrWhiteSpace(gamePath))
+        {
+            await Cleaner.ScanAsync(gamePath).ConfigureAwait(true);
+        }
+    }
+
+    /// <summary>Closes the cleaner modal.</summary>
+    public void CloseCleaner() => CleanerOpen = false;
+
+    /// <summary>
+    /// Development only: opens the cleaner over a throwaway fixture folder so
+    /// the modal can be demonstrated without a real game install.
+    /// </summary>
+    public async Task OpenCleanerOnFixtureAsync()
+    {
+        var fixture = System.IO.Path.Combine(
+            System.IO.Path.GetTempPath(), "dispatch-cleaner-demo");
+        System.IO.Directory.CreateDirectory(fixture);
+
+        // Stock files (never offered), mod files (known and likely), and an
+        // unknown, so all three tiers populate.
+        void Write(string rel, string content)
+        {
+            var full = System.IO.Path.Combine(fixture, rel.Replace('/', System.IO.Path.DirectorySeparatorChar));
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(full)!);
+            System.IO.File.WriteAllText(full, content);
+        }
+
+        Write("GTA5.exe", "stock");
+        Write("dinput8.dll", new string('x', 4200));
+        Write("ScriptHookV.dll", new string('x', 780000));
+        Write("plugins/StopThePed.dll", new string('x', 240000));
+        Write("plugins/LSPDFR/GrammarPolice.dll", new string('x', 96000));
+        Write("scripts/LemonUI.SHVDN3.dll", new string('x', 48000));
+        Write("holiday-screenshot.png", new string('x', 1_400_000));
+        Write("notes.txt", "my notes");
+
+        CleanerOpen = true;
+        await Cleaner.ScanAsync(fixture).ConfigureAwait(true);
+    }
 
     /// <summary>The officer callsign shown under the badge, or a placeholder.</summary>
     public string CallsignLabel => Officer?.Callsign ?? "No officer";
@@ -124,6 +182,10 @@ public sealed partial class LauncherViewModel : ObservableObject
                 // palette drops the user exactly on the row they named.
                 GoTo("controls");
                 _controls.Search = entry.Title;
+                break;
+
+            case Dispatch.Core.Palette.PaletteAction.Run when entry.Target == "clean":
+                _ = OpenCleanerAsync();
                 break;
 
             case Dispatch.Core.Palette.PaletteAction.Run when entry.Target == "controls":

@@ -19,6 +19,8 @@ public partial class LauncherView : UserControl
 
         // A double-click or tap on a result chooses it, the same as Enter.
         PaletteResults.DoubleTapped += (_, _) => Palette?.ChooseSelected();
+
+        Cleaner.CloseRequested += (_, _) => (DataContext as LauncherViewModel)?.CloseCleaner();
     }
 
     private CommandPaletteViewModel? Palette => (DataContext as LauncherViewModel)?.Palette;

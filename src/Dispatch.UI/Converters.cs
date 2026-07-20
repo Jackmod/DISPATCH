@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
 using Dispatch.UI.Controls;
+using Dispatch.UI.Launcher;
 
 namespace Dispatch.UI;
 

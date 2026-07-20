@@ -104,6 +104,20 @@ public partial class MainWindow : Window
             return;
         }
 
+        // F9 opens the cleaner over a throwaway fixture folder, so the modal can
+        // be seen and driven without a real game install present.
+        if (e.Key == Key.F9)
+        {
+            LauncherShell.IsVisible = true;
+            Gallery.IsVisible = false;
+            Controls.IsVisible = false;
+            Wizard.IsVisible = false;
+            var launcher = (LauncherViewModel)(LauncherShell.DataContext ??= new LauncherViewModel());
+            _ = launcher.OpenCleanerOnFixtureAsync();
+            e.Handled = true;
+            return;
+        }
+
         if (!e.KeyModifiers.HasFlag(KeyModifiers.Control) ||
             Wizard.DataContext is not WizardViewModel wizard)
         {
