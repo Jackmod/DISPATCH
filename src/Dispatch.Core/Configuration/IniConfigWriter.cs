@@ -89,6 +89,51 @@ public sealed class IniConfigWriter
         return new ConfigResult(changed, outcomes);
     }
 
+    /// <summary>
+    /// Reads a set of settings back out of a document and reports, per setting,
+    /// whether the value on disk is what it should be. This is the independent
+    /// safeguard: it never writes, it re-derives the expected value the same way
+    /// <see cref="Apply"/> does, and it resolves keys through the same index — so a
+    /// value that did not take, or a key this mod version does not have, is caught.
+    /// </summary>
+    public IReadOnlyList<SettingCheck> Verify(IniDocument document, IEnumerable<ConfigSetting> settings, OfficerValues officer)
+    {
+        ArgumentNullException.ThrowIfNull(document);
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(officer);
+
+        var index = BuildIndex(document);
+        var checks = new List<SettingCheck>();
+
+        foreach (var setting in settings)
+        {
+            var expected = officer.Fill(setting.Value);
+            var target = Normalise(setting.Name);
+
+            var scope = setting.Section is { } wanted
+                ? index.Where(e => string.Equals(e.Section, wanted, StringComparison.OrdinalIgnoreCase)).ToList()
+                : index;
+
+            var matches = Resolve(scope, target, setting.Match).ToList();
+            if (matches.Count == 0)
+            {
+                checks.Add(new SettingCheck(setting.Name, setting.Name, expected, null, ConfigCheck.KeyMissing));
+                continue;
+            }
+
+            foreach (var (section, key) in matches)
+            {
+                var actual = document.Get(section, key);
+                var result = string.Equals(actual, expected, StringComparison.Ordinal)
+                    ? ConfigCheck.Verified
+                    : ConfigCheck.ValueMismatch;
+                checks.Add(new SettingCheck(setting.Name, key, expected, actual, result));
+            }
+        }
+
+        return checks;
+    }
+
     private static IEnumerable<(string Section, string Key)> Resolve(
         IReadOnlyList<(string Normalised, string Section, string Key)> index,
         string target,

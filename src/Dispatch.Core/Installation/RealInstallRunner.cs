@@ -169,17 +169,33 @@ public sealed class RealInstallRunner : IInstallRunner
             Report(progress, InstallPhase.WritingConfiguration, "Applying keybinds and settings",
                 total, total, total, total, "config   applying guide values");
 
+            var officer = request.Officer ?? OfficerValues.Default;
             var configReport = await _config
-                .ApplyAsync(
-                    request.GamePath,
-                    staged.Select(s => s.Mod.Id),
-                    request.Officer ?? OfficerValues.Default,
-                    cancellationToken)
+                .ApplyAsync(request.GamePath, staged.Select(s => s.Mod.Id), officer, cancellationToken)
                 .ConfigureAwait(false);
+
+            // ===== The safeguard: read every ini back and confirm it stuck =====
+            // An independent second pass. If a value did not actually take, it is
+            // reported as needing attention rather than silently wrong in-game.
+            Report(progress, InstallPhase.Verifying, "Checking the config actually applied",
+                total, total, total, total, "verify   reading every config file back");
+
+            var verify = await _config
+                .VerifyAsync(request.GamePath, staged.Select(s => s.Mod.Id), officer, cancellationToken)
+                .ConfigureAwait(false);
+
+            foreach (var (modId, file, check) in verify.Mismatches)
+            {
+                problems.Add(new InstallProblem(
+                    $"{modId} configuration",
+                    $"'{check.Setting}' in {file} should be '{check.Expected}' but is '{check.Actual}'. "
+                    + "The setting did not apply; you can fix it in Settings, or reinstall this mod."));
+            }
 
             Report(progress, InstallPhase.Verifying, "Verifying placed files",
                 total, total, total, total,
-                $"config   {configReport.TotalApplied} setting(s) written; verify {record.Files.Count} file(s)");
+                $"verify   {verify.VerifiedCount} setting(s) confirmed, {verify.Mismatches.Count} not applied; "
+                + $"{record.Files.Count} file(s) placed");
         }
 
         // Staging is scratch; a clean run purges it. It is kept only when a

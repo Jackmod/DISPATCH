@@ -43,6 +43,46 @@ public interface IControlWriter
         string gamePath,
         IReadOnlyList<GameAction> actions,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reads every binding back out of the game files and reports whether each one is
+    /// actually what it was meant to be. The independent safeguard after a write: a
+    /// bind that did not land, or one another step changed, shows here.
+    /// </summary>
+    Task<IReadOnlyList<BindingCheck>> VerifyAsync(
+        string gamePath,
+        IReadOnlyList<BoundAction> bindings,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>Whether a binding read back from disk is what it should be.</summary>
+public enum BindCheckResult
+{
+    /// <summary>The game file holds exactly the intended binding.</summary>
+    Verified,
+
+    /// <summary>The file holds a different binding — the change did not take.</summary>
+    Mismatch,
+
+    /// <summary>The key or its file is not present, so it could not be confirmed.</summary>
+    NotFound,
+}
+
+/// <summary>One binding checked against what is actually in the game file.</summary>
+/// <param name="ActionId">The action.</param>
+/// <param name="ActionName">Its display name, for a readable report.</param>
+/// <param name="Expected">The binding that should be on disk.</param>
+/// <param name="Actual">What is on disk, or null when the key was not found.</param>
+/// <param name="Result">Verified, mismatched, or not found.</param>
+public sealed record BindingCheck(
+    string ActionId,
+    string ActionName,
+    KeyBinding Expected,
+    KeyBinding? Actual,
+    BindCheckResult Result)
+{
+    /// <summary>True when the binding did not land as intended.</summary>
+    public bool Failed => Result == BindCheckResult.Mismatch;
 }
 
 /// <summary>One value a write changed: where it is, and what it moved from and to.</summary>
@@ -139,20 +179,25 @@ public sealed class ControlWriter : IControlWriter
             cancellationToken.ThrowIfCancellationRequested();
 
             var relative = group.Key;
-            var path = Path.Combine(gamePath, relative.Replace('/', Path.DirectorySeparatorChar));
 
-            if (!File.Exists(path))
+            // Resolve the file wherever it actually landed, not just at the hinted
+            // path, so a curated bind whose ini installed to a differently-named or
+            // deeper folder still writes.
+            var path = ModFileLocator.Resolve(gamePath, relative);
+            if (path is null)
             {
                 missing.Add(relative);
                 continue;
             }
+
+            var file = Path.GetRelativePath(gamePath, path).Replace('\\', '/');
 
             var document = await IniDocument.LoadAsync(path, cancellationToken).ConfigureAwait(false);
 
             var fileChanges = new List<ControlChange>();
             foreach (var bound in group)
             {
-                fileChanges.AddRange(ApplyToDocument(document, relative, bound));
+                fileChanges.AddRange(ApplyToDocument(document, file, bound));
             }
 
             if (fileChanges.Count == 0)
@@ -198,8 +243,8 @@ public sealed class ControlWriter : IControlWriter
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var path = Path.Combine(gamePath, group.Key.Replace('/', Path.DirectorySeparatorChar));
-            if (!File.Exists(path))
+            var path = ModFileLocator.Resolve(gamePath, group.Key);
+            if (path is null)
             {
                 continue;
             }
@@ -243,7 +288,12 @@ public sealed class ControlWriter : IControlWriter
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var path = Path.Combine(gamePath, relative.Replace('/', Path.DirectorySeparatorChar));
+            var path = ModFileLocator.Resolve(gamePath, relative);
+            if (path is null)
+            {
+                continue;
+            }
+
             var backup = path + BackupSuffix;
 
             // Only files with a backup from a prior apply can be put back; a file
@@ -254,11 +304,45 @@ public sealed class ControlWriter : IControlWriter
             }
 
             File.Copy(backup, path, overwrite: true);
-            restored.Add(relative);
+            restored.Add(Path.GetRelativePath(gamePath, path).Replace('\\', '/'));
         }
 
         return Task.FromResult<IReadOnlyList<string>>(
             restored.OrderBy(f => f, StringComparer.Ordinal).ToList());
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<BindingCheck>> VerifyAsync(
+        string gamePath,
+        IReadOnlyList<BoundAction> bindings,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(gamePath);
+        ArgumentNullException.ThrowIfNull(bindings);
+
+        // Read the real binds back out of the files, then compare each to what it was
+        // meant to be — the same read the settings screen uses, so a verified bind is
+        // one the game will genuinely load.
+        var onDisk = await ReadAsync(gamePath, bindings.Select(b => b.Action).ToList(), cancellationToken)
+            .ConfigureAwait(false);
+
+        var checks = new List<BindingCheck>();
+        foreach (var bound in bindings)
+        {
+            if (onDisk.TryGetValue(bound.Action.Id, out var actual))
+            {
+                var result = actual == bound.Binding ? BindCheckResult.Verified : BindCheckResult.Mismatch;
+                checks.Add(new BindingCheck(bound.Action.Id, bound.Action.Name, bound.Binding, actual, result));
+            }
+            else
+            {
+                // The key or its file is not there — a mod that writes its config on
+                // first launch, or is not installed. Can't confirm; not a hard fail.
+                checks.Add(new BindingCheck(bound.Action.Id, bound.Action.Name, bound.Binding, null, BindCheckResult.NotFound));
+            }
+        }
+
+        return checks;
     }
 
     private static IReadOnlyList<ControlChange> ApplyToDocument(IniDocument document, string file, BoundAction bound)

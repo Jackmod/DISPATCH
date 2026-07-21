@@ -104,13 +104,18 @@ public sealed class SettingsWriter : ISettingsWriter
             cancellationToken.ThrowIfCancellationRequested();
 
             var relative = group.Key;
-            var path = Path.Combine(gamePath, relative.Replace('/', Path.DirectorySeparatorChar));
 
-            if (!File.Exists(path))
+            // Resolve the file wherever it actually landed, not just at the hinted
+            // path — a curated setting whose mod installed to a differently-named or
+            // deeper folder still gets written.
+            var path = ModFileLocator.Resolve(gamePath, relative);
+            if (path is null)
             {
                 missing.Add(relative);
                 continue;
             }
+
+            var file = Path.GetRelativePath(gamePath, path).Replace('\\', '/');
 
             var document = await IniDocument.LoadAsync(path, cancellationToken).ConfigureAwait(false);
 
@@ -120,7 +125,7 @@ public sealed class SettingsWriter : ISettingsWriter
                 var old = Read(document, value.Setting);
                 if (Write(document, value.Setting, value.Raw))
                 {
-                    fileChanges.Add(new SettingChangeRecord(relative, value.Setting.ConfigKey, old ?? Absent, value.Raw));
+                    fileChanges.Add(new SettingChangeRecord(file, value.Setting.ConfigKey, old ?? Absent, value.Raw));
                 }
             }
 
@@ -164,8 +169,8 @@ public sealed class SettingsWriter : ISettingsWriter
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var path = Path.Combine(gamePath, group.Key.Replace('/', Path.DirectorySeparatorChar));
-            if (!File.Exists(path))
+            var path = ModFileLocator.Resolve(gamePath, group.Key);
+            if (path is null)
             {
                 continue;
             }

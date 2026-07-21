@@ -491,7 +491,12 @@ public sealed partial class ControlsViewModel : ObservableObject
         if (!string.IsNullOrWhiteSpace(_gamePath) && Directory.Exists(_gamePath))
         {
             var result = await _writer.WriteAsync(_gamePath, AllBindings).ConfigureAwait(true);
-            StatusMessage = Describe(result);
+
+            // The safeguard: read every bind back out of the game files and confirm it
+            // landed, and check the applied scheme is clash-free — so "applied" means
+            // the game will really load it, not just that a write was attempted.
+            var checks = await _writer.VerifyAsync(_gamePath, AllBindings).ConfigureAwait(true);
+            StatusMessage = Describe(result, checks, Conflicts.Count);
         }
         else
         {
@@ -504,6 +509,29 @@ public sealed partial class ControlsViewModel : ObservableObject
         }
 
         Refresh();
+    }
+
+    private static string Describe(ControlWriteResult result, IReadOnlyList<BindingCheck> checks, int conflicts)
+    {
+        var verified = checks.Count(c => c.Result == BindCheckResult.Verified);
+        var failed = checks.Where(c => c.Failed).ToList();
+
+        // The write result first (what moved, backups, missing files), then the
+        // read-back verdict — the part that proves it actually took.
+        var written = Describe(result);
+
+        if (failed.Count > 0)
+        {
+            var names = string.Join(", ", failed.Take(3).Select(c => c.ActionName));
+            return $"{written} Checked the game files: {failed.Count} bind(s) did not take ({names}). "
+                + "Try Apply again, or check that mod is installed.";
+        }
+
+        var clash = conflicts == 0
+            ? "no clashes"
+            : $"{conflicts} clash(es) still to resolve";
+
+        return $"{written} Confirmed {verified} bind(s) in the game files — {clash}.";
     }
 
     /// <summary>

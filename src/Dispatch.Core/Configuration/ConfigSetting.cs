@@ -14,6 +14,31 @@ public enum ConfigMatch
     Contains,
 }
 
+/// <summary>What a read-back check found for one setting after it was applied.</summary>
+public enum ConfigCheck
+{
+    /// <summary>The on-disk value matches what was written — it stuck.</summary>
+    Verified,
+
+    /// <summary>The key exists but holds a different value — the write did not take.</summary>
+    ValueMismatch,
+
+    /// <summary>The setting's key is not in the file (this mod version does not have it).</summary>
+    KeyMissing,
+}
+
+/// <summary>The result of reading one setting back after applying it.</summary>
+/// <param name="Setting">The setting name from the catalogue.</param>
+/// <param name="Key">The real key it resolved to, or the setting name when none matched.</param>
+/// <param name="Expected">The value that should be on disk.</param>
+/// <param name="Actual">What is actually on disk, or null when the key is absent.</param>
+/// <param name="Result">Whether it verified, mismatched, or the key is missing.</param>
+public sealed record SettingCheck(string Setting, string Key, string Expected, string? Actual, ConfigCheck Result)
+{
+    /// <summary>True when the value did not take — the case worth reporting.</summary>
+    public bool Failed => Result == ConfigCheck.ValueMismatch;
+}
+
 /// <summary>One value to write into a config file, named as the guide names it.</summary>
 /// <param name="Name">
 /// The human setting name from the guide (e.g. "Open Computer Key"). Matched to

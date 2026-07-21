@@ -201,6 +201,69 @@ public sealed class RealConfigApplyTests : IDisposable
     }
 
     [Fact]
+    public async Task Verify_confirms_a_correctly_applied_config()
+    {
+        Place("StopThePed.ini", "plugins/LSPDFR/StopThePed.ini");
+        var installer = new ConfigInstaller(
+            new IniConfigWriter(NullLogger<IniConfigWriter>.Instance),
+            NullLogger<ConfigInstaller>.Instance);
+
+        await installer.ApplyAsync(_game, ["stoptheped"], OfficerValues.Default);
+        var report = await installer.VerifyAsync(_game, ["stoptheped"], OfficerValues.Default);
+
+        report.AllApplied.Should().BeTrue("every applied value should read back correctly");
+        report.Mismatches.Should().BeEmpty();
+        report.VerifiedCount.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public async Task Verify_catches_a_value_that_did_not_take()
+    {
+        var dest = Place("StopThePed.ini", "plugins/LSPDFR/StopThePed.ini");
+        var installer = new ConfigInstaller(
+            new IniConfigWriter(NullLogger<IniConfigWriter>.Instance),
+            NullLogger<ConfigInstaller>.Instance);
+
+        await installer.ApplyAsync(_game, ["stoptheped"], OfficerValues.Default);
+
+        // Simulate something clobbering a value after apply (a bad write, a mod
+        // rewriting its own ini) — the safeguard must catch it.
+        var doc = await IniDocument.LoadAsync(dest);
+        doc.SetAnywhere("SearchKey", "F1");
+        await doc.SaveAsync(dest);
+
+        var report = await installer.VerifyAsync(_game, ["stoptheped"], OfficerValues.Default);
+
+        report.AllApplied.Should().BeFalse();
+        report.Mismatches.Should().Contain(m =>
+            m.Check.Setting == "SearchKey" && m.Check.Expected == "F9" && m.Check.Actual == "F1");
+    }
+
+    [Fact]
+    public async Task The_keybind_editor_verify_confirms_binds_and_catches_a_bad_one()
+    {
+        Place("lspdfr_keys.ini", "lspdfr/keys.ini");
+        var writer = new ControlWriter();
+        var scheme = ControlCatalogue.Bind(ControlCatalogue.Suggested)
+            .Where(b => b.Action.Id is "lspdfr.arrest" or "lspdfr.backup")
+            .ToList();
+
+        await writer.WriteAsync(_game, scheme);
+
+        var good = await writer.VerifyAsync(_game, scheme);
+        good.Should().OnlyContain(c => c.Result == BindCheckResult.Verified);
+
+        // Now clobber one bind on disk and re-verify.
+        var keys = Path.Combine(_game, "lspdfr", "keys.ini");
+        var doc = await IniDocument.LoadAsync(keys);
+        doc.SetAnywhere("PERFORM_ARREST_Key", "Z");
+        await doc.SaveAsync(keys);
+
+        var after = await writer.VerifyAsync(_game, scheme);
+        after.Should().Contain(c => c.ActionId == "lspdfr.arrest" && c.Result == BindCheckResult.Mismatch);
+    }
+
+    [Fact]
     public async Task A_nonexistent_key_is_never_added_to_the_file()
     {
         // The writer must only change keys the file already has. Applying LSPDFR's

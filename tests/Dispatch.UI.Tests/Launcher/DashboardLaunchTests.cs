@@ -1,4 +1,5 @@
 using Avalonia.Headless.XUnit;
+using Dispatch.Core.Detection;
 using Dispatch.Core.Platform;
 using Dispatch.UI.Launcher;
 using FluentAssertions;
@@ -24,6 +25,20 @@ public sealed class DashboardLaunchTests
         }
     }
 
+    // A guard that reports the game not running, so these tests are deterministic
+    // regardless of whether GTA V / RagePluginHook happens to be open on the machine.
+    private sealed class IdleGuard : IGameProcessGuard
+    {
+        public bool IsGameRunning(out string? processName)
+        {
+            processName = null;
+            return false;
+        }
+    }
+
+    private static DashboardViewModel Dashboard(FakeLauncher launcher, string? gamePath) =>
+        new(launcher: launcher, gamePath: gamePath, guard: new IdleGuard());
+
     private static string NewGameFolder()
     {
         var root = Path.Combine(Path.GetTempPath(), $"dispatch-launch-{Guid.NewGuid():N}");
@@ -45,7 +60,7 @@ public sealed class DashboardLaunchTests
     [AvaloniaFact]
     public void No_game_folder_reports_it_rather_than_doing_nothing()
     {
-        var model = new DashboardViewModel(launcher: new FakeLauncher(LaunchOutcome.Launched), gamePath: null);
+        var model = Dashboard(new FakeLauncher(LaunchOutcome.Launched), null);
 
         model.GoOnDuty();
 
@@ -62,7 +77,7 @@ public sealed class DashboardLaunchTests
 
         try
         {
-            var model = new DashboardViewModel(launcher: launcher, gamePath: root);
+            var model = Dashboard(launcher, root);
 
             model.GoOnDuty();
 
@@ -86,7 +101,7 @@ public sealed class DashboardLaunchTests
 
         try
         {
-            var model = new DashboardViewModel(launcher: launcher, gamePath: root);
+            var model = Dashboard(launcher, root);
 
             model.GoOnDuty();
 
@@ -108,7 +123,7 @@ public sealed class DashboardLaunchTests
 
         try
         {
-            var model = new DashboardViewModel(launcher: launcher, gamePath: root);
+            var model = Dashboard(launcher, root);
 
             model.GoOnDuty();
             model.ShowPreLaunchWarning.Should().BeTrue();
@@ -146,7 +161,7 @@ public sealed class DashboardLaunchTests
 
         try
         {
-            var model = new DashboardViewModel(launcher: new FakeLauncher(LaunchOutcome.LoaderNotFound), gamePath: root);
+            var model = Dashboard(new FakeLauncher(LaunchOutcome.LoaderNotFound), root);
 
             model.GoOnDuty();
 
