@@ -28,23 +28,38 @@ public static class StockManifest
     /// </remarks>
     public static readonly IReadOnlySet<string> RootFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
+        // Executables and launchers.
         "GTA5.exe",
+        "GTA5_Enhanced.exe",
         "GTAVLauncher.exe",
         "PlayGTAV.exe",
         "GTAVLanguageSelect.exe",
+        "EasyAntiCheat_launcher.exe",
+        "launcher.exe",
+        // Rockstar/Steam/Epic install bookkeeping.
         "commonData.rpf",
         "index.bin",
         "installscript.vdf",
+        "installscript_sdk.vdf",
         "steam_api64.dll",
+        "steam_appid.txt",
+        "version.txt",
+        "gfx.dat",
+        "gtaomp.dat",
+        // Graphics and platform libraries that ship with the game.
         "GFSDK_ShadowLib.win64.dll",
         "GFSDK_TXAA.win64.dll",
         "GFSDK_TXAA_AlphaResolve.win64.dll",
         "NvPmApi.Core.win64.dll",
+        "GPUPerfAPIDX11-x64.dll",
         "d3dcompiler_46.dll",
         "d3dcsx_46.dll",
         "bink2w64.dll",
-        "version.txt",
-        "EasyAntiCheat_launcher.exe",
+        "libcurl.dll",
+        "vulkan-1.dll",
+        "amd_ags_x64.dll",
+        "oo2core_5_win64.dll",
+        "gameface_x64.dll",
     };
 
     /// <summary>Folders present in a stock install, relative to the game root.</summary>
@@ -124,6 +139,14 @@ public static class StockManifest
             return true;
         }
 
+        // Steam/Rockstar content-manifest files at the root are named as long hex
+        // hashes (e.g. 00000000ba379c838000130044fc8b80_...). They are install
+        // bookkeeping, not mods, and no mod produces a name of this shape.
+        if (IsContentHashFile(segments[0]))
+        {
+            return true;
+        }
+
         return RootFiles.Contains(segments[0]);
     }
 
@@ -153,4 +176,16 @@ public static class StockManifest
     /// <summary>Lower-cases and forward-slashes a path so comparisons are stable.</summary>
     internal static string Normalise(string path) =>
         path.Replace('\\', '/').Trim('/').ToLowerInvariant();
+
+    /// <summary>
+    /// True when a root file name is a Steam/Rockstar content hash — a run of at
+    /// least sixteen hex characters, optionally with a hex tail after an underscore.
+    /// </summary>
+    private static bool IsContentHashFile(string name)
+    {
+        var stem = Path.GetFileNameWithoutExtension(name);
+        var head = stem.Split('_', 2)[0];
+
+        return head.Length >= 16 && head.All(Uri.IsHexDigit);
+    }
 }

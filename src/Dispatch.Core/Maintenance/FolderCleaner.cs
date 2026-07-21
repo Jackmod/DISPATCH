@@ -75,10 +75,18 @@ public sealed class FolderCleaner
     private readonly ILogger<FolderCleaner> _logger;
     private readonly IReadOnlySet<string> _knownModFiles;
 
-    /// <summary>Extensions that mark a file as mod-shaped when found at the root.</summary>
-    private static readonly HashSet<string> ModExtensions = new(StringComparer.OrdinalIgnoreCase)
+    /// <summary>
+    /// Extensions a mod file has when it sits loose at the game root. With the stock
+    /// allowlist filtering the game's own files out first, a non-stock root file with
+    /// one of these is a mod: an .asi or .rphs plugin, a bundled .dll, a mod's .ini or
+    /// .log or config, a readme or manual it dropped. The game itself leaves none of
+    /// these loose at the root beyond the handful the stock allowlist already names.
+    /// </summary>
+    private static readonly HashSet<string> RootModExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
-        ".asi", ".dll", ".ini", ".log", ".xml",
+        ".asi", ".rphs", ".rph", ".dll", ".pdb", ".log", ".ini", ".cfg",
+        ".xml", ".json", ".txt", ".pdf", ".png", ".exe", ".config", ".nlog",
+        ".cs", ".lua", ".dat",
     };
 
     /// <summary>Folders that only exist because a mod created them.</summary>
@@ -286,14 +294,25 @@ public sealed class FolderCleaner
     /// <summary>Decides which tier a non-stock, non-protected file belongs to.</summary>
     private CleanTier ClassifyTier(string relative, out string reason)
     {
+        var segments = relative.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var name = segments.Length > 0 ? segments[^1] : relative;
+        var extension = Path.GetExtension(relative);
+
+        // A file Dispatch itself placed, by its recorded relative path.
         if (_knownModFiles.Contains(relative))
         {
             reason = "Installed by Dispatch, or recognised from the mod catalogue.";
             return CleanTier.Known;
         }
 
-        var segments = relative.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        var extension = Path.GetExtension(relative);
+        // Cross-reference: the file name is one a mod in the pack installs, wherever
+        // it sits. This is the strongest signal — the file came out of a mod archive,
+        // so it is a mod file however deep, root or not.
+        if (ModArtifacts.Knows(name) || KnownRootModFiles.Contains(name))
+        {
+            reason = "A file that ships with one of the mods — not part of a stock GTA V install.";
+            return CleanTier.Known;
+        }
 
         if (segments.Length > 1 && ModFolders.Contains(segments[0]))
         {
@@ -312,21 +331,19 @@ public sealed class FolderCleaner
             return CleanTier.Likely;
         }
 
-        // A loose file at the root is only treated as a mod when it is one of the
-        // loaders everyone recognises. Every other unrecognised root file is left
-        // Unknown, because the root also holds stock game and launcher libraries
-        // that must never be preselected for removal.
-        if (segments.Length == 1 && ModExtensions.Contains(extension))
+        // A loose file at the game root with a mod-shaped extension. The stock
+        // allowlist has already taken the game's own root files out (GTA5.exe, the
+        // graphics and launcher DLLs, the .rpf archives, the Steam content hashes),
+        // so what is left with one of these extensions was dropped here by a mod —
+        // an .asi plugin, a bundled .dll, a mod's .ini / .log / config, a readme it
+        // left behind. This is the change that stops the root staying full of mod
+        // files: it is preselected, but as Likely rather than Known, so it is still
+        // listed for review before anything moves.
+        if (segments.Length == 1 && RootModExtensions.Contains(extension))
         {
-            if (KnownRootModFiles.Contains(segments[0]))
-            {
-                reason = "A known mod loader or tool at the game root.";
-                return CleanTier.Likely;
-            }
-
-            reason = "A loose file at the game root, where stock game files also live. "
-                     + "Dispatch will not guess — decide for yourself.";
-            return CleanTier.Unknown;
+            reason = "A loose file at the game root that is not part of a stock GTA V install — "
+                     + "left here by a mod.";
+            return CleanTier.Likely;
         }
 
         reason = "Not part of a stock install, and not recognised. Dispatch will not guess.";

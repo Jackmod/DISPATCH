@@ -199,29 +199,39 @@ public sealed class FolderCleanerTests : IDisposable
     [InlineData("dinput8.dll")]
     [InlineData("ScriptHookV.dll")]
     [InlineData("OpenIV.asi")]
-    public void Recognised_mod_loaders_at_the_root_are_Likely(string path)
+    public void Recognised_mod_loaders_at_the_root_are_Known(string path)
     {
+        // These are unmistakable mod loaders, cross-referenced against the mods the
+        // pack installs — so they are Known, not merely likely, and preselected.
         Given(path);
 
-        Scan().Candidates[0].Tier.Should().Be(CleanTier.Likely);
+        Scan().Candidates[0].Tier.Should().Be(CleanTier.Known);
     }
 
     [Theory]
-    [InlineData("libcurl.dll")]         // stock / launcher library
+    [InlineData("libcurl.dll")]
     [InlineData("gpuperfapidx11-x64.dll")]
-    [InlineData("discord-rpc.dll")]
-    [InlineData("some-random-tool.dll")]
-    public void Unrecognised_loose_files_at_the_root_are_Unknown_and_not_preselected(string path)
+    public void Stock_launcher_libraries_at_the_root_are_stock_and_never_offered(string path)
     {
-        // The root mixes stock game/launcher libraries with mods, so an
-        // unrecognised loose file there must never be ticked on the user's behalf.
-        // This is the fix for the cleaner offering to delete libcurl.dll.
+        // These are the game's own launcher/graphics libraries — stock, so they are
+        // recognised as such and never appear in the plan at all. The allowlist is
+        // what keeps the aggressive root scan from ever touching them.
         Given(path);
 
-        var plan = Scan();
+        Scan().Candidates.Should().BeEmpty();
+    }
 
-        plan.Candidates[0].Tier.Should().Be(CleanTier.Unknown);
-        plan.Candidates[0].IsPreselected.Should().BeFalse();
+    [Theory]
+    [InlineData("discord-rpc.dll")]      // a shared library a mod bundles
+    [InlineData("some-random-tool.dll")] // any other non-stock loose .dll
+    public void A_non_stock_loose_dll_at_the_root_is_caught(string path)
+    {
+        // With the stock libraries allowlisted out, a loose .dll left at the root is a
+        // mod's — so it is preselected rather than left behind. This is the fix for a
+        // root that stayed full of mod DLLs after a clean.
+        Given(path);
+
+        Scan().Candidates[0].IsPreselected.Should().BeTrue();
     }
 
     [Theory]
@@ -237,14 +247,14 @@ public sealed class FolderCleanerTests : IDisposable
     }
 
     [Theory]
-    [InlineData("holiday-photo.png")]
-    [InlineData("notes.txt")]
-    public void An_unrecognised_loose_root_file_is_Unknown_and_never_preselected(string path)
+    [InlineData("savedata.db")]
+    [InlineData("clip.mp4")]
+    [InlineData("archive.zip")]
+    public void A_loose_root_file_with_a_non_mod_extension_stays_Unknown(string path)
     {
-        // A loose file dropped at the root might be something the user cares about
-        // (a screenshot, a note), so it is listed for a decision rather than ticked
-        // on their behalf. Files nested inside a non-stock root FOLDER are a different
-        // case — that folder was made by a mod, so its contents are preselected.
+        // The aggressive root scan catches mod-shaped extensions (.asi/.dll/.log/.ini/
+        // .txt/.png…), but a file with none of those — a database, a video, an archive
+        // — is not mod-shaped, so it is listed for the user to decide, not preselected.
         Given(path);
 
         var plan = Scan();
@@ -260,7 +270,7 @@ public sealed class FolderCleanerTests : IDisposable
         // The preview has to justify each row, or the user is confirming a
         // list they cannot evaluate.
         Given("plugins/Thing.dll");
-        Given("mystery.dat");
+        Given("mystery.db");
 
         Scan().Candidates.Should().OnlyContain(c => !string.IsNullOrWhiteSpace(c.Reason));
     }
@@ -271,7 +281,7 @@ public sealed class FolderCleanerTests : IDisposable
     public void The_plan_counts_only_preselected_bytes()
     {
         Given("plugins/Known.dll", new string('x', 100));
-        Given("mystery.dat", new string('x', 500));
+        Given("mystery.db", new string('x', 500));
 
         var plan = Scan("plugins/Known.dll");
 
@@ -283,7 +293,7 @@ public sealed class FolderCleanerTests : IDisposable
     {
         Given("plugins/Known.dll");
         Given("plugins/Other.dll");
-        Given("mystery.dat");
+        Given("mystery.db");
 
         var plan = Scan("plugins/Known.dll");
 
@@ -295,7 +305,7 @@ public sealed class FolderCleanerTests : IDisposable
     [Fact]
     public void Candidates_are_ordered_by_tier_so_the_safest_appear_first()
     {
-        Given("mystery.dat");
+        Given("mystery.db");
         Given("plugins/Known.dll");
         Given("plugins/Other.dll");
 
@@ -309,7 +319,7 @@ public sealed class FolderCleanerTests : IDisposable
     {
         Given("GTA5.exe");
         Given("plugins/Thing.dll");
-        Given("mystery.dat");
+        Given("mystery.db");
 
         Scan().FilesScanned.Should().Be(3, "stock files are examined even though they are not offered");
     }
@@ -371,6 +381,59 @@ public sealed class FolderCleanerTests : IDisposable
         Given("gta5.EXE");
 
         Scan().Candidates.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void A_real_modded_root_catches_the_mod_files_and_leaves_the_game_alone()
+    {
+        // The exact contents of a real modded game root (from a user's install): the
+        // cleaner must catch every loose mod file — the shared libraries, the .asi
+        // plugins, the config, the logs — while never offering a stock game file.
+        string[] stock =
+        [
+            "GTA5.exe", "PlayGTAV.exe", "bink2w64.dll", "common.rpf", "commonData.rpf",
+            "d3dcompiler_46.dll", "d3dcsx_46.dll", "GFSDK_ShadowLib.win64.dll",
+            "GPUPerfAPIDX11-x64.dll", "NvPmApi.Core.win64.dll", "steam_api64.dll",
+            "libcurl.dll", "installscript.vdf", "installscript_sdk.vdf",
+            "00000000ba379c838000130044fc8b80_0",  // Steam content hash
+            "x64a.rpf",
+        ];
+
+        string[] mods =
+        [
+            "AdvancedHookV.dll", "CalloutInterfaceAPI.dll", "DamageTrackerLib.dll",
+            "DdsConvert.dll", "discord-rpc.dll", "DiscordRpcNet.dll", "EasyHook.dll",
+            "EasyHook64.dll", "EasyLoad64.dll", "ELS.asi", "ELS.ini", "ELS.log",
+            "FullTraffic.asi", "FullTraffic.ini", "fvad.dll", "FW1FontWrapper.dll",
+            "IPT.Common.dll", "irrKlang.NET4.dll", "Keybinds.txt",
+            "languages removed IMPORTANT!.txt", "LMS.Common.dll", "LMS.PortableExecutable.dll",
+            "LSJC_Manual.pdf", "Microsoft.Expression.Drawing.dll", "Modern Siren Pack - 3.1.1.txt",
+            "Mono.Cecil.dll", "Mono.Cecil.Mdb.dll", "NativeTrainer.asi", "openCameraV.asi",
+            "openCameraV.log", "OpenHTMLBeforeAskingQuestions.txt", "opus.dll", "opusenc.dll",
+            "PyroCommon.dll", "PyroCommon.ini", "RAGEPluginHook.exe", "RagePluginHook.ini",
+            "ResourceAdjuster.ini", "ScriptHookV.dll", "ScriptHookV.log", "Siren hashtag list.txt",
+            "SlimDX.dll", "startup.rphs", "dinput8.dll", "cursor_32_2.png", "DefaultSkin.png",
+        ];
+
+        foreach (var f in stock) { Given(f, "stock"); }
+        foreach (var f in mods) { Given(f, "mod"); }
+
+        var plan = Scan();
+
+        var offered = plan.Candidates.Select(c => c.RelativePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var s in stock)
+        {
+            offered.Should().NotContain(s.ToLowerInvariant(), "a stock game file must never be offered: {0}", s);
+        }
+
+        foreach (var m in mods)
+        {
+            var candidate = plan.Candidates.FirstOrDefault(c =>
+                string.Equals(c.RelativePath, m, StringComparison.OrdinalIgnoreCase));
+            candidate.Should().NotBeNull("the mod file {0} must be caught", m);
+            candidate!.IsPreselected.Should().BeTrue("mod files are preselected for cleaning: {0}", m);
+        }
     }
 
     [Fact]

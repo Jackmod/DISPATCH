@@ -54,7 +54,7 @@ public sealed class CleanerViewModelTests : IDisposable
     {
         Given("GTA5.exe");            // stock
         Given("plugins/mod.dll");     // likely
-        Given("mystery.dat");         // unknown
+        Given("mystery.db");          // unknown (non-mod extension)
 
         var vm = Vm();
         await vm.ScanAsync(_game);
@@ -62,7 +62,7 @@ public sealed class CleanerViewModelTests : IDisposable
         vm.Stage.Should().Be(CleanerStage.Warning);
         vm.HasWork.Should().BeTrue();
         vm.ToRemove.Select(r => r.Path).Should().Contain("plugins/mod.dll");
-        vm.ToRemove.Select(r => r.Path).Should().NotContain("mystery.dat", "unknown files are never queued");
+        vm.ToRemove.Select(r => r.Path).Should().NotContain("mystery.db", "unknown files are never queued");
         vm.ToRemove.Select(r => r.Path).Should().NotContain("gta5.exe");
     }
 
