@@ -69,7 +69,9 @@ if ($LASTEXITCODE -ne 0) { throw "vpk pack failed." }
 # --- publish to GitHub with the full update feed ---------------------------
 
 Write-Step "Uploading release v$Version to $Repo (with the update feed)"
-vpk upload github --repoUrl "https://github.com/$Repo" --token $token --publish `
+# --publish and --merge take an explicit value in vpk 1.2; publish (not draft) and
+# merge into the existing feed so delta updates and version history are preserved.
+vpk upload github --repoUrl "https://github.com/$Repo" --token $token --publish true --merge true `
     --releaseName "DISPATCH v$Version" --tag "v$Version" -o releases
 if ($LASTEXITCODE -ne 0) { throw "vpk upload github failed." }
 
