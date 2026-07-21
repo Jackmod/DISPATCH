@@ -1,0 +1,92 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:Dispatch.UI.Controls"
+             xmlns:vm="clr-namespace:Dispatch.UI.Launcher"
+             x:Class="Dispatch.UI.Launcher.CrashReportView"
+             x:DataType="vm:CrashReportViewModel">
+
+  <!--
+    Paste a RagePluginHook.log or LSPDFR.log and get the cause in plain language.
+    Runs the same translator the dashboard uses over the game's own logs, but over
+    text the user pastes, so a crash from anywhere can be diagnosed here.
+  -->
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,0,32,0">
+    <StackPanel Spacing="16" MaxWidth="860" HorizontalAlignment="Left">
+
+      <StackPanel Spacing="6">
+        <TextBlock Text="Diagnose a crash" Classes="h1" />
+        <TextBlock Classes="small" TextWrapping="Wrap"
+                   Foreground="{DynamicResource TextMuted}"
+                   Text="Game crashed or a plugin won't load? Paste your RagePluginHook.log or LSPDFR.log below and DISPATCH will point at the likely cause. The log is in your game folder, and the answer is usually the last plugin to load before it stopped." />
+      </StackPanel>
+
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <Button Classes="ghost" Content="Read my game's logs"
+                IsVisible="{Binding CanLoadFromGame}"
+                Command="{Binding LoadFromGameCommand}" />
+        <TextBlock Classes="small" VerticalAlignment="Center"
+                   Foreground="{DynamicResource TextMuted}"
+                   Text="…or paste a log below." />
+      </StackPanel>
+
+      <TextBox Text="{Binding LogText}"
+               AcceptsReturn="True"
+               TextWrapping="NoWrap"
+               Height="240"
+               FontFamily="{DynamicResource MonoFont}"
+               VerticalContentAlignment="Top"
+               Watermark="Paste the contents of RagePluginHook.log or LSPDFR.log here…" />
+
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <Button Classes="primary" Content="Analyse"
+                IsEnabled="{Binding HasText}"
+                Command="{Binding AnalyzeCommand}" />
+        <Button Classes="ghost" Content="Clear"
+                IsEnabled="{Binding HasText}"
+                Command="{Binding ClearCommand}" />
+      </StackPanel>
+
+      <TextBlock Classes="small" TextWrapping="Wrap"
+                 IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                 Foreground="{DynamicResource TextMuted}"
+                 Text="{Binding StatusMessage}" />
+
+      <!-- The recognised causes -->
+      <ItemsControl ItemsSource="{Binding Findings}" IsVisible="{Binding HasFindings}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:CrashFindingRow">
+            <Border Margin="0,0,0,10" Padding="18"
+                    CornerRadius="{DynamicResource RadiusCard}"
+                    Background="{DynamicResource GlassSurface}"
+                    BorderBrush="{DynamicResource GlassBorderGold}"
+                    BorderThickness="1">
+              <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                  <c:Icon Data="{StaticResource IconAlert}" Foreground="{DynamicResource Gold}"
+                          VerticalAlignment="Top" />
+                  <TextBlock Text="{Binding Title}" Classes="body" FontWeight="SemiBold"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Text="{Binding Explanation}" Classes="small" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- Nothing known matched -->
+      <Border IsVisible="{Binding NoKnownIssues}"
+              Padding="18"
+              CornerRadius="{DynamicResource RadiusCard}"
+              Background="{DynamicResource GlassSurface}"
+              BorderBrush="{DynamicResource GlassBorder}"
+              BorderThickness="1">
+        <TextBlock Classes="small" TextWrapping="Wrap"
+                   Text="No known issue matched this log. Scroll it for the plugin named just before the crash — that is almost always the cause. Removing that plugin's .dll from plugins, launching, and confirming the crash is gone is the fastest way to pin it down." />
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

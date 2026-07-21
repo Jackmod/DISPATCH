@@ -138,6 +138,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         // own full screens rather than as separate rail destinations.
         Keybinds = new ControlsViewModel(gamePath: gamePath, officer: officer);
         PluginSettings = new PluginSettingsViewModel(gamePath: gamePath, officer: officer);
+        CrashReport = new CrashReportViewModel(gamePath);
 
         if (officer is not null)
         {
@@ -153,11 +154,15 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>The plugin settings editor, hosted as the second hub section.</summary>
     public PluginSettingsViewModel PluginSettings { get; }
 
+    /// <summary>The crash-report tool, hosted as a hub section.</summary>
+    public CrashReportViewModel CrashReport { get; }
+
     /// <summary>The hub sections, in order.</summary>
     public IReadOnlyList<HubSection> Sections { get; } =
     [
         new("keybinds", "Keybinds"),
         new("plugins", "Plugin settings"),
+        new("crash", "Crash report"),
         new("appearance", "Appearance"),
         new("officer", "Officer"),
         new("folders", "Folders"),
@@ -171,6 +176,9 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     /// <summary>Whether the plugin settings section is showing.</summary>
     public bool IsPlugins => Section == "plugins";
+
+    /// <summary>Whether the crash-report section is showing.</summary>
+    public bool IsCrash => Section == "crash";
 
     /// <summary>Whether the appearance section is showing.</summary>
     public bool IsAppearance => Section == "appearance";
@@ -198,6 +206,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(IsKeybinds));
         OnPropertyChanged(nameof(IsPlugins));
+        OnPropertyChanged(nameof(IsCrash));
         OnPropertyChanged(nameof(IsAppearance));
         OnPropertyChanged(nameof(IsOfficer));
         OnPropertyChanged(nameof(IsFolders));

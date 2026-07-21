@@ -70,6 +70,8 @@
                   Command="{Binding SetSectionCommand}" CommandParameter="keybinds" />
           <Button Classes="nav" Classes.active="{Binding IsPlugins}" Content="Plugin settings"
                   Command="{Binding SetSectionCommand}" CommandParameter="plugins" />
+          <Button Classes="nav" Classes.active="{Binding IsCrash}" Content="Crash report"
+                  Command="{Binding SetSectionCommand}" CommandParameter="crash" />
           <Button Classes="nav" Classes.active="{Binding IsAppearance}" Content="Appearance"
                   Command="{Binding SetSectionCommand}" CommandParameter="appearance" />
           <Button Classes="nav" Classes.active="{Binding IsOfficer}" Content="Officer"
@@ -96,6 +98,11 @@
           <!-- Plugin settings: the full plugin-settings screen, hosted -->
           <Panel IsVisible="{Binding IsPlugins}">
             <vm:PluginSettingsView DataContext="{Binding PluginSettings}" />
+          </Panel>
+
+          <!-- Crash report: paste a log, get the cause in plain language -->
+          <Panel IsVisible="{Binding IsCrash}">
+            <vm:CrashReportView DataContext="{Binding CrashReport}" />
           </Panel>
 
           <!-- Appearance -->
