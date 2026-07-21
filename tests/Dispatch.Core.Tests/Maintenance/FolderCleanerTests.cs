@@ -171,6 +171,31 @@ public sealed class FolderCleanerTests : IDisposable
     }
 
     [Theory]
+    [InlineData("WHELEN ENGINEERING/whelen.xml")]
+    [InlineData("FENIEX/lights.dat")]
+    [InlineData("CODE 3 PSE/thing.meta")]
+    [InlineData("SOUNDOFF SIGNAL/siren.awc")]
+    [InlineData("TOMAR/nested/deep/file.ytd")]
+    [InlineData("MOTOROLA SPECTRA/radio.dat")]
+    [InlineData("vehicles/police.yft")]
+    [InlineData("licenses/els.txt")]
+    public void Files_inside_a_non_stock_root_folder_are_Likely(string path)
+    {
+        // The ELS light/siren brand folders and a loose vehicles folder are dropped
+        // straight into the game root by their installers. They are not stock, not
+        // one of the plugins/scripts mod folders, so before this they fell to Unknown
+        // and were never ticked — which is exactly why the user's root stayed full of
+        // WHELEN, FENIEX, CODE 3 PSE and friends after a "clean".
+        Given(path);
+
+        var plan = Scan();
+
+        plan.Candidates.Should().ContainSingle();
+        plan.Candidates[0].Tier.Should().Be(CleanTier.Likely);
+        plan.Candidates[0].IsPreselected.Should().BeTrue();
+    }
+
+    [Theory]
     [InlineData("dinput8.dll")]
     [InlineData("ScriptHookV.dll")]
     [InlineData("OpenIV.asi")]
@@ -214,11 +239,12 @@ public sealed class FolderCleanerTests : IDisposable
     [Theory]
     [InlineData("holiday-photo.png")]
     [InlineData("notes.txt")]
-    [InlineData("random/nested/thing.dat")]
-    public void Anything_unrecognised_is_Unknown_and_never_preselected(string path)
+    public void An_unrecognised_loose_root_file_is_Unknown_and_never_preselected(string path)
     {
-        // This is the tier most likely to hold something the user cares about,
-        // so it is listed for a decision rather than ticked on their behalf.
+        // A loose file dropped at the root might be something the user cares about
+        // (a screenshot, a note), so it is listed for a decision rather than ticked
+        // on their behalf. Files nested inside a non-stock root FOLDER are a different
+        // case — that folder was made by a mod, so its contents are preselected.
         Given(path);
 
         var plan = Scan();

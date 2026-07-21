@@ -301,6 +301,17 @@ public sealed class FolderCleaner
             return CleanTier.Likely;
         }
 
+        // Any other subfolder at the game root that is not a stock folder was made
+        // by a mod: the ELS light/siren brand folders (WHELEN, FENIEX, CODE 3 PSE,
+        // SOUNDOFF, TOMAR…), a loose vehicles folder, an add-on's own tree. Stock
+        // content was already filtered out as stock before it got here, so a file
+        // this deep under a non-stock top folder is mod content, not the game's.
+        if (segments.Length > 1 && !StockManifest.RootFolders.Contains(segments[0]))
+        {
+            reason = $"Inside '{segments[0]}', a folder that is not part of a stock GTA V install.";
+            return CleanTier.Likely;
+        }
+
         // A loose file at the root is only treated as a mod when it is one of the
         // loaders everyone recognises. Every other unrecognised root file is left
         // Unknown, because the root also holds stock game and launcher libraries

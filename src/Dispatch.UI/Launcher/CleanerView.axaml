@@ -114,10 +114,17 @@
           <!-- Step 2: Cleaning -->
           <Panel IsVisible="{Binding Stage, Converter={x:Static vm:CleanerConverters.IsCleaning}}">
             <!-- In progress -->
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20"
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="18" MaxWidth="460"
                         IsVisible="{Binding CleaningInProgress}">
               <c:RadioWavePulse Width="90" Height="90" HorizontalAlignment="Center" />
-              <TextBlock Text="Moving files to quarantine…" Classes="body" HorizontalAlignment="Center" />
+              <TextBlock Text="Cleaning your game folder…" Classes="body" HorizontalAlignment="Center" />
+              <ProgressBar Minimum="0" Maximum="1" Value="{Binding CleanProgress}"
+                           Width="420" Height="8" HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding CleanCounter}" Classes="body muted"
+                         HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding CleanCurrentItem}" Classes="small muted"
+                         HorizontalAlignment="Center" TextAlignment="Center"
+                         TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxWidth="420" />
             </StackPanel>
             <!-- Done -->
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16" MaxWidth="440"

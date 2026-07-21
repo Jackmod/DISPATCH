@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -90,6 +91,22 @@ public sealed partial class CleanerViewModel : ObservableObject
     [ObservableProperty]
     private bool _cleaningInProgress;
 
+    /// <summary>How far the clean has got, 0 to 1, for the progress bar.</summary>
+    [ObservableProperty]
+    private double _cleanProgress;
+
+    /// <summary>What the clean is doing right now — the file being moved, or the stage.</summary>
+    [ObservableProperty]
+    private string _cleanCurrentItem = string.Empty;
+
+    /// <summary>Files moved so far this clean.</summary>
+    [ObservableProperty]
+    private int _cleanDone;
+
+    /// <summary>Total files this clean will move.</summary>
+    [ObservableProperty]
+    private int _cleanTotal;
+
     [ObservableProperty]
     private string _cleanSummary = string.Empty;
 
@@ -177,6 +194,11 @@ public sealed partial class CleanerViewModel : ObservableObject
     /// <summary>Whether the Done button may close the modal.</summary>
     public bool CanClose => Stage == CleanerStage.Verify && VerifyAcknowledged;
 
+    /// <summary>Progress as "12 of 40 files", shown beside the bar while cleaning.</summary>
+    public string CleanCounter => CleanTotal > 0 ? $"{CleanDone} of {CleanTotal} files" : string.Empty;
+
+    partial void OnCleanTotalChanged(int value) => OnPropertyChanged(nameof(CleanCounter));
+
     /// <summary>Raised when the modal should close.</summary>
     public event EventHandler? CloseRequested;
 
@@ -226,17 +248,36 @@ public sealed partial class CleanerViewModel : ObservableObject
 
         Stage = CleanerStage.Cleaning;
         CleaningInProgress = true;
+        CleanTotal = ToRemove.Count;
+        CleanDone = 0;
+        CleanProgress = 0;
+        CleanCurrentItem = "Preparing to move files…";
 
         var paths = ToRemove.Select(r => r.Path).ToList();
-        var batch = await _quarantine.QuarantineAsync(GamePath, paths).ConfigureAwait(true);
-
-        // The files are safe in quarantine; now clear the empty plugins/scripts/
-        // lspdfr folders the mods created and left behind. Only empty folders go, so
-        // nothing that still holds a file is touched.
         var gamePath = GamePath;
+
+        // Created on the UI thread, so the callback marshals back here and can touch
+        // bindable state directly. It names each file as it moves and advances the bar.
+        var progress = new Progress<string>(relative =>
+        {
+            CleanDone++;
+            CleanCurrentItem = $"Moving {relative}";
+            CleanProgress = CleanTotal == 0 ? 1 : Math.Min(1.0, (double)CleanDone / CleanTotal);
+            OnPropertyChanged(nameof(CleanCounter));
+        });
+
+        // Off the UI thread so the bar animates while the (possibly large) move runs.
+        var batch = await Task.Run(() => _quarantine.QuarantineAsync(gamePath, paths, progress)).ConfigureAwait(true);
+
+        // The files are safe in quarantine; now clear the empty folders the mods
+        // created and left behind. Only empty folders go, so nothing that still
+        // holds a file is touched.
+        CleanCurrentItem = "Removing empty folders the mods left behind…";
         var foldersRemoved = await Task.Run(() =>
             new FolderCleaner(NullLogger<FolderCleaner>.Instance).PruneEmptyDirectories(gamePath)).ConfigureAwait(true);
 
+        CleanProgress = 1;
+        CleanCurrentItem = "Finished.";
         CleanSummary = foldersRemoved > 0
             ? $"Moved {batch.Entries.Count} file(s) to quarantine and cleared {foldersRemoved} empty mod folder(s) "
               + "the mods left behind. You can restore the files any time from Settings; the folders held nothing."
