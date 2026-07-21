@@ -51,15 +51,21 @@ public sealed class ControlCatalogueTests
     }
 
     [Fact]
-    public void The_factory_scheme_collides_with_the_console_key()
+    public void No_shipped_scheme_binds_the_reserved_console_key()
     {
-        // Grammar Police ships claiming F4. Surfacing this is exactly what the
-        // controls screen is for.
-        var reserved = ControlCatalogue.Bind(ControlCatalogue.Factory)
+        // F4 opens the RagePluginHook console — the way back in when something
+        // breaks — so neither scheme may hand it out. No tutorial mod ships on
+        // it: Grammar Police's interface key ships on F3 (colliding with Simple
+        // Trainer, which is why the tutorial moves it to F8), not F4. The older
+        // "Grammar Police ships on F4" belief was a transcription error.
+        var onConsole = ControlCatalogue.Bind(ControlCatalogue.Factory)
+            .Concat(ControlCatalogue.Bind(ControlCatalogue.Suggested))
             .Where(bound => GameAction.IsReserved(bound.Binding))
             .ToList();
 
-        reserved.Should().NotBeEmpty("the guide gives Grammar Police F4 as shipped");
+        onConsole.Should().BeEmpty(
+            "F4 belongs to the console: {0}",
+            string.Join(", ", onConsole.Select(r => r.Action.Name)));
     }
 
     [Fact]

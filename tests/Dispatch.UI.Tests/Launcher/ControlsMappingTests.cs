@@ -32,14 +32,14 @@ public sealed class ControlsMappingTests
     {
         var model = new ControlsViewModel();
 
-        // F8 is unused in the Suggested scheme.
-        model.SelectedKey = KeyTokens.Parse("F8");
+        // F12 is unused in the Suggested scheme (F8 is Grammar Police's interface).
+        model.SelectedKey = KeyTokens.Parse("F12");
         model.SelectedKeyHasActions.Should().BeFalse();
 
         var arrest = model.AssignableActions.First(r => r.Action.Id == "lspdfr.arrest");
         model.MapToKeyCommand.Execute(arrest);
 
-        arrest.Binding.Key.Canonical.Should().Be("F8");
+        arrest.Binding.Key.Canonical.Should().Be("F12");
         model.ActionsOnSelectedKey.Should().Contain(r => r.Action.Id == "lspdfr.arrest");
     }
 

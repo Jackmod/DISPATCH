@@ -6,7 +6,7 @@ namespace Dispatch.Core.Configuration;
 /// Candidate paths to the config file, relative to the game folder, tried in
 /// order; the filename may be a glob. The first that exists is edited.
 /// </param>
-/// <param name="Settings">The values to write, named as the guide names them.</param>
+/// <param name="Settings">The values to write, named by the file's real key.</param>
 public sealed record ModConfig(
     string ModId,
     IReadOnlyList<string> FileHints,
@@ -16,262 +16,260 @@ public sealed record ModConfig(
 /// Every config change the install guide specifies, as data.
 /// </summary>
 /// <remarks>
-/// This is the guide's Phases 4, 5, 9, 13 and 17 turned into rows. The values are
-/// exactly those the guide gives — chosen so that no two actions collide on a
-/// key, which <c>KeybindClashDetector</c> checks holds. Officer-specific values
-/// are placeholders filled in per install. Nothing here is applied blindly: the
-/// writer only changes keys that actually exist in the file it finds.
+/// This is the guide's Phases 4, 5, 9, 13 and 17 turned into rows — but keyed to
+/// each mod's <em>real</em> ini key names, file paths and value formats, read from
+/// the actual mod archives rather than the guide's friendly labels. That distinction
+/// is the whole game: the writer only changes a key that already exists in the file
+/// (<see cref="IniConfigWriter"/>), so a name that does not match the file's real key
+/// is silently written nowhere. Each setting's <c>Name</c> is therefore the file's
+/// exact key, which normalises to itself and matches cleanly.
+///
+/// <para>
+/// A few mods need more than one file (LSPDFR keeps its keys in <c>keys.ini</c> and
+/// its settings in <c>lspdfr.ini</c>) — those are two rows with the same mod id, both
+/// of which the installer applies. Values are in each file's own dialect: WinForms
+/// key names (<c>LShiftKey</c>, <c>NumPad7</c>, <c>D0</c>), the mod's own <c>yes/no</c>
+/// or <c>True/False</c> booleans, and pixel or fractional coordinates as that version
+/// of the mod expects. Where a mod's current release changed a value's units from what
+/// the guide assumed (Simple HUD moved to fractional positions), the stale values are
+/// left out rather than written wrong.
+/// </para>
 /// </remarks>
 public static class ConfigCatalogue
 {
-    private static ConfigSetting S(string name, string value, ConfigMatch match = ConfigMatch.Exact) =>
-        new(name, value, match);
+    private static ConfigSetting S(string name, string value, ConfigMatch match = ConfigMatch.Exact, string? section = null) =>
+        new(name, value, match, section);
 
     /// <summary>Every mod's config edits, in install order.</summary>
     public static readonly IReadOnlyList<ModConfig> All =
     [
-        // ===== Phase 4 — LSPDFR key configuration =========================
+        // ===== Phase 4 — LSPDFR key configuration (lspdfr/keys.ini) ========
+        // Flat file at the game root's lspdfr folder, no sections. Keys are
+        // SCREAMING_SNAKE with a _Key / _ControllerKey suffix.
         new ModConfig("lspdfr",
-            ["Plugins/LSPDFR/KeyBindings.ini", "Plugins/LSPDFR/Keys.ini", "Plugins/LSPDFR/*Key*.ini", "LSPDFR.ini"],
+            ["lspdfr/keys.ini", "lspdfr/Keys.ini"],
             [
-                S("Pursuit Menu Controller Key", "None"),
-                S("Crime Report Controller Key", "None"),
-                S("Stop Peds Key", "I"),
-                S("Perform Arrest Key", "I"),
-                S("Chase Abort Join Key", "None"),
-                S("Chase Abort Join Controller Key", "None"),
-                S("Traffic Stop Start Controller Key", "None"),
-                S("Traffic Stop Interact Key", "I"),
-                S("Traffic Stop Interact Controller Key", "None"),
-                S("Toggle Police Computer Controller Key", "None"),
-                S("Backup Menu Key", "None"),
-                S("Backup Menu Controller Key", "None"),
-
-                // ===== Phase 5 — LSPDFR settings (same file family) =======
-                S("Main Preload Models", "false"),
-                S("Ambient Disable Escape Suspect Counter", "true"),
-                S("Chase Disable Camera Focus", "true"),
-                S("Ambient Disabled Player Flashlight Override", "true"),
+                S("STOP_PEDS_Key", "I"),
+                S("PERFORM_ARREST_Key", "I"),
+                S("TRAFFICSTOP_INTERACT_Key", "I"),
+                S("CHASE_ABORT_JOIN_Key", "None"),
+                S("BACKUP_MENU_Key", "None"),
+                S("PURSUIT_MENU_ControllerKey", "None"),
+                S("CRIME_REPORT_ControllerKey", "None"),
+                S("CHASE_ABORT_JOIN_ControllerKey", "None"),
+                S("TRAFFICSTOP_START_ControllerKey", "None"),
+                S("TRAFFICSTOP_INTERACT_ControllerKey", "None"),
+                S("TOGGLE_POLICECOMPUTER_ControllerKey", "None"),
+                S("BACKUP_MENU_ControllerKey", "None"),
             ]),
 
-        // ===== Phase 9 — Simple Trainer ===================================
-        new ModConfig("simpletrainer",
-            ["TrainerV.ini"],
+        // ===== Phase 5 — LSPDFR settings (lspdfr/lspdfr.ini) ==============
+        // Dotted keys (Section.Setting), lower-case true/false.
+        new ModConfig("lspdfr",
+            ["lspdfr/lspdfr.ini", "lspdfr/LSPDFR.ini"],
             [
-                S("Spawn A Driver Key", "0"),
-                S("Add Waypoint Key", "0"),
+                S("Main.PreloadAllModels", "false"),
+                S("Ambient.DisableEscapedSuspectEncounter", "true"),
+                S("Chase.DisableCameraFocus", "true"),
+                S("Ambient.DisablePlayerFlashlightOverride", "true"),
+            ]),
+
+        // ===== Phase 9 — Simple Trainer (TrainerV.ini) ====================
+        // Numeric virtual-key codes; 0 disables the bind.
+        new ModConfig("simpletrainer",
+            ["TrainerV.ini", "trainerv.ini"],
+            [
+                S("SpawnADriverKey", "0"),
+                S("AddWayPoint", "0"),
             ]),
 
         // ===== Phase 13 — batch 1 =========================================
-        new ModConfig("skincontrol",
-            ["SkinControl.ini"],
-            [S("Hotkey", "9")]),
-
-        new ModConfig("rphdeletevehicle",
-            ["Plugins/RPHDeleteVehicle.ini", "Plugins/*Delete*Vehicle*.ini"],
-            [
-                S("Delete Key", "D"),
-                // The guide keeps the Shift modifier, so the binding is Shift+D.
-                S("Delete Modifier Key", "Left Shift"),
-            ]),
-
         new ModConfig("clipboard",
-            ["Plugins/LSPDFR/Clipboard.ini", "Plugins/LSPDFR/*Clipboard*.ini"],
+            ["plugins/LSPDFR/Clipboard.ini"],
             [
-                S("Clipboard Key", "T"),
-                S("Notepad Key", "Y"),
-                S("Clipboard Modifier Key", "Left Control"),
+                S("ClipboardKey", "T"),
+                S("NotepadKey", "Y"),
+                S("ClipboardModifierKey", "LControlKey"),
             ]),
 
         new ModConfig("compulite",
-            ["Plugins/LSPDFR/Compulite/Compulite.ini", "Plugins/LSPDFR/*Compulite*.ini"],
+            ["plugins/LSPDFR/CompuLite.ini", "plugins/LSPDFR/*Compulite*.ini"],
             [
-                S("Open Computer Key", "X"),
-                S("Give Citation Key", "X"),
-                S("Give Citation Modifier Key", "Left Shift"),
-                S("Open Computer Controller Button", "None"),
-                S("Court case waiting duration", "24"),
-                S("Pause game when opening", "No"),
+                S("OpenComputerKey", "X"),
+                S("GiveCitationKey", "X"),
+                S("GiveCitationModifierKey", "LShiftKey"),
+                S("OpenComputerButton", "None"),
+                S("CourtCaseWaitingTime", "24"),
+                S("IsPausedWhenOpen", "no"),
             ]),
 
         new ModConfig("liar",
-            ["Plugins/LSPDFR/LIAR.ini", "Plugins/LSPDFR/*LIAR*.ini"],
+            ["plugins/LSPDFR/LidarGun.ini", "plugins/LSPDFR/*Lidar*.ini", "plugins/LSPDFR/*LIAR*.ini"],
             [
-                S("LIAR Key", "1"),
-                S("Position X", "612"),
-                S("Position Y", "755"),
+                S("LidarKey", "NumPad1"),
+                S("PosX", "612"),
+                S("PosY", "755"),
                 S("Scale", "71"),
                 S("Volume", "5"),
-                S("HUD Colour", "1"),
+                S("HudColor", "1"),
             ]),
 
         new ModConfig("calloutinterface",
-            ["Plugins/LSPDFR/CalloutInterface.ini", "Plugins/LSPDFR/*CalloutInterface*.ini"],
+            ["plugins/LSPDFR/CalloutInterface.ini", "plugins/LSPDFR/*CalloutInterface*.ini"],
             [
-                S("Callout Menu Key", "F10"),
-                S("Toggle Terminal Key", "NumPad7"),
-                S("Toggle ALPR Key", "D"),
-                S("Hold Interval", "300"),
-                S("MDT Call Sign", "{callsign}"),
-                S("MDT Position X", "1353"),
-                S("MDT Position Y", "698"),
-                S("MDT Scale", "91"),
-                S("MDT Timeout", "15"),
-                S("MDT Sound Display", "4"),
-                S("Postal Code Enabled", "True"),
-                S("Postal Code Set", "virus_City"),
-                S("Postal Code Position X", "318"),
-                S("Postal Code Position Y", "17"),
-                S("Postal Code Scale", "47"),
-                S("Plate Enabled", "True"),
-                S("Plate Position X", "495"),
-                S("Plate Position Y", "907"),
-                S("Plate Scale", "60"),
-                S("Auto Tab", "True", ConfigMatch.Contains),
-                S("Auto Blip", "True"),
-                S("Blip Enabled", "True"),
+                S("CalloutMenuKey", "F10"),
+                S("ToggleTerminalKey", "NumPad7"),
+                S("ToggleALPRKey", "D"),
+                S("HoldInterval", "300"),
+                S("MDTCallsign", "{callsign}"),
+                S("MDTPosX", "1353"),
+                S("MDTPosY", "698"),
+                S("MDTScale", "91"),
+                S("MDTTimeout", "15"),
+                S("MDTSoundOnDisplay", "4"),
+                S("MDTSoundOnALPRHit", "5"),
+                S("PostalCodeEnabled", "True"),
+                S("PostalCodeSet", "virus_City"),
+                S("PostalCodePosX", "318"),
+                S("PostalCodePosY", "17"),
+                S("PostalCodeScale", "47"),
+                S("PlateEnabled", "True"),
+                S("PlatePosX", "495"),
+                S("PlatePosY", "907"),
+                S("PlateScale", "60"),
+                S("AutoBlip", "True"),
+                S("BlipEnabled", "True"),
+                // The [AutoTab] block: every entry on so a callout auto-fills its tabs.
+                S("ALPR", "True", ConfigMatch.Exact, "AutoTab"),
+                S("Incident", "True", ConfigMatch.Exact, "AutoTab"),
+                S("Peds", "True", ConfigMatch.Exact, "AutoTab"),
+                S("Vehicles", "True", ConfigMatch.Exact, "AutoTab"),
             ]),
 
         new ModConfig("speedradarlite",
-            ["Plugins/LSPDFR/SpeedRadar.ini", "Plugins/LSPDFR/*Speed*Radar*.ini", "Plugins/LSPDFR/*Radar*.ini"],
+            ["plugins/LSPDFR/SpeedRadarLite.ini", "plugins/LSPDFR/*Speed*Radar*.ini"],
             [
-                S("Increase Threshold Key", "I"),
-                S("Decrease Threshold Key", "O"),
-                S("Threshold Modifier Key", "Left Shift"),
-                S("Initial Speed Threshold", "55"),
+                // Note the mod's own misspelling: "Threashold" on the increase key.
+                S("IncreaseThreashold", "I"),
+                S("DecreaseThreasholdKey", "O"),
+                S("ThresholdModifierKey", "LShiftKey"),
+                S("SpeedThreshold", "55"),
             ]),
 
         new ModConfig("fastdraw",
-            ["scripts/FastDraw.ini", "scripts/*Fast*Draw*.ini"],
-            [S("Menu Key", "NONE")]),
+            ["scripts/Fast_Draw_Settings.ini", "scripts/*Fast*Draw*.ini"],
+            [S("MENUKEY", "None")]),
 
         // ===== Phase 17 — batch 2 =========================================
-        new ModConfig("ingamescreenshot",
-            ["scripts/InGameScreenshot.ini", "scripts/*Screenshot*.ini"],
-            [S("Screenshot Key", "K")]),
-
+        // Simple HUD moved to fractional 0..1 coordinates, so the guide's pixel
+        // positions/scales no longer apply and are left out; only the still-valid
+        // toggles are written.
         new ModConfig("simplehud",
-            ["scripts/SimpleHUD.ini", "scripts/*Simple*HUD*.ini"],
+            ["SimpleHUD.ini", "scripts/SimpleHUD.ini"],
             [
-                S("Direction Position X", "292"),
-                S("Direction Scale", "51"),
-                S("Road Position X", "312"),
-                S("Postal Enabled", "false"),
-                S("Time Position Y", "912"),
-                S("Time Format", "12"),
-                S("Time Enabled", "true"),
-                S("Toggle Key", "B"),
-                S("Modifier Key", "NONE"),
-                S("Menu Enabled", "true"),
+                S("PostalEnabled", "false"),
+                S("TimeFormat", "12h"),
+                S("TimeEnabled", "true"),
+                S("ToggleKey", "B"),
+                S("MenuEnabled", "true"),
             ]),
 
         new ModConfig("spotlight",
-            ["Plugins/spotlight_resources/General.ini", "Plugins/spotlight_resources/*General*.ini",
-             "Plugins/spotlight_resources/*.ini"],
+            ["plugins/spotlight_resources/General.ini", "plugins/spotlight_resources/*General*.ini"],
             [
-                S("Editor Key", "F6"),
-                S("Keyboard toggle key", "S"),
-                S("Controller modifier key", "NONE"),
-                S("Mouse toggle key", "S"),
+                S("EditorKey", "F6"),
+                // Toggle and Modifier repeat across [Keyboard]/[Controller]/[Mouse];
+                // scope each so it lands in the right one.
+                S("Toggle", "S", ConfigMatch.Exact, "Keyboard"),
+                S("Toggle", "S", ConfigMatch.Exact, "Mouse"),
+                S("Modifier", "None", ConfigMatch.Exact, "Controller"),
             ]),
 
         new ModConfig("immersiveeffects",
-            ["Plugins/ImmersiveEffects.ini", "Plugins/*Immersive*.ini"],
-            [S("Menu Key", "F2")]),
-
-        new ModConfig("dashcamv",
-            ["Plugins/DashCamV.ini", "Plugins/*DashCam*.ini"],
+            ["plugins/Immersive Effects.ini", "plugins/*Immersive*.ini"],
             [
-                S("Measurement system", "1"),
-                S("Unit Name", "{officer}"),
-                S("State", "San Andreas"),
-                S("Remote Toggle Key", "I"),
-                S("Remote View Gamepad Toggle", "NONE", ConfigMatch.Contains),
-                S("Department", "{department}", ConfigMatch.Contains),
-                S("Black and white filter", "false"),
+                S("MenuKey", "F2"),
+                S("MenuKeyModifier", "LShiftKey"),
             ]),
 
         new ModConfig("restrain",
-            ["Plugins/Restrain.ini", "Plugins/*Restrain*.ini"],
-            [S("Restrain Key", "E")]),
+            ["plugins/Restrain The Deceased.ini", "plugins/*Restrain*.ini"],
+            [S("RestrainKey", "E")]),
 
         new ModConfig("grammarpolice",
-            ["Plugins/LSPDFR/GrammarPolice/custom/*.ini", "Plugins/LSPDFR/GrammarPolice/default/*.ini",
-             "Plugins/LSPDFR/GrammarPolice/*.ini"],
+            ["plugins/LSPDFR/GrammarPolice/custom.ini", "plugins/LSPDFR/GrammarPolice/default.ini",
+             "plugins/LSPDFR/GrammarPolice/*.ini"],
             [
-                S("Call Sign", "{callsign}"),
-                S("Agency", "\"IMMERSIVE\""),
-                S("Dispatch Key", "0"),
-                // The guide gives Interface F4, but F4 is the RagePluginHook console
-                // ("never rebind") — so it moves to F7, matching the clash-free
-                // Suggested control scheme, with Settings on Left Control + F7 to keep
-                // the pair distinct.
-                S("Interface Key", "F7"),
-                S("Settings Key", "F7"),
-                S("Settings Modifier Key", "Left Control"),
-                S("Radio Key", "O"),
-                S("Radio Modifier Key", "Left Control"),
-                S("Show Notifications", "True"),
-                S("Player Status", "True"),
-                S("Show Target Plate", "True"),
-                S("Status Text Position X", "489"),
-                S("Status Text Position Y", "980"),
-                S("Status Text Scale", "47"),
-                S("Radial Position X", "625"),
-                S("Radio Position Y", "669"),
-                S("Radio Scale", "43"),
-                S("PTT Hold To Talk", "True"),
-                S("Preface Response", "2"),
-                S("Enable Traffic Stop", "True"),
-                S("Attempt To Initiate Pursuit", "True"),
-                S("Use Generic Response", "True"),
-                S("Officer Backup Air", "True"),
-                S("Use Natives", "False", ConfigMatch.Contains),
+                S("Callsign", "\"{callsign}\""),
+                S("AgencyCodes", "\"IMMERSIVE\""),
+                S("DispatchKey", "D0"),
+                S("InterfaceKey", "F8"),
+                S("SettingsKey", "F7"),
+                S("SettingsModifier", "LControlKey"),
+                S("RadioKey", "O"),
+                S("RadioModifier", "LControlKey"),
+                S("ShowNotifications", "true"),
+                S("ShowPlayerStatus", "true"),
+                S("ShowTargetPlate", "true"),
+                S("StatusTextPosX", "489"),
+                S("StatusTextPosY", "980"),
+                S("RadioPosX", "625"),
+                S("RadioPosY", "669"),
+                S("RadioScale", "43"),
+                S("HoldToTalk", "true"),
+                S("PrefaceResponse", "2"),
+                S("EnableTrafficStop", "true"),
+                S("AttemptToInitiatePursuit", "true"),
+                S("UseGenericResponse", "true"),
+                S("OfferBackupAir", "true"),
             ]),
 
-        new ModConfig("baitcar",
-            ["Plugins/LSPDFR/BaitCar.ini", "Plugins/LSPDFR/*BaitCar*.ini", "Plugins/*BaitCar*.ini"],
-            [S("Main Menu Key", "F11")]),
-
         new ModConfig("heliassistance",
-            ["Plugins/LSPDFR/HeliAssistance.ini", "Plugins/LSPDFR/*Heli*.ini"],
+            ["plugins/lspdfr/HeliAssistance.ini", "plugins/LSPDFR/HeliAssistance.ini", "plugins/lspdfr/*Heli*.ini"],
             [
-                S("Player Name", "{officer}"),
-                S("Unit Name", "{airunit}"),
+                S("PlayerName", "{officer}"),
+                S("UnitName", "{airunit}"),
             ]),
 
         new ModConfig("radiorealismfr",
-            ["Plugins/LSPDFR/OfficerPorky.ini", "Plugins/LSPDFR/*Porky*.ini", "Plugins/LSPDFR/*RadioRealism*.ini"],
+            ["plugins/LSPDFR/RadioRealismFR.ini", "plugins/LSPDFR/*Porky*.ini", "plugins/LSPDFR/*RadioRealism*.ini"],
             [
-                S("Display Street Detection Notification", "True"),
-                S("Enable Auto Ped ID Check", "True"),
-                S("Key To Play Backup Animation", "NONE"),
+                S("DisplayStreetDetectionNotification", "true"),
+                S("EnableAutoPedIDCheck", "true"),
+                // Key name literally has spaces in this file; normalises the same.
+                S("Backup Menu Key", "None"),
             ]),
 
         new ModConfig("riskiertrafficstops",
-            ["Plugins/LSPDFR/RiskierTrafficStops.ini", "Plugins/LSPDFR/*Riskier*.ini"],
-            [S("Chance", "30", ConfigMatch.Contains)]),
+            ["plugins/LSPDFR/RiskierTrafficStops.ini", "plugins/LSPDFR/*Riskier*.ini"],
+            [S("Chance", "30")]),
 
         new ModConfig("stoptheped",
-            ["Plugins/LSPDFR/StopThePed.ini", "Plugins/LSPDFR/StopThePedConfig.ini", "Plugins/LSPDFR/*StopThePed*.ini"],
+            ["plugins/LSPDFR/StopThePed.ini", "plugins/LSPDFR/*StopThePed*.ini"],
             [
-                S("Shortcut key to pat down", "F9"),
-                S("Key to call transport", "D9"),
-                S("Button to tackle", "X"),
-                S("Button to boost player speed", "A"),
-                S("Take control of all peds arrested by LSPDFR", "NO"),
-                S("Force search result full screen", "NO"),
-                S("Glowing stick", "NO", ConfigMatch.Contains),
-                S("Realistic weapon system", "NO"),
-                S("Prisoner transport backup enabled", "YES"),
-                S("Use nearest cop as prisoner transport", "YES"),
+                S("SearchKey", "F9"),
+                S("CallTransportKey", "D9"),
+                // Keyboard tackle is left at its default: the guide puts tackle on X
+                // for the controller only, and X on the keyboard is Compulite's
+                // hold-to-open. The controller button is set in the control catalogue.
+                S("SprintBoostKey", "A"),
+                S("TakeOverAllArrests", "no"),
+                S("ForceSearchResultFullScreen", "no"),
+                S("OnFootTrafficUseWand", "no"),
+                // "Turn the realistic weapon system on at startup" — a generic key
+                // name, so scope it to its section.
+                S("EnabledOnStartup", "no", ConfigMatch.Exact, "RealisticWeaponSystem"),
+                S("PrisonerTransportEnabled", "yes"),
+                S("RecruitNearestCopForTransport", "yes"),
+                // Every prisoner-transport siren/light entry off.
+                S("PrisonerTransportSiren", "no", ConfigMatch.Contains),
             ]),
 
         new ModConfig("ultimatebackup",
-            ["Plugins/LSPDFR/UltimateBackup.ini", "Plugins/LSPDFR/*UltimateBackup*.ini", "Plugins/*UltimateBackup*.ini"],
+            ["plugins/LSPDFR/UltimateBackup.ini", "plugins/LSPDFR/*UltimateBackup*.ini"],
             [
-                S("Toggle Menu Key", "U"),
-                S("Perimeters code 2 siren lights on", "NO"),
+                S("ToggleMenuKey", "U"),
+                S("IsCode2SirenLightsOn", "no"),
             ]),
     ];
 

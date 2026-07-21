@@ -25,7 +25,12 @@ public enum ConfigMatch
 /// <c>{officer}</c>, <c>{department}</c>, <c>{airunit}</c>.
 /// </param>
 /// <param name="Match">Whether one key or every matching key is written.</param>
-public sealed record ConfigSetting(string Name, string Value, ConfigMatch Match = ConfigMatch.Exact);
+/// <param name="Section">
+/// When set, only keys in this ini section are considered — for files that reuse a
+/// key name across sections (Spotlight's <c>Toggle</c> under <c>[Keyboard]</c>,
+/// <c>[Controller]</c> and <c>[Mouse]</c>). Null matches in any section.
+/// </param>
+public sealed record ConfigSetting(string Name, string Value, ConfigMatch Match = ConfigMatch.Exact, string? Section = null);
 
 /// <summary>The officer details the config values are personalised with.</summary>
 /// <param name="Callsign">The officer's callsign, e.g. "1 ADAM 7".</param>

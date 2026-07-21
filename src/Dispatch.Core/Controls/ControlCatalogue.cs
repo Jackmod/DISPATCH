@@ -8,10 +8,10 @@ namespace Dispatch.Core.Controls;
 /// later should be new rows, never new code.
 ///
 /// <para>
-/// Bindings here come from the guide the spec is built on. Where the guide and
-/// safety disagree — F4 being both the RagePluginHook console and Grammar
-/// Police's interface key — the console wins and the other action is moved.
-/// That conflict is real and is the sort of thing this screen exists to catch.
+/// Bindings here come from the tutorial the spec is built on. Where two mods
+/// disagree — Grammar Police shipping its voice interface on F3, the same key
+/// as Simple Trainer — the tutorial moves the newcomer aside (to F8). That
+/// conflict is real and is the sort of thing this screen exists to catch.
 /// </para>
 /// </remarks>
 public static class ControlCatalogue
@@ -19,122 +19,107 @@ public static class ControlCatalogue
     /// <summary>Every keyboard and controller action, in display order.</summary>
     public static readonly IReadOnlyList<GameAction> Actions =
     [
-        // ===== LSPDFR core =============================================
+        // ===== LSPDFR core (lspdfr/keys.ini) ===========================
         Action("lspdfr.duty", "Go on or off duty", "Report for duty, or end your shift.",
-            "LSPDFR", "Duty", "lspdfr/Keys.ini", "GoOnDutyKey"),
+            "LSPDFR", "Duty", "lspdfr/keys.ini", "TOGGLE_DUTY_Key"),
         Action("lspdfr.arrest", "Arrest suspect", "Place the suspect you are aiming at under arrest.",
-            "LSPDFR", "Suspects", "lspdfr/Keys.ini", "PERFORM_ARREST_Key"),
+            "LSPDFR", "Suspects", "lspdfr/keys.ini", "PERFORM_ARREST_Key"),
         Action("lspdfr.stop", "Start traffic stop",
             "Pull over the vehicle ahead. The de facto standard for this is Left Shift; changing it will surprise anyone who has played before.",
-            "LSPDFR", "Traffic", "lspdfr/Keys.ini", "TRAFFIC_STOP_Key"),
+            "LSPDFR", "Traffic", "lspdfr/keys.ini", "TRAFFICSTOP_START_Key"),
         Action("lspdfr.interact", "Interact", "Talk to the person you are looking at.",
-            "LSPDFR", "Suspects", "lspdfr/Keys.ini", "INTERACT_Key"),
+            "LSPDFR", "Suspects", "lspdfr/keys.ini", "TRAFFICSTOP_INTERACT_Key"),
         Action("lspdfr.backup", "Request backup", "Open the backup menu.",
-            "LSPDFR", "Dispatch", "lspdfr/Keys.ini", "BACKUP_Key"),
+            "LSPDFR", "Dispatch", "lspdfr/keys.ini", "BACKUP_MENU_Key"),
         Action("lspdfr.computer", "Police computer", "Open the in-car computer.",
-            "LSPDFR", "Dispatch", "lspdfr/Keys.ini", "POLICE_COMPUTER_Key"),
+            "LSPDFR", "Dispatch", "lspdfr/keys.ini", "TOGGLE_POLICECOMPUTER_Key"),
 
-        // ===== Stop The Ped ============================================
+        // ===== Stop The Ped (plugins/LSPDFR/StopThePed.ini) ============
+        // WinForms key names — the file writes D8-style number-row keys and named
+        // keys like Back/Enter, not the bare digit.
         Action("stp.patdown", "Pat down suspect",
             "Search the person you are aiming at for weapons and contraband.",
-            "Stop The Ped", "Suspects", "plugins/StopThePed.ini", "PatDownKey", KeyDialect.Bare),
+            "Stop The Ped", "Suspects", "plugins/LSPDFR/StopThePed.ini", "SearchKey"),
         Action("stp.transport", "Transport suspect", "Put an arrested suspect into a vehicle.",
-            "Stop The Ped", "Suspects", "plugins/StopThePed.ini", "TransportKey", KeyDialect.Bare),
+            "Stop The Ped", "Suspects", "plugins/LSPDFR/StopThePed.ini", "CallTransportKey"),
         Action("stp.tackle", "Tackle", "Tackle a fleeing suspect.",
-            "Stop The Ped", "Suspects", "plugins/StopThePed.ini", "TackleKey", KeyDialect.Bare),
+            "Stop The Ped", "Suspects", "plugins/LSPDFR/StopThePed.ini", "TacklePedKey"),
         Action("stp.sprint", "Sprint boost", "Run faster while chasing on foot.",
-            "Stop The Ped", "Suspects", "plugins/StopThePed.ini", "SprintKey", KeyDialect.Bare),
+            "Stop The Ped", "Suspects", "plugins/LSPDFR/StopThePed.ini", "SprintBoostKey"),
 
         // ===== Callout Interface =======================================
         Action("ci.menu", "Callout menu", "Open the Callout Interface menu.",
-            "Callout Interface", "Dispatch", "plugins/LSPDFR/CalloutInterface.ini", "MenuKey"),
+            "Callout Interface", "Dispatch", "plugins/LSPDFR/CalloutInterface.ini", "CalloutMenuKey"),
         Action("ci.terminal", "MDT terminal", "Open the mobile data terminal.",
-            "Callout Interface", "Dispatch", "plugins/LSPDFR/CalloutInterface.ini", "TerminalKey"),
+            "Callout Interface", "Dispatch", "plugins/LSPDFR/CalloutInterface.ini", "ToggleTerminalKey"),
         Action("ci.alpr", "Run plate (ALPR)", "Read the plate of the vehicle you are looking at.",
-            "Callout Interface", "Traffic", "plugins/LSPDFR/CalloutInterface.ini", "ALPRKey", KeyDialect.Bare),
+            "Callout Interface", "Traffic", "plugins/LSPDFR/CalloutInterface.ini", "ToggleALPRKey"),
 
-        // ===== Grammar Police ==========================================
+        // ===== Grammar Police (GrammarPolice/default.ini) ==============
+        // Its modifier fields drop the trailing "Key" (InterfaceModifier).
         Action("gp.interface", "Voice interface", "Open the voice control interface.",
-            "Grammar Police", "Voice", "plugins/LSPDFR/GrammarPolice/custom/config.ini", "InterfaceKey"),
+            "Grammar Police", "Voice", "plugins/LSPDFR/GrammarPolice/default.ini", "InterfaceKey"),
         Action("gp.settings", "Voice settings", "Open Grammar Police settings.",
-            "Grammar Police", "Voice", "plugins/LSPDFR/GrammarPolice/custom/config.ini", "SettingsKey"),
+            "Grammar Police", "Voice", "plugins/LSPDFR/GrammarPolice/default.ini", "SettingsKey"),
         Action("gp.radio", "Push to talk", "Hold to speak to dispatch.",
-            "Grammar Police", "Voice", "plugins/LSPDFR/GrammarPolice/custom/config.ini", "RadioKey"),
+            "Grammar Police", "Voice", "plugins/LSPDFR/GrammarPolice/default.ini", "RadioKey"),
 
-        // ===== Charges and Citations ===================================
+        // ===== Charges and Citations (CompuLite.ini) ===================
         Action("compulite.open", "Charges menu", "Open the charges and citations menu.",
-            "Charges & Citations", "Suspects", "plugins/lspdfr/Compulite/config.ini", "OpenKey", KeyDialect.Bare),
+            "Charges & Citations", "Suspects", "plugins/LSPDFR/CompuLite.ini", "OpenComputerKey"),
         Action("compulite.citation", "Write citation", "Issue a citation to the person you are dealing with.",
-            "Charges & Citations", "Traffic", "plugins/lspdfr/Compulite/config.ini", "CitationKey", KeyDialect.Bare),
+            "Charges & Citations", "Traffic", "plugins/LSPDFR/CompuLite.ini", "GiveCitationKey"),
 
         // ===== Everything else =========================================
         Action("backup.menu", "Backup menu", "Call a specific unit to your location.",
-            "Ultimate Backup", "Dispatch", "plugins/UltimateBackup.ini", "MenuKey", KeyDialect.Bare),
+            "Ultimate Backup", "Dispatch", "plugins/LSPDFR/UltimateBackup.ini", "ToggleMenuKey"),
         Action("hud.toggle", "Toggle HUD", "Show or hide the on-screen display.",
-            "Simple HUD", "Interface", "scripts/SimpleHUD.ini", "ToggleKey", KeyDialect.Bare),
+            "Simple HUD", "Interface", "SimpleHUD.ini", "ToggleKey"),
         Action("dashcam.toggle", "Toggle dash cam", "Turn the dash cam overlay on or off.",
-            "Dash Cam V", "Interface", "plugins/DashCamV.ini", "RemoteToggleKey", KeyDialect.Bare),
+            "Dash Cam V", "Interface", "plugins/DashCamV.ini", "RemoteToggleKey"),
         Action("spotlight.toggle", "Toggle spotlight", "Turn the vehicle spotlight on or off.",
-            "Spotlight", "Vehicle", "plugins/spotlight.ini", "ToggleKey", KeyDialect.Bare),
+            "Spotlight", "Vehicle", "plugins/spotlight_resources/General.ini", "Toggle"),
         Action("spotlight.editor", "Spotlight editor", "Adjust spotlight position and angle.",
-            "Spotlight", "Vehicle", "plugins/spotlight.ini", "EditorKey"),
+            "Spotlight", "Vehicle", "plugins/spotlight_resources/General.ini", "EditorKey"),
         Action("restrain.toggle", "Restrain suspect", "Cuff or uncuff the person you are dealing with.",
-            "Restrain", "Suspects", "plugins/Restrain.ini", "RestrainKey", KeyDialect.Bare),
+            "Restrain", "Suspects", "plugins/Restrain The Deceased.ini", "RestrainKey"),
         Action("baitcar.menu", "Bait car menu", "Deploy or manage a bait car.",
-            "Bait Car", "Vehicle", "plugins/BaitCar.ini", "MenuKey"),
+            "Bait Car", "Vehicle", "plugins/LSPDFR/BaitCar.ini", "MenuKey"),
         Action("effects.menu", "Immersive effects", "Open the immersive effects menu.",
-            "Immersive Effects", "Interface", "plugins/ImmersiveEffects.ini", "MenuKey"),
+            "Immersive Effects", "Interface", "plugins/Immersive Effects.ini", "MenuKey"),
         Action("liar.menu", "Radar gun", "Raise the radar gun.",
-            "LIAR", "Traffic", "plugins/LIAR.ini", "MenuKey"),
+            "LIAR", "Traffic", "plugins/LSPDFR/LidarGun.ini", "LidarKey"),
         Action("radar.increase", "Radar threshold up", "Raise the speed the radar flags.",
-            "LIAR", "Traffic", "plugins/LIAR.ini", "IncreaseKey", KeyDialect.Bare),
+            "Speed Radar", "Traffic", "plugins/LSPDFR/SpeedRadarLite.ini", "IncreaseThreashold"),
         Action("radar.decrease", "Radar threshold down", "Lower the speed the radar flags.",
-            "LIAR", "Traffic", "plugins/LIAR.ini", "DecreaseKey", KeyDialect.Bare),
+            "Speed Radar", "Traffic", "plugins/LSPDFR/SpeedRadarLite.ini", "DecreaseThreasholdKey"),
         Action("vehicle.delete", "Delete vehicle", "Remove the vehicle you are looking at.",
-            "Simple Trainer", "Vehicle", "TrainerV.ini", "DeleteVehicleKey", KeyDialect.Bare),
+            "RPH Delete Vehicle", "Vehicle", "plugins/RPHDeleteVehicle.ini", "DeleteKey"),
         Action("screenshot.take", "Take screenshot", "Capture the current frame.",
-            "In-Game Screenshot", "Interface", "scripts/InGameScreenshot.ini", "ScreenshotKey", KeyDialect.Bare),
+            "In-Game Screenshot", "Interface", "scripts/InGameScreenshot.ini", "ScreenshotKey"),
         Action("skin.menu", "Skin control", "Change your uniform.",
-            "Skin Control", "Interface", "plugins/SkinControl.ini", "HotKey", KeyDialect.Bare),
+            "Skin Control", "Interface", "SkinControl.ini", "Hotkey"),
         Action("clipboard.open", "Open clipboard", "Open the notes clipboard.",
-            "Clipboard", "Interface", "plugins/Clipboard.ini", "OpenKey", KeyDialect.Bare),
+            "Clipboard", "Interface", "plugins/LSPDFR/Clipboard.ini", "ClipboardKey"),
 
-        // ===== Controller ==============================================
+        // ===== Controller (lspdfr/keys.ini + StopThePed.ini) ===========
         Action("pad.stop", "Start traffic stop", "Pull over the vehicle ahead.",
-            "LSPDFR", "Traffic", "lspdfr/Keys.ini", "TRAFFIC_STOP_Button",
+            "LSPDFR", "Traffic", "lspdfr/keys.ini", "TRAFFICSTOP_START_ControllerKey",
             KeyDialect.Controller, InputDevice.Controller),
         Action("pad.interact", "Interact", "Talk to the person you are looking at.",
-            "LSPDFR", "Suspects", "lspdfr/Keys.ini", "INTERACT_Button",
+            "LSPDFR", "Suspects", "lspdfr/keys.ini", "TRAFFICSTOP_INTERACT_ControllerKey",
             KeyDialect.Controller, InputDevice.Controller),
         Action("pad.backup", "Request backup", "Open the backup menu.",
-            "LSPDFR", "Dispatch", "lspdfr/Keys.ini", "BACKUP_Button",
+            "LSPDFR", "Dispatch", "lspdfr/keys.ini", "BACKUP_MENU_ControllerKey",
             KeyDialect.Controller, InputDevice.Controller),
         Action("pad.pursuit", "Pursuit menu", "Open the pursuit menu.",
-            "LSPDFR", "Dispatch", "lspdfr/Keys.ini", "PURSUIT_Button",
+            "LSPDFR", "Dispatch", "lspdfr/keys.ini", "PURSUIT_MENU_ControllerKey",
             KeyDialect.Controller, InputDevice.Controller),
         Action("pad.tackle", "Tackle", "Tackle a fleeing suspect.",
-            "Stop The Ped", "Suspects", "plugins/StopThePed.ini", "TackleButton",
+            "Stop The Ped", "Suspects", "plugins/LSPDFR/StopThePed.ini", "TacklePedButton",
             KeyDialect.Controller, InputDevice.Controller),
         Action("pad.sprint", "Sprint boost", "Run faster while chasing on foot.",
-            "Stop The Ped", "Suspects", "plugins/StopThePed.ini", "SprintButton",
-            KeyDialect.Controller, InputDevice.Controller),
-        Action("pad.engine", "Engine off", "Kill the engine of the vehicle you are in.",
-            "Turn Off Engine", "Vehicle", "plugins/TurnOffEngine.ini", "EngineButton",
-            KeyDialect.Controller, InputDevice.Controller),
-        Action("pad.sirens", "Toggle sirens", "Cycle the siren.",
-            "ELS", "Vehicle", "plugins/ELS.ini", "SirenButton",
-            KeyDialect.Controller, InputDevice.Controller),
-        Action("pad.lights", "Lights and horn", "Toggle the lights or sound the horn.",
-            "ELS", "Vehicle", "plugins/ELS.ini", "LightsButton",
-            KeyDialect.Controller, InputDevice.Controller),
-        Action("pad.camera", "Cycle camera", "Switch the camera view, including the dash cam.",
-            "Dash Cam V", "Interface", "plugins/DashCamV.ini", "CameraButton",
-            KeyDialect.Controller, InputDevice.Controller),
-        Action("pad.marktarget", "Mark pursuit target", "Mark the suspect you are aiming at.",
-            "LSPDFR", "Traffic", "lspdfr/Keys.ini", "MARK_Button",
-            KeyDialect.Controller, InputDevice.Controller),
-        Action("pad.partner", "Partner into vehicle", "Order your partner into the car.",
-            "Stop The Ped", "Suspects", "plugins/StopThePed.ini", "PartnerButton",
+            "Stop The Ped", "Suspects", "plugins/LSPDFR/StopThePed.ini", "SprintBoostButton",
             KeyDialect.Controller, InputDevice.Controller),
     ];
 
@@ -142,10 +127,11 @@ public static class ControlCatalogue
     /// The conflict-free scheme, and the one preselected in the wizard.
     /// </summary>
     /// <remarks>
-    /// Grammar Police's interface key is F7 here rather than the F4 the guide
-    /// gives it. F4 opens the RagePluginHook console, which is where people go
-    /// when something has broken, and a mod is not entitled to take that away.
-    /// Its settings key moves to Left Control + F7 to keep the pair together.
+    /// Grammar Police's interface key is F8 here, matching the tutorial's
+    /// on-screen config. Its shipped default (F3) collides with Simple Trainer;
+    /// F8 is free once Callout's menu moves to F10 and Skin Control moves to Tab.
+    /// Its settings key stays on Left Control + F7. (F4 — the RagePluginHook
+    /// console — is never used by Grammar Police; the old "F4" was a guide typo.)
     /// </remarks>
     public static readonly IReadOnlyDictionary<string, KeyBinding> Suggested =
         new Dictionary<string, KeyBinding>(StringComparer.Ordinal)
@@ -166,7 +152,7 @@ public static class ControlCatalogue
             ["ci.terminal"] = Bind("NumPad7"),
             ["ci.alpr"] = Bind("D", KeyModifier.Control),
 
-            ["gp.interface"] = Bind("F7"),
+            ["gp.interface"] = Bind("F8"),
             ["gp.settings"] = Bind("F7", KeyModifier.Control),
             ["gp.radio"] = Bind("O", KeyModifier.Control),
 
@@ -195,12 +181,6 @@ public static class ControlCatalogue
             ["pad.pursuit"] = Bind("DPadDown"),
             ["pad.tackle"] = Bind("PadX"),
             ["pad.sprint"] = Bind("PadA"),
-            ["pad.engine"] = Bind("RightThumb"),
-            ["pad.sirens"] = Bind("PadB"),
-            ["pad.lights"] = Bind("LeftThumb"),
-            ["pad.camera"] = Bind("PadBack"),
-            ["pad.marktarget"] = Bind("PadY"),
-            ["pad.partner"] = Bind("PadStart"),
         };
 
     /// <summary>
@@ -231,8 +211,8 @@ public static class ControlCatalogue
             ["ci.terminal"] = Bind("NumPad7"),
             ["ci.alpr"] = Bind("D"),
 
-            // As shipped: collides with the RagePluginHook console.
-            ["gp.interface"] = Bind("F4"),
+            // As shipped: collides with Simple Trainer (both F3).
+            ["gp.interface"] = Bind("F3"),
             ["gp.settings"] = Bind("F7"),
             ["gp.radio"] = Bind("O", KeyModifier.Control),
 
@@ -266,12 +246,6 @@ public static class ControlCatalogue
             ["pad.pursuit"] = Bind("DPadDown"),
             ["pad.tackle"] = Bind("PadX"),
             ["pad.sprint"] = Bind("PadA"),
-            ["pad.engine"] = Bind("RightThumb"),
-            ["pad.sirens"] = Bind("PadB"),
-            ["pad.lights"] = Bind("LeftThumb"),
-            ["pad.camera"] = Bind("PadBack"),
-            ["pad.marktarget"] = Bind("PadY"),
-            ["pad.partner"] = Bind("PadStart"),
         };
 
     /// <summary>Every category, for the filter chips.</summary>

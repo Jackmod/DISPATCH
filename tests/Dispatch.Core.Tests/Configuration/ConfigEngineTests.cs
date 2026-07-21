@@ -113,13 +113,20 @@ public sealed class ConfigEngineTests
     }
 
     [Fact]
-    public void Every_catalogue_mod_maps_to_a_known_mod_id_or_is_clearly_new()
+    public void Every_catalogue_config_maps_to_a_known_mod_id()
     {
-        // Config entries should line up with catalogue mod ids so they actually
-        // run. New mods not yet in the mod catalogue are allowed but listed.
+        // Config entries must line up with catalogue mod ids or the install pass
+        // filters them out and they never run. A mod may appear more than once when
+        // it keeps its config in more than one file (LSPDFR: keys.ini + lspdfr.ini),
+        // so duplicates are expected — every id just has to be a real mod.
         var known = Dispatch.Core.Catalogue.ModCatalogue.Mods.Keys.ToHashSet(StringComparer.Ordinal);
-        var configModIds = ConfigCatalogue.All.Select(c => c.ModId).ToList();
 
-        configModIds.Should().OnlyHaveUniqueItems();
+        var unknown = ConfigCatalogue.All
+            .Select(c => c.ModId)
+            .Distinct(StringComparer.Ordinal)
+            .Where(id => !known.Contains(id))
+            .ToList();
+
+        unknown.Should().BeEmpty("every config mod id should be a real mod: {0}", string.Join(", ", unknown));
     }
 }

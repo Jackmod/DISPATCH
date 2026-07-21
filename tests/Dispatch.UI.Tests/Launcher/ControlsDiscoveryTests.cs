@@ -71,7 +71,8 @@ public sealed class ControlsDiscoveryTests
 
             var document = await IniDocument.LoadAsync(Path.Combine(root, "plugins", "MysteryMod.ini"));
             document.GetAnywhere("MegaMenuKey").Should().Be("G");
-            document.GetAnywhere("MegaMenuKeyModifier").Should().Be("Left Control");
+            // The companion modifier field the mods use: <name>ModifierKey = LControlKey.
+            document.GetAnywhere("MegaMenuModifierKey").Should().Be("LControlKey");
             model.HasPending.Should().BeFalse("applying accepts the new baseline");
         }
         finally

@@ -232,13 +232,15 @@ public sealed class IniScannerTests : IDisposable
 
         var bind = (await _scanner.ScanAllAsync(_root)).Keybinds.Single();
 
-        // Rebind to Left Control + G and confirm the file holds the new value and modifier.
+        // Rebind to Left Control + G and confirm the file holds the new value and its
+        // companion modifier, spelled and valued the way the mods read it:
+        // <name>ModifierKey = LControlKey.
         var moved = new BoundAction(bind.Action, new KeyBinding(new KeyToken("G"), KeyModifier.Control));
         await writer.WriteAsync(_root, [moved]);
 
         var document = await IniDocument.LoadAsync(Path.Combine(_root, "plugins", "M.ini"));
         document.GetAnywhere("SomeActionKey").Should().Be("G");
-        document.GetAnywhere("SomeActionKeyModifier").Should().Be("Left Control");
+        document.GetAnywhere("SomeActionModifierKey").Should().Be("LControlKey");
     }
 
     [Fact]

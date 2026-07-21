@@ -46,13 +46,22 @@ public sealed class ControlWriterTests : IDisposable
             .Where(b => Ids.Contains(b.Action.Id))
             .ToList();
 
+    // Seeds each mod's file with the real key the action targets, so the writer —
+    // which only ever changes a key that already exists — has something to edit.
     private void CreateFilesFor(IEnumerable<BoundAction> bindings)
     {
-        foreach (var file in bindings.Select(b => b.Action.ConfigFile).Distinct(StringComparer.OrdinalIgnoreCase))
+        foreach (var group in bindings.GroupBy(b => b.Action.ConfigFile, StringComparer.OrdinalIgnoreCase))
         {
-            var path = Path.Combine(_root, file.Replace('/', Path.DirectorySeparatorChar));
+            var path = Path.Combine(_root, group.Key.Replace('/', Path.DirectorySeparatorChar));
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            File.WriteAllText(path, "; fixture config\n");
+
+            var lines = new List<string> { "; fixture config" };
+            foreach (var bound in group)
+            {
+                lines.Add($"{bound.Action.ConfigKey} = PLACEHOLDER   ; the bind");
+            }
+
+            File.WriteAllText(path, string.Join('\n', lines) + "\n");
         }
     }
 
@@ -80,12 +89,12 @@ public sealed class ControlWriterTests : IDisposable
         var bindings = Subset();
         CreateFilesFor(bindings);
 
-        var before = await File.ReadAllTextAsync(
-            Path.Combine(_root, "lspdfr", "Keys.ini"));
+        var keys = Path.Combine(_root, "lspdfr", "keys.ini");
+        var before = await File.ReadAllTextAsync(keys);
 
         await _writer.WriteAsync(_root, bindings);
 
-        var backup = Path.Combine(_root, "lspdfr", "Keys.ini.bak");
+        var backup = keys + ".bak";
         File.Exists(backup).Should().BeTrue("every target is copied to a .bak before it is written");
         (await File.ReadAllTextAsync(backup)).Should().Be(before, "the backup is the pre-write state");
     }
@@ -98,14 +107,15 @@ public sealed class ControlWriterTests : IDisposable
 
         await _writer.WriteAsync(_root, bindings);
 
-        var stp = await IniDocument.LoadAsync(Path.Combine(_root, "plugins", "StopThePed.ini"));
-        // Stop The Ped writes the bare number row: D9 becomes "9", not "D9".
-        stp.GetAnywhere("TransportKey").Should().Be("9");
+        // Stop The Ped keeps the WinForms number-row spelling: D9 stays "D9".
+        var stp = await IniDocument.LoadAsync(Path.Combine(_root, "plugins", "LSPDFR", "StopThePed.ini"));
+        stp.GetAnywhere("CallTransportKey").Should().Be("D9");
 
-        var compulite = await IniDocument.LoadAsync(
-            Path.Combine(_root, "plugins", "lspdfr", "Compulite", "config.ini"));
-        compulite.GetAnywhere("CitationKey").Should().Be("X");
-        compulite.GetAnywhere("CitationKeyModifier").Should().Be("Left Shift");
+        // Compulite's citation is Left Shift + X; the modifier lands in its own
+        // companion field, in the WinForms token form the mod reads.
+        var compulite = await IniDocument.LoadAsync(Path.Combine(_root, "plugins", "LSPDFR", "CompuLite.ini"));
+        compulite.GetAnywhere("GiveCitationKey").Should().Be("X");
+        compulite.GetAnywhere("GiveCitationModifierKey").Should().Be("LShiftKey");
     }
 
     [Fact]
@@ -117,8 +127,8 @@ public sealed class ControlWriterTests : IDisposable
         var result = await _writer.WriteAsync(_root, bindings);
 
         result.Changes.Should().BeEmpty();
-        result.MissingFiles.Should().Contain("lspdfr/Keys.ini");
-        File.Exists(Path.Combine(_root, "lspdfr", "Keys.ini")).Should().BeFalse();
+        result.MissingFiles.Should().Contain("lspdfr/keys.ini");
+        File.Exists(Path.Combine(_root, "lspdfr", "keys.ini")).Should().BeFalse();
     }
 
     [Fact]
@@ -139,7 +149,7 @@ public sealed class ControlWriterTests : IDisposable
         var bindings = Subset();
         CreateFilesFor(bindings);
 
-        var keysPath = Path.Combine(_root, "lspdfr", "Keys.ini");
+        var keysPath = Path.Combine(_root, "lspdfr", "keys.ini");
         var before = await File.ReadAllTextAsync(keysPath);
 
         var preview = await _writer.PreviewAsync(_root, bindings);
@@ -157,9 +167,9 @@ public sealed class ControlWriterTests : IDisposable
         await _writer.WriteAsync(_root, bindings);
 
         // Simulate a mod's in-game menu rewriting its own ini.
-        var stpPath = Path.Combine(_root, "plugins", "StopThePed.ini");
+        var stpPath = Path.Combine(_root, "plugins", "LSPDFR", "StopThePed.ini");
         var stp = await IniDocument.LoadAsync(stpPath);
-        stp.SetAnywhere("TransportKey", "8");
+        stp.SetAnywhere("CallTransportKey", "D8");
         await stp.SaveAsync(stpPath);
 
         var readBack = await _writer.ReadAsync(_root, bindings.Select(b => b.Action).ToList());
@@ -173,7 +183,7 @@ public sealed class ControlWriterTests : IDisposable
         var bindings = Subset();
         CreateFilesFor(bindings);
 
-        var keysPath = Path.Combine(_root, "lspdfr", "Keys.ini");
+        var keysPath = Path.Combine(_root, "lspdfr", "keys.ini");
         var original = await File.ReadAllTextAsync(keysPath);
 
         await _writer.WriteAsync(_root, bindings);
@@ -181,7 +191,7 @@ public sealed class ControlWriterTests : IDisposable
 
         var restored = await _writer.RestoreBackupsAsync(_root, bindings.Select(b => b.Action).ToList());
 
-        restored.Should().Contain("lspdfr/Keys.ini");
+        restored.Should().Contain("lspdfr/keys.ini");
         (await File.ReadAllTextAsync(keysPath)).Should().Be(original, "restore returns the pre-write content");
     }
 
@@ -200,9 +210,9 @@ public sealed class ControlWriterTests : IDisposable
     [Fact]
     public async Task Comments_in_a_config_file_survive_a_write()
     {
-        var path = Path.Combine(_root, "plugins", "StopThePed.ini");
+        var path = Path.Combine(_root, "plugins", "LSPDFR", "StopThePed.ini");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        await File.WriteAllTextAsync(path, "; keep me\nTransportKey = 5   ; the transport key\n");
+        await File.WriteAllTextAsync(path, "; keep me\nCallTransportKey = D5   ; the transport key\n");
 
         var transport = ControlCatalogue.Bind(ControlCatalogue.Suggested)
             .Where(b => b.Action.Id == "stp.transport")
@@ -212,6 +222,6 @@ public sealed class ControlWriterTests : IDisposable
 
         var text = await File.ReadAllTextAsync(path);
         text.Should().Contain("; keep me");
-        text.Should().Contain("TransportKey = 9   ; the transport key");
+        text.Should().Contain("CallTransportKey = D9   ; the transport key");
     }
 }

@@ -218,7 +218,7 @@ public sealed class ControlWriter : IControlWriter
 
                 var key = KeyTokens.Parse(raw, action.Dialect);
                 var modifier = action.Device == InputDevice.Keyboard
-                    ? ParseModifier(document.GetAnywhere(ModifierKey(action.ConfigKey)))
+                    ? ParseModifier(document.GetAnywhere(ModifierField(document, action.ConfigKey)))
                     : KeyModifier.None;
 
                 scheme[action.Id] = new KeyBinding(key, modifier);
@@ -266,6 +266,14 @@ public sealed class ControlWriter : IControlWriter
         var action = bound.Action;
         var changes = new List<ControlChange>();
 
+        // Only ever change a key the mod actually has. Inserting a key the file
+        // never defined does nothing in-game and leaves a dead line behind, so a
+        // catalogue key that does not match this file is skipped, not appended.
+        if (!document.HasAnywhere(action.ConfigKey))
+        {
+            return changes;
+        }
+
         var mainValue = KeyTokens.Format(bound.Binding.Key, action.Dialect);
         var oldMain = document.GetAnywhere(action.ConfigKey);
         if (document.SetAnywhere(action.ConfigKey, mainValue))
@@ -279,7 +287,7 @@ public sealed class ControlWriter : IControlWriter
             return changes;
         }
 
-        var modKey = ModifierKey(action.ConfigKey);
+        var modKey = ModifierField(document, action.ConfigKey);
         var hasModifier = bound.Binding.Modifier != KeyModifier.None;
         var modExists = document.HasAnywhere(modKey);
 
@@ -327,7 +335,30 @@ public sealed class ControlWriter : IControlWriter
         }
     }
 
-    private static string ModifierKey(string configKey) => configKey + "Modifier";
+    /// <summary>
+    /// The companion modifier field for a key, resolved against the file because
+    /// these mods spell it two ways: LSPDFR's <c>PERFORM_ARREST_Key</c> pairs with
+    /// <c>PERFORM_ARREST_ModifierKey</c> and Stop The Ped's <c>SearchKey</c> with
+    /// <c>SearchModifierKey</c>, while Grammar Police's <c>InterfaceKey</c> pairs with
+    /// <c>InterfaceModifier</c> (no trailing "Key"). Whichever the file actually has
+    /// is used; the <c>…ModifierKey</c> form is the default when it has neither.
+    /// </summary>
+    private static string ModifierField(IniDocument document, string configKey)
+    {
+        var baseName = configKey.EndsWith("Key", StringComparison.Ordinal)
+            ? configKey[..^3]
+            : configKey;
+
+        var withKey = baseName + "ModifierKey";
+        var without = baseName + "Modifier";
+
+        if (document.HasAnywhere(withKey))
+        {
+            return withKey;
+        }
+
+        return document.HasAnywhere(without) ? without : withKey;
+    }
 
     private static string ModifierToFile(KeyModifier modifier)
     {
@@ -336,10 +367,13 @@ public sealed class ControlWriter : IControlWriter
             return "None";
         }
 
+        // WinForms modifier tokens — the form every one of these config files reads,
+        // e.g. LSPDFR's TRAFFICSTOP_START_Key=LShiftKey and Compulite's
+        // GiveCitationModifierKey=LControlKey. "Left Shift" would not parse.
         var parts = new List<string>(3);
-        if (modifier.HasFlag(KeyModifier.Control)) { parts.Add("Left Control"); }
-        if (modifier.HasFlag(KeyModifier.Shift)) { parts.Add("Left Shift"); }
-        if (modifier.HasFlag(KeyModifier.Alt)) { parts.Add("Left Alt"); }
+        if (modifier.HasFlag(KeyModifier.Control)) { parts.Add("LControlKey"); }
+        if (modifier.HasFlag(KeyModifier.Shift)) { parts.Add("LShiftKey"); }
+        if (modifier.HasFlag(KeyModifier.Alt)) { parts.Add("LMenu"); }
 
         return string.Join(" + ", parts);
     }

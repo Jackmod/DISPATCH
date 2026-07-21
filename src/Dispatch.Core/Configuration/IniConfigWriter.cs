@@ -62,7 +62,13 @@ public sealed class IniConfigWriter
             var target = Normalise(setting.Name);
             var written = new List<string>();
 
-            foreach (var (section, key) in Resolve(index, target, setting.Match))
+            // A section-scoped setting only sees keys in that section, so a name that
+            // repeats across sections (Spotlight's Toggle) resolves to the right one.
+            var scope = setting.Section is { } wanted
+                ? index.Where(e => string.Equals(e.Section, wanted, StringComparison.OrdinalIgnoreCase)).ToList()
+                : index;
+
+            foreach (var (section, key) in Resolve(scope, target, setting.Match))
             {
                 if (document.Set(section, key, value))
                 {
@@ -106,7 +112,7 @@ public sealed class IniConfigWriter
 
     private static List<(string Normalised, string Section, string Key)> BuildIndex(IniDocument document)
     {
-        var index = new List<(string, string, string)>();
+        var index = new List<(string Normalised, string Section, string Key)>();
 
         // The root section is the empty string; include it alongside the named ones.
         var sections = new List<string> { string.Empty };

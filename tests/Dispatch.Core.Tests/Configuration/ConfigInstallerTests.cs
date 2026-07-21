@@ -38,26 +38,27 @@ public sealed class ConfigInstallerTests : IDisposable
     [Fact]
     public async Task It_finds_the_config_by_glob_and_writes_the_guide_values()
     {
+        // The real TrainerV keys: SpawnADriverKey and AddWayPoint (no "Key" suffix).
         WriteConfig("TrainerV.ini",
             "[Trainer]\n" +
             "SpawnADriverKey = 113\n" +
-            "AddWaypointKey = 114\n");
+            "AddWayPoint = 114\n");
 
         var report = await _installer.ApplyAsync(_game, ["simpletrainer"], OfficerValues.Default);
 
         var trainer = report.Outcomes.Single();
         trainer.File.Should().Be("TrainerV.ini");
-        trainer.Applied.Should().Contain("Spawn A Driver Key").And.Contain("Add Waypoint Key");
+        trainer.Applied.Should().Contain("SpawnADriverKey").And.Contain("AddWayPoint");
 
         ReadConfig("TrainerV.ini").Should().Contain("SpawnADriverKey = 0");
-        ReadConfig("TrainerV.ini").Should().Contain("AddWaypointKey = 0");
+        ReadConfig("TrainerV.ini").Should().Contain("AddWayPoint = 0");
     }
 
     [Fact]
     public async Task It_fills_the_officer_callsign_and_leaves_a_hand_tuned_comment()
     {
-        // Callout Interface, found under plugins/lspdfr via a glob hint.
-        WriteConfig("Plugins/LSPDFR/CalloutInterface.ini",
+        // Callout Interface, found under plugins/LSPDFR via a hint.
+        WriteConfig("plugins/LSPDFR/CalloutInterface.ini",
             "; do not delete this line\n" +
             "MDTCallSign = CHANGEME\n" +
             "CalloutMenuKey = F9\n" +
@@ -66,7 +67,7 @@ public sealed class ConfigInstallerTests : IDisposable
         var officer = new OfficerValues("3 LINCOLN 22", "Jack", "LSPD", "AIR 1");
         var report = await _installer.ApplyAsync(_game, ["calloutinterface"], officer);
 
-        report.Outcomes.Single().File.Should().Be("Plugins/LSPDFR/CalloutInterface.ini");
+        report.Outcomes.Single().File.Should().Be("plugins/LSPDFR/CalloutInterface.ini");
 
         var text = ReadConfig("Plugins/LSPDFR/CalloutInterface.ini");
         text.Should().Contain("MDTCallSign = 3 LINCOLN 22");
