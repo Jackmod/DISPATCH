@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using Dispatch.Core.Platform;
@@ -52,8 +53,9 @@ public sealed class WindowsDefenderService : IDefenderService
                 _ => null,
             };
         }
-        catch (Exception ex) when (ex is IOException or InvalidOperationException)
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or Win32Exception)
         {
+            // Win32Exception covers PowerShell being missing or blocked by policy.
             _logger.LogDebug(ex, "Could not read Defender exclusions");
             return null;
         }
@@ -76,8 +78,11 @@ public sealed class WindowsDefenderService : IDefenderService
             // process we cannot capture output from.
             return await IsExcludedAsync(path, cancellationToken).ConfigureAwait(false) == true;
         }
-        catch (Exception ex) when (ex is IOException or InvalidOperationException)
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or Win32Exception)
         {
+            // Win32Exception is the one that actually happens here: declining the UAC
+            // prompt raises ERROR_CANCELLED (1223) from ShellExecute. Treat every one
+            // of these as "not added" rather than letting it crash the wizard.
             _logger.LogWarning(ex, "Could not add Defender exclusion for {Path}", path);
             return false;
         }

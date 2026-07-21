@@ -96,13 +96,27 @@ public sealed partial class LocateGameStep : WizardStep
         DefenderBusy = true;
         DefenderStatus = "Asking Windows to add the exclusion…";
 
-        var ok = await _defender.AddExclusionAsync(Selected.Path).ConfigureAwait(true);
-
-        DefenderBusy = false;
-        DefenderDone = ok;
-        DefenderStatus = ok
-            ? "Done — the game folder is excluded from Defender."
-            : "Not added. You can add it later, or approve the Windows prompt when it appears.";
+        try
+        {
+            var ok = await _defender.AddExclusionAsync(Selected.Path).ConfigureAwait(true);
+            DefenderDone = ok;
+            DefenderStatus = ok
+                ? "Done — the game folder is excluded from Defender."
+                : "Not added. You can add it later, or approve the Windows prompt when it appears.";
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Adding an exclusion is a courtesy step; a failure — a declined UAC
+            // prompt, no PowerShell, a locked-down machine — must never take the
+            // wizard down.
+            DefenderDone = false;
+            DefenderStatus = "Couldn't add it. You can add the folder in Windows Security later.";
+            System.Diagnostics.Debug.WriteLine(ex);
+        }
+        finally
+        {
+            DefenderBusy = false;
+        }
     }
 
     /// <summary>Whether the folder cleaner overlay is open on this screen.</summary>

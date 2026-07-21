@@ -25,36 +25,52 @@ public partial class LocateGameView : UserControl
     /// <summary>Opens a folder picker and adds the chosen folder as a candidate.</summary>
     private async void OnBrowse(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is not LocateGameStep step)
+        // An unhandled exception in an async void handler takes the whole app down,
+        // so every button on this screen swallows failures rather than crashing.
+        try
         {
-            return;
+            if (DataContext is not LocateGameStep step)
+            {
+                return;
+            }
+
+            var top = TopLevel.GetTopLevel(this);
+            if (top is null)
+            {
+                return;
+            }
+
+            var folders = await top.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+            {
+                Title = "Select your Grand Theft Auto V folder",
+                AllowMultiple = false,
+            });
+
+            var path = folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                step.AddFolder(path);
+            }
         }
-
-        var top = TopLevel.GetTopLevel(this);
-        if (top is null)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return;
-        }
-
-        var folders = await top.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
-        {
-            Title = "Select your Grand Theft Auto V folder",
-            AllowMultiple = false,
-        });
-
-        var path = folders.Count > 0 ? folders[0].TryGetLocalPath() : null;
-        if (!string.IsNullOrWhiteSpace(path))
-        {
-            step.AddFolder(path);
+            System.Diagnostics.Debug.WriteLine(ex);
         }
     }
 
     /// <summary>Opens the cleaner against the selected folder.</summary>
     private async void OnClean(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is LocateGameStep step)
+        try
         {
-            await step.OpenCleanerAsync();
+            if (DataContext is LocateGameStep step)
+            {
+                await step.OpenCleanerAsync();
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            System.Diagnostics.Debug.WriteLine(ex);
         }
     }
 }

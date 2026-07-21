@@ -19,14 +19,28 @@
     owner/name of the public repo whose releases the app updates from.
     Defaults to Jackmod/DISPATCH (matches VelopackAppUpdater).
 
+.PARAMETER SignParams
+    signtool.exe arguments for code-signing, e.g.
+    "/a /fd sha256 /tr http://timestamp.digicert.com /td sha256". Provide these once
+    you have a code-signing certificate and the exe is signed, which removes the
+    Windows SmartScreen "unknown publisher" prompt. Left empty, the build is unsigned.
+
+.PARAMETER AzureTrustedSignFile
+    Path to an Azure Trusted Signing metadata.json. Azure Trusted Signing is the
+    cheap modern alternative to buying a certificate outright (about $10/month) and
+    removes the same SmartScreen prompt. Mutually exclusive with -SignParams.
+
 .EXAMPLE
     ./tools/Publish-App.ps1 -Version 1.1.0
+    ./tools/Publish-App.ps1 -Version 1.1.0 -SignParams "/a /fd sha256 /tr http://timestamp.digicert.com /td sha256"
 #>
 
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$Version,
-    [string]$Repo = 'Jackmod/DISPATCH'
+    [string]$Repo = 'Jackmod/DISPATCH',
+    [string]$SignParams = '',
+    [string]$AzureTrustedSignFile = ''
 )
 
 # Continue, not Stop: this is mostly native tools (dotnet, vpk, gh) whose stderr
@@ -62,8 +76,25 @@ if ($LASTEXITCODE -ne 0) { throw "Publish failed." }
 # --- package the Velopack release feed -------------------------------------
 
 Write-Step "Packaging Velopack release $Version"
-vpk pack -u Dispatch -v $Version -p publish-thin -e Dispatch.exe -o releases `
-    --packTitle 'DISPATCH' --packAuthors 'DISPATCH'
+$packArgs = @('pack', '-u', 'Dispatch', '-v', $Version, '-p', 'publish-thin',
+    '-e', 'Dispatch.exe', '-o', 'releases', '--packTitle', 'DISPATCH', '--packAuthors', 'DISPATCH')
+
+# Code-signing (optional): pass -SignParams or -AzureTrustedSignFile to sign the exe
+# and remove the SmartScreen "unknown publisher" prompt. Unsigned otherwise.
+if ($SignParams) {
+    Write-Host "  signing with signtool" -ForegroundColor Gray
+    $packArgs += @('--signParams', $SignParams)
+}
+elseif ($AzureTrustedSignFile) {
+    Write-Host "  signing with Azure Trusted Signing" -ForegroundColor Gray
+    $packArgs += @('--azureTrustedSignFile', $AzureTrustedSignFile)
+}
+else {
+    Write-Host "  UNSIGNED build - users will see a SmartScreen 'unknown publisher' prompt." -ForegroundColor Yellow
+    Write-Host "  Pass -SignParams or -AzureTrustedSignFile once you have a certificate." -ForegroundColor Yellow
+}
+
+vpk @packArgs
 if ($LASTEXITCODE -ne 0) { throw "vpk pack failed." }
 
 # --- publish to GitHub with the full update feed ---------------------------

@@ -1,4 +1,5 @@
 using Avalonia.Headless.XUnit;
+using Dispatch.Core.Platform;
 using Dispatch.UI.Wizard.Steps;
 using FluentAssertions;
 using Xunit;
@@ -123,6 +124,43 @@ public sealed class LocateGameStepTests
 
             step.VerifySteps.Should().NotBeEmpty();
             step.VerifySteps[0].Number.Should().Be(1);
+        }
+        finally
+        {
+            Directory.Delete(temp, recursive: true);
+        }
+    }
+
+    // A Defender service that fails exactly the way declining a UAC prompt does.
+    private sealed class ThrowingDefender : IDefenderService
+    {
+        public bool IsAvailable => true;
+
+        public Task<bool?> IsExcludedAsync(string path, CancellationToken cancellationToken = default) =>
+            Task.FromResult<bool?>(false);
+
+        public Task<bool> AddExclusionAsync(string path, CancellationToken cancellationToken = default) =>
+            throw new System.ComponentModel.Win32Exception(1223, "The operation was canceled by the user.");
+    }
+
+    [AvaloniaFact]
+    public async Task Adding_a_defender_exclusion_that_fails_never_crashes_the_wizard()
+    {
+        var step = new LocateGameStep(defender: new ThrowingDefender());
+        var temp = Path.Combine(Path.GetTempPath(), "dispatch-defender-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(temp);
+        File.WriteAllText(Path.Combine(temp, "GTA5.exe"), "stub");
+
+        try
+        {
+            step.AddFolder(temp);
+
+            // Declining UAC raises a Win32Exception; it must be swallowed, not crash.
+            var act = () => step.AddDefenderExclusionAsync();
+            await act.Should().NotThrowAsync();
+
+            step.DefenderBusy.Should().BeFalse("the busy flag is always cleared");
+            step.DefenderStatus.Should().Contain("later");
         }
         finally
         {

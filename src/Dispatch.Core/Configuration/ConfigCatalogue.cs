@@ -202,8 +202,13 @@ public static class ConfigCatalogue
                 S("Call Sign", "{callsign}"),
                 S("Agency", "\"IMMERSIVE\""),
                 S("Dispatch Key", "0"),
-                S("Interface Key", "F4"),
+                // The guide gives Interface F4, but F4 is the RagePluginHook console
+                // ("never rebind") — so it moves to F7, matching the clash-free
+                // Suggested control scheme, with Settings on Left Control + F7 to keep
+                // the pair distinct.
+                S("Interface Key", "F7"),
                 S("Settings Key", "F7"),
+                S("Settings Modifier Key", "Left Control"),
                 S("Radio Key", "O"),
                 S("Radio Modifier Key", "Left Control"),
                 S("Show Notifications", "True"),
