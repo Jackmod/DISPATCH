@@ -8,10 +8,6 @@
         "url":  "https://github.com/Jackmod/DISPATCH/releases/download/modpack-v1/GTAV.ResourceAdjuster.zip"
     },
     {
-        "file":  "lspdfr_049_9572_Manual_Install.zip",
-        "url":  "https://github.com/Jackmod/DISPATCH/releases/download/modpack-v1/lspdfr_049_9572_Manual_Install.zip"
-    },
-    {
         "file":  "RAGENativeUI.zip",
         "url":  "https://github.com/Jackmod/DISPATCH/releases/download/modpack-v1/RAGENativeUI.zip"
     },
@@ -290,5 +286,9 @@
     {
         "file":  "Traffic.Yield.rar",
         "url":  "https://github.com/Jackmod/DISPATCH/releases/download/modpack-v1/Traffic.Yield.rar"
+    },
+    {
+        "file":  "lspdfr_049_9695_Manual_Install.zip",
+        "url":  "https://github.com/Jackmod/DISPATCH/releases/download/modpack-v1/lspdfr_049_9695_Manual_Install.zip"
     }
 ]

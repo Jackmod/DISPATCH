@@ -52,3 +52,8 @@ desktop.ini
 /publish-thin/
 /releases/
 *.local.zip
+
+# Dropped test artifacts (mod archives / config files placed at repo root for inspection)
+/*.zip
+/*.rar
+/StopThePed.ini
