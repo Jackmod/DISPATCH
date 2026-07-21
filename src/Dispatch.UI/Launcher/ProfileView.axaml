@@ -8,7 +8,7 @@
   <!-- The officer's own page: portrait, identity, and a career in numbers. -->
 
   <Panel>
-    <c:AmbientBackdrop Intensity="0.7" ShowGrid="True" />
+    <c:AmbientBackdrop Intensity="0.7" ShowGrid="True" IsAnimated="False" />
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
       <StackPanel Margin="32,28,32,32" Spacing="24" MaxWidth="1040" HorizontalAlignment="Stretch">

@@ -6,7 +6,7 @@
              x:DataType="vm:ModsViewModel">
 
   <Panel>
-    <c:AmbientBackdrop Intensity="0.6" ShowGrid="True" />
+    <c:AmbientBackdrop Intensity="0.6" ShowGrid="True" IsAnimated="False" />
 
     <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="32,24,32,0">
 
@@ -25,10 +25,25 @@
                Margin="0,0,0,16" />
 
       <!-- ===== List =========================================== -->
-      <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-        <ItemsControl ItemsSource="{Binding Rows}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:ModRow">
+      <!-- Virtualized: only the mod rows on screen are realized (73+ installed). -->
+      <ListBox Grid.Row="2" ItemsSource="{Binding Rows}"
+               Background="Transparent" BorderThickness="0" Padding="0"
+               ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+        <ListBox.Styles>
+          <Style Selector="ListBoxItem">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+          </Style>
+          <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+          </Style>
+          <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+          </Style>
+        </ListBox.Styles>
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:ModRow">
               <Border Margin="0,0,0,8" Padding="16,12"
                       CornerRadius="{DynamicResource RadiusCard}"
                       Background="{DynamicResource GlassSurface}"
@@ -77,9 +92,8 @@
                 </StackPanel>
               </Border>
             </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </ScrollViewer>
+        </ListBox.ItemTemplate>
+      </ListBox>
 
       <!-- ===== Status ========================================= -->
       <TextBlock Grid.Row="3" Classes="small" Margin="0,10,0,16"

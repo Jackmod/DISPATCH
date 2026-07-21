@@ -54,7 +54,9 @@
   </UserControl.Styles>
 
   <Panel>
-    <c:AmbientBackdrop Intensity="0.5" />
+    <!-- Static: Settings is dense and long-lived, so the backdrop keeps its depth
+         but does not run an endless animation loop that stops the app idling. -->
+    <c:AmbientBackdrop Intensity="0.5" IsAnimated="False" />
 
     <Grid RowDefinitions="Auto,*" Margin="32,24,0,0">
 
@@ -92,21 +94,35 @@
         <!-- ===== Hub content ================================= -->
         <Panel Grid.Column="1">
 
-          <!-- Keybinds: the full controls screen, hosted. The wrapper keeps the hub
-               data context so IsVisible resolves; the inner view gets the sub-VM. -->
-          <Panel IsVisible="{Binding IsKeybinds}">
-            <vm:ControlsView DataContext="{Binding Keybinds}" />
-          </Panel>
+          <!-- The three heavy sub-views are lazily built. Content is null until the
+               section is first opened, so the keyboard map, the plugin list and the
+               crash tool are not all constructed when Settings opens. Once built the
+               view is cached (Content stays set) and IsVisible just toggles it, so
+               switching back is instant and nothing staged is lost. The ContentControl
+               sets each view's DataContext from its content (the sub-VM). -->
+          <ContentControl IsVisible="{Binding IsKeybinds}" Content="{Binding KeybindsContent}">
+            <ContentControl.DataTemplates>
+              <DataTemplate DataType="vm:ControlsViewModel">
+                <vm:ControlsView />
+              </DataTemplate>
+            </ContentControl.DataTemplates>
+          </ContentControl>
 
-          <!-- Plugin settings: the full plugin-settings screen, hosted -->
-          <Panel IsVisible="{Binding IsPlugins}">
-            <vm:PluginSettingsView DataContext="{Binding PluginSettings}" />
-          </Panel>
+          <ContentControl IsVisible="{Binding IsPlugins}" Content="{Binding PluginSettingsContent}">
+            <ContentControl.DataTemplates>
+              <DataTemplate DataType="vm:PluginSettingsViewModel">
+                <vm:PluginSettingsView />
+              </DataTemplate>
+            </ContentControl.DataTemplates>
+          </ContentControl>
 
-          <!-- Crash report: paste a log, get the cause in plain language -->
-          <Panel IsVisible="{Binding IsCrash}">
-            <vm:CrashReportView DataContext="{Binding CrashReport}" />
-          </Panel>
+          <ContentControl IsVisible="{Binding IsCrash}" Content="{Binding CrashContent}">
+            <ContentControl.DataTemplates>
+              <DataTemplate DataType="vm:CrashReportViewModel">
+                <vm:CrashReportView />
+              </DataTemplate>
+            </ContentControl.DataTemplates>
+          </ContentControl>
 
           <!-- Appearance -->
           <ScrollViewer IsVisible="{Binding IsAppearance}" VerticalScrollBarVisibility="Auto" Margin="0,0,32,0">

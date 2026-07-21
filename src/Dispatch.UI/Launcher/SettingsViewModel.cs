@@ -169,6 +169,24 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>The crash-report tool, hosted as a hub section.</summary>
     public CrashReportViewModel CrashReport { get; }
 
+    // The three heavy sub-views (the keyboard map, the plugin list, the crash tool)
+    // are built the first time their section is opened, then kept. Opening Settings
+    // no longer constructs all three at once. The sub-VMs above hold the state, so a
+    // view built on demand loses nothing, and once built it stays cached — switching
+    // back is instant. Keybinds is the default section, so it counts as built up front.
+    private bool _keybindsBuilt = true;
+    private bool _pluginsBuilt;
+    private bool _crashBuilt;
+
+    /// <summary>The keybinds view-model once its section has been opened, else null.</summary>
+    public object? KeybindsContent => _keybindsBuilt ? Keybinds : null;
+
+    /// <summary>The plugin-settings view-model once its section has been opened, else null.</summary>
+    public object? PluginSettingsContent => _pluginsBuilt ? PluginSettings : null;
+
+    /// <summary>The crash-report view-model once its section has been opened, else null.</summary>
+    public object? CrashContent => _crashBuilt ? CrashReport : null;
+
     /// <summary>The hub sections, in order.</summary>
     public IReadOnlyList<HubSection> Sections { get; } =
     [
@@ -220,6 +238,11 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     partial void OnSectionChanged(string value)
     {
+        // Build a heavy sub-view the first time its section is opened; it stays cached after.
+        if (value == "keybinds" && !_keybindsBuilt) { _keybindsBuilt = true; OnPropertyChanged(nameof(KeybindsContent)); }
+        else if (value == "plugins" && !_pluginsBuilt) { _pluginsBuilt = true; OnPropertyChanged(nameof(PluginSettingsContent)); }
+        else if (value == "crash" && !_crashBuilt) { _crashBuilt = true; OnPropertyChanged(nameof(CrashContent)); }
+
         OnPropertyChanged(nameof(IsKeybinds));
         OnPropertyChanged(nameof(IsPlugins));
         OnPropertyChanged(nameof(IsCrash));

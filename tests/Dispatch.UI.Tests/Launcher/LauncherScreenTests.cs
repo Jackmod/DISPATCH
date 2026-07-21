@@ -101,6 +101,26 @@ public sealed class LauncherScreenTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void Settings_builds_heavy_sub_views_lazily_and_then_caches_them()
+    {
+        var vm = new SettingsViewModel(Officer(), _root);
+
+        // Keybinds is the default section, so it is built up front; the other heavy
+        // views wait until their section is opened — Settings does not construct all
+        // three (keyboard map, plugin list, crash tool) at once.
+        vm.KeybindsContent.Should().NotBeNull();
+        vm.PluginSettingsContent.Should().BeNull("plugin settings is not built until opened");
+        vm.CrashContent.Should().BeNull("the crash tool is not built until opened");
+
+        vm.Section = "plugins";
+        vm.PluginSettingsContent.Should().NotBeNull("opening the section builds it");
+
+        // Switching away keeps it cached, so state is preserved and switching back is instant.
+        vm.Section = "keybinds";
+        vm.PluginSettingsContent.Should().NotBeNull("once built it stays cached");
+    }
+
+    [AvaloniaFact]
     public async Task Settings_persists_the_reduced_motion_toggle()
     {
         var paths = Paths();
