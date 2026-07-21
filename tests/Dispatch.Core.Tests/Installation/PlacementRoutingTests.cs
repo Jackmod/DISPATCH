@@ -92,6 +92,99 @@ public sealed class PlacementRoutingTests : IDisposable
         InGame("StopThePed.dll").Should().BeFalse("it belongs in plugins, not the root");
     }
 
+    // ===== Guide-audited real layouts ====================================
+
+    [Fact]
+    public async Task Callout_interface_places_its_shared_dlls_data_tree_and_plugin()
+    {
+        // It ships far more than CalloutInterface.dll: the shared DLLs at its GTA V
+        // root, its plugin under plugins/LSPDFR, and its whole data tree. All of it
+        // must land, and the bundled RAGENativeUI must be dropped.
+        var ci = Stage("calloutinterface",
+            ("CalloutInterface-1.4.1/Grand Theft Auto V/CalloutInterfaceAPI.dll", "api"),
+            ("CalloutInterface-1.4.1/Grand Theft Auto V/IPT.Common.dll", "ipt"),
+            ("CalloutInterface-1.4.1/Grand Theft Auto V/RawCanvasUI.dll", "canvas"),
+            ("CalloutInterface-1.4.1/Grand Theft Auto V/RAGENativeUI.dll", "stale"),
+            ("CalloutInterface-1.4.1/Grand Theft Auto V/plugins/LSPDFR/CalloutInterface.dll", "plugin"),
+            ("CalloutInterface-1.4.1/Grand Theft Auto V/plugins/LSPDFR/CalloutInterface/alpr.xml", "data"),
+            ("CalloutInterface-1.4.1/README.html", "doc"));
+
+        await _runner.RunAsync("run", _game, "full-duty", "1.0.3725", [ci]);
+
+        InGame("CalloutInterfaceAPI.dll").Should().BeTrue();
+        InGame("IPT.Common.dll").Should().BeTrue();
+        InGame("RawCanvasUI.dll").Should().BeTrue();
+        InGame("plugins/LSPDFR/CalloutInterface.dll").Should().BeTrue();
+        InGame("plugins/LSPDFR/CalloutInterface/alpr.xml").Should().BeTrue("its data tree comes too");
+        InGame("RAGENativeUI.dll").Should().BeFalse("the bundled copy is stripped");
+        InGame("README.html").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task A_later_mod_cannot_overwrite_callout_interfaces_shared_dlls()
+    {
+        // Callout Interface (order 10) installs first; Grammar Police (order 40) ships
+        // its own CalloutInterfaceAPI.dll / IPT.Common.dll, which must NOT overwrite
+        // the copies Callout Interface placed — the protected-assemblies guard, on the
+        // current file names.
+        var ci = Stage("calloutinterface",
+            ("CI/Grand Theft Auto V/CalloutInterfaceAPI.dll", "callout-copy"),
+            ("CI/Grand Theft Auto V/IPT.Common.dll", "callout-copy"),
+            ("CI/Grand Theft Auto V/plugins/LSPDFR/CalloutInterface.dll", "ci"));
+        var gp = Stage("grammarpolice",
+            ("GP/Grand Theft Auto V/CalloutInterfaceAPI.dll", "grammar-copy"),
+            ("GP/Grand Theft Auto V/IPT.Common.dll", "grammar-copy"),
+            ("GP/Grand Theft Auto V/plugins/LSPDFR/GrammarPolice.dll", "gp"));
+
+        await _runner.RunAsync("run", _game, "full-duty", "1.0.3725", [ci, gp]);
+
+        File.ReadAllText(Path.Combine(_game, "CalloutInterfaceAPI.dll")).Should().Be("callout-copy",
+            "Grammar Police must not overwrite Callout Interface's shared dll");
+        File.ReadAllText(Path.Combine(_game, "IPT.Common.dll")).Should().Be("callout-copy");
+        InGame("plugins/LSPDFR/GrammarPolice.dll").Should().BeTrue("its own plugin still installs");
+    }
+
+    [Fact]
+    public async Task Fast_draw_scripts_land_in_the_game_scripts_folder_not_nested()
+    {
+        var fd = Stage("fastdraw",
+            ("Fast Draw v1.2/GTAV/scripts/Fast_Draw.dll", "code"),
+            ("Fast Draw v1.2/GTAV/scripts/Fast_Draw_Settings.ini", "cfg"));
+
+        await _runner.RunAsync("run", _game, "full-duty", "1.0.3725", [fd]);
+
+        InGame("scripts/Fast_Draw.dll").Should().BeTrue();
+        InGame("scripts/Fast_Draw_Settings.ini").Should().BeTrue();
+        InGame("scripts/Fast Draw v1.2/GTAV/scripts/Fast_Draw.dll").Should().BeFalse("the wrapper must not nest");
+    }
+
+    [Fact]
+    public async Task Simple_hud_asi_goes_to_the_game_root_not_scripts()
+    {
+        var hud = Stage("simplehud",
+            ("SimpleHUD/Grand Theft Auto V/SimpleHUD.asi", "asi"),
+            ("SimpleHUD/Grand Theft Auto V/SimpleHUD.ini", "cfg"),
+            ("SimpleHUD/Documentation/readme.txt", "doc"));
+
+        await _runner.RunAsync("run", _game, "full-duty", "1.0.3725", [hud]);
+
+        InGame("SimpleHUD.asi").Should().BeTrue("it's an asi loaded from the game root");
+        InGame("SimpleHUD.ini").Should().BeTrue();
+        InGame("scripts/SimpleHUD.asi").Should().BeFalse("this version is not a scripts mod");
+    }
+
+    [Fact]
+    public async Task Radio_realism_scanner_audio_keeps_its_resident_subfolder()
+    {
+        var rr = Stage("radiorealism",
+            ("RadioRealismAlphaV1.2/Grand Theft Auto V/LSPDFR/Audio/scanner/RESIDENT/INSERT_01.wav", "audio"));
+
+        await _runner.RunAsync("run", _game, "full-duty", "1.0.3725", [rr]);
+
+        InGame("lspdfr/audio/scanner/RESIDENT/INSERT_01.wav").Should().BeTrue("LSPDFR reads it from scanner/RESIDENT");
+        InGame("lspdfr/audio/scanner/INSERT_01.wav").Should().BeFalse("it must not be flattened into scanner");
+    }
+
     // ===== AutoDetect =====================================================
 
     [Fact]

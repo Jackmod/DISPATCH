@@ -140,8 +140,16 @@ public static class ModCatalogue
                 order: 6, required: true, aliases: ["TrainerV"]),
 
             // ===== Callout Interface, before its copiers ==================
+            // Ships far more than its .dll: the shared CalloutInterfaceAPI.dll,
+            // IPT.Common.dll and RawCanvasUI.dll at its GTA V root, its own
+            // CalloutInterface.dll under plugins/LSPDFR, and the whole
+            // plugins/LSPDFR/CalloutInterface data tree (ALPR, MDT audio). Take the
+            // entire "Grand Theft Auto V" folder to the game root, dropping only the
+            // bundled RAGENativeUI so the managed root copy wins. Installs first
+            // (order 10) so its shared DLLs are the ones later mods must not overwrite.
             Browser("calloutinterface", "Callout Interface", "Ryst",
-                new PlacementRule(PlacementKind.SingleFile, Destination: "plugins", Files: ["CalloutInterface.dll"]),
+                new PlacementRule(PlacementKind.FolderContents, SourceFolder: "Grand Theft Auto V",
+                    StripBeforeExtract: ["RAGENativeUI.dll", "RageNativeUI.dll"]),
                 order: 10),
 
             // ===== Everything else ========================================
@@ -185,14 +193,29 @@ public static class ModCatalogue
                     SourceFolder: "Brighter with Higher Range and Brighter Takedowns"),
                 dependsOn: ["els"], order: 41),
 
-            Script("fastdraw", "Fast Draw"),
-            Script("simplehud", "Simple HUD"),
+            // Fast Draw ships GTAV/scripts/{Fast_Draw.dll, .ini, LemonUI}; take that
+            // scripts folder's contents into the game scripts folder (SourceFolder,
+            // or the whole wrapper nests as scripts/Fast Draw v1.2/GTAV/scripts).
+            Browser("fastdraw", "Fast Draw", "Community",
+                new PlacementRule(PlacementKind.FolderContents, Destination: "scripts", SourceFolder: "scripts"),
+                order: 40),
+
+            // Simple HUD 1.3 is an .asi loaded from the game root (SimpleHUD.asi +
+            // SimpleHUD.ini under its "Grand Theft Auto V" folder), not a scripts mod
+            // as the older guide text assumed. Its GTA V folder goes to the root.
+            Browser("simplehud", "Simple HUD", "Community",
+                new PlacementRule(PlacementKind.FolderContents, SourceFolder: "Grand Theft Auto V"),
+                order: 40),
 
             Browser("clearthewayv", "Clear The Way V", "Albo1125",
                 new PlacementRule(PlacementKind.SingleFile, Destination: "plugins", Files: ["ClearTheWayV.dll"]), order: 40),
 
+            // The scanner audio replacement: 18 files that live in scanner/RESIDENT,
+            // not loose in scanner. Source the "scanner" folder so its RESIDENT
+            // subfolder is preserved (Destination + SourceFolder "resident" would
+            // flatten the wavs straight into scanner, where LSPDFR never reads them).
             Browser("radiorealism", "Radio Realism Alpha", "Community",
-                new PlacementRule(PlacementKind.FolderContents, Destination: "lspdfr/audio/scanner", SourceFolder: "resident"),
+                new PlacementRule(PlacementKind.FolderContents, Destination: "lspdfr/audio/scanner", SourceFolder: "scanner"),
                 order: 40),
 
             Browser("immersiveeffects", "Immersive Effects", "Community",
@@ -398,14 +421,4 @@ public static class ModCatalogue
             Aliases = aliases ?? [],
         };
 
-    private static ModDefinition Script(string id, string name) =>
-        new()
-        {
-            Id = id,
-            Name = name,
-            Author = "Community",
-            Source = SourceKind.Browser,
-            Placement = new PlacementRule(PlacementKind.FolderContents, Destination: "scripts"),
-            Order = 40,
-        };
 }

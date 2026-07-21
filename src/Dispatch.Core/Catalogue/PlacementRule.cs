@@ -67,12 +67,24 @@ public sealed record PlacementRule(
 /// the copy Callout Interface placed silently breaks Callout Interface — a
 /// failure with no error, just a feature that stops working. The installer
 /// consults this set before every write.
+///
+/// <para>
+/// Both the historical names and the current ones are listed: newer Callout
+/// Interface renamed <c>CalloutInterface.ApplicationExtension.dll</c> to
+/// <c>CalloutInterfaceAPI.dll</c> and <c>IPTCommon.dll</c> to <c>IPT.Common.dll</c>,
+/// and Grammar Police and LIAR ship the new names — so those are the ones that must
+/// actually be protected today.
+/// </para>
 /// </remarks>
 public static class ProtectedAssemblies
 {
     /// <summary>The assemblies no later mod may overwrite.</summary>
     public static readonly IReadOnlySet<string> Names = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
+        // Current names (Callout Interface 1.4+, shipped by Grammar Police and LIAR).
+        "CalloutInterfaceAPI.dll",
+        "IPT.Common.dll",
+        // Historical names, kept so older archives are still handled.
         "CalloutInterface.ApplicationExtension.dll",
         "IPTCommon.dll",
     };

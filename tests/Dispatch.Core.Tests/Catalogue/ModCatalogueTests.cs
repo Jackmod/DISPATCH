@@ -93,12 +93,30 @@ public sealed class ModCatalogueTests
     }
 
     [Fact]
-    public void The_protected_assemblies_are_the_two_the_spec_names()
+    public void The_protected_assemblies_cover_both_the_current_and_historical_names()
     {
-        // Overwriting either silently breaks Callout Interface.
+        // Overwriting any of these silently breaks Callout Interface. Current
+        // versions renamed them, and Grammar Police and LIAR ship the new names —
+        // so the new names are the ones that actually have to be protected today.
+        ProtectedAssemblies.IsProtected("CalloutInterfaceAPI.dll").Should().BeTrue();
+        ProtectedAssemblies.IsProtected("IPT.Common.dll").Should().BeTrue();
+        // Historical names still guarded for older archives.
         ProtectedAssemblies.IsProtected("CalloutInterface.ApplicationExtension.dll").Should().BeTrue();
         ProtectedAssemblies.IsProtected("IPTCommon.dll").Should().BeTrue();
         ProtectedAssemblies.IsProtected("SomethingElse.dll").Should().BeFalse();
+    }
+
+    [Fact]
+    public void Callout_interface_installs_its_whole_folder_not_just_the_dll()
+    {
+        // It ships the shared CalloutInterfaceAPI.dll / IPT.Common.dll and its whole
+        // plugins/LSPDFR/CalloutInterface data tree, not only CalloutInterface.dll —
+        // so it must take its Grand Theft Auto V folder, not a single file.
+        var ci = ModCatalogue.Mods["calloutinterface"];
+
+        ci.Placement.Kind.Should().Be(PlacementKind.FolderContents);
+        ci.Placement.SourceFolder.Should().Be("Grand Theft Auto V");
+        ci.Placement.StripBeforeExtract.Should().Contain(s => s.Contains("NativeUI", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
