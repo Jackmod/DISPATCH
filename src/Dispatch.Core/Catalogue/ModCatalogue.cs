@@ -255,7 +255,9 @@ public static class ModCatalogue
             Plugin("r57", "R57", "Community", aliases: ["R57_Main", "R57"]),
             Plugin("realtrafficai", "Real Traffic AI", "Community", aliases: ["Real Traffic AI", "Traffic AI"]),
             Plugin("resistplus", "Resist Plus", "Community", aliases: ["ResistPlus", "Resist Plus"]),
-            Plugin("modernsirenpack", "Modern Siren Pack", "Community",
+            // A siren-audio replacement: .awc/.rpf audio that has to be imported
+            // through OpenIV, not copied into the game folder. Set aside for import.
+            Manual("modernsirenpack", "Modern Siren Pack", "Community",
                 aliases: ["MODERN SIREN PACK", "Modern Siren", "Siren Pack"]),
             Plugin("newsheli", "News Heli", "Community", aliases: ["NewsHeli", "News Heli"]),
             Plugin("simpledeath", "Simple Death", "Community", aliases: ["SimpleDeath", "Simple Death"]),

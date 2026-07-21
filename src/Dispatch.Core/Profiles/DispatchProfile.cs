@@ -41,8 +41,14 @@ public sealed record DispatchProfile
         ActiveOfficerId is { } id ? Officers.FirstOrDefault(o => o.Id == id) : null;
 
     /// <summary>True when the first-run wizard has been completed.</summary>
+    /// <remarks>
+    /// Having an officer is the signal that first-run is done, so a returning user
+    /// lands in the launcher — not back in the wizard — even if the game path did
+    /// not persist. The launcher handles a missing game path itself (it prompts to
+    /// set one), which is a far better place to fix it from than the setup flow.
+    /// </remarks>
     [JsonIgnore]
-    public bool IsConfigured => Officers.Count > 0 && !string.IsNullOrWhiteSpace(GamePath);
+    public bool IsConfigured => Officers.Count > 0;
 
     /// <summary>Returns a copy with <paramref name="officer"/> added or replaced, and made active.</summary>
     public DispatchProfile WithOfficer(OfficerProfile officer)

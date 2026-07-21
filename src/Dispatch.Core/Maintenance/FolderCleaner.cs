@@ -206,6 +206,83 @@ public sealed class FolderCleaner
         return new CleanPlan(ordered, scanned, protectedPaths);
     }
 
+    /// <summary>
+    /// Removes directories left empty under the game folder once mod files have been
+    /// moved out — the <c>plugins</c>/<c>scripts</c>/<c>lspdfr</c> trees a mod
+    /// created, and any empty subfolder within them. Returns how many were removed.
+    /// </summary>
+    /// <remarks>
+    /// Safe by construction: only a directory that holds nothing is removed, so a
+    /// stock folder with real content is always kept, and a folder holding a file
+    /// the user chose not to clean is left in place. The root is never touched, and
+    /// reparse points (a junctioned library) are skipped so the walk cannot wander
+    /// off onto another disk.
+    /// </remarks>
+    public int PruneEmptyDirectories(string gamePath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(gamePath);
+
+        if (!Directory.Exists(gamePath))
+        {
+            return 0;
+        }
+
+        var removed = 0;
+
+        // Deepest first (longest path first), so a parent that becomes empty once
+        // its children are gone is caught in the same pass.
+        var directories = SafeAllDirectories(gamePath)
+            .OrderByDescending(d => d.Length)
+            .ToList();
+
+        foreach (var dir in directories)
+        {
+            try
+            {
+                if ((new DirectoryInfo(dir).Attributes & FileAttributes.ReparsePoint) != 0)
+                {
+                    continue;
+                }
+
+                if (Directory.EnumerateFileSystemEntries(dir).Any())
+                {
+                    continue;
+                }
+
+                Directory.Delete(dir, recursive: false);
+                removed++;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                _logger.LogDebug(ex, "Could not remove empty folder {Dir}", dir);
+            }
+        }
+
+        if (removed > 0)
+        {
+            _logger.LogInformation("Removed {Removed} empty folder(s) left behind by mods", removed);
+        }
+
+        return removed;
+    }
+
+    private static IEnumerable<string> SafeAllDirectories(string root)
+    {
+        try
+        {
+            return Directory.EnumerateDirectories(root, "*", new EnumerationOptions
+            {
+                RecurseSubdirectories = true,
+                IgnoreInaccessible = true,
+                AttributesToSkip = FileAttributes.ReparsePoint,
+            });
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
+    }
+
     /// <summary>Decides which tier a non-stock, non-protected file belongs to.</summary>
     private CleanTier ClassifyTier(string relative, out string reason)
     {

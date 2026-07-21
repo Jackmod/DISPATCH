@@ -43,6 +43,23 @@ public sealed class FolderCleanerTests : IDisposable
         File.WriteAllText(full, content);
     }
 
+    [Fact]
+    public void PruneEmptyDirectories_clears_empty_mod_folders_but_keeps_content_and_the_root()
+    {
+        // An empty mod tree, a mod folder that still holds a file, and a stock file.
+        Directory.CreateDirectory(Path.Combine(_game, "plugins", "lspdfr"));
+        Given("scripts/keep.dll");
+        Given("GTA5.exe", "stock");
+
+        var removed = new FolderCleaner(NullLogger<FolderCleaner>.Instance).PruneEmptyDirectories(_game);
+
+        removed.Should().BeGreaterThan(0);
+        Directory.Exists(Path.Combine(_game, "plugins")).Should().BeFalse("the empty tree is pruned");
+        Directory.Exists(Path.Combine(_game, "scripts")).Should().BeTrue("it still holds a file");
+        File.Exists(Path.Combine(_game, "scripts", "keep.dll")).Should().BeTrue("its file is untouched");
+        Directory.Exists(_game).Should().BeTrue("the root is never removed");
+    }
+
     private static FolderCleaner Cleaner(params string[] known) =>
         new(NullLogger<FolderCleaner>.Instance, known);
 

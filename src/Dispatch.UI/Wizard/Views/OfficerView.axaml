@@ -134,6 +134,10 @@
                      Text="Suggested is the conflict-free scheme from the guide. Default keeps every mod's factory binds, several of which conflict." />
         </StackPanel>
 
+        <CheckBox IsChecked="{Binding LaunchWhenDone}"
+                  Content="Open the DISPATCH launcher when I finish"
+                  Margin="0,4,0,0" />
+
       </StackPanel>
     </c:Card>
 

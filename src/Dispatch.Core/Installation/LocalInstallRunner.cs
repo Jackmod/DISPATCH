@@ -344,17 +344,35 @@ public sealed class LocalInstallRunner
 
     // ===== Junk and OpenIV routing =======================================
 
+    // Shortcut and metadata cruft that is never mod content.
     private static readonly string[] JunkExtensions = [".url", ".nfo", ".lnk"];
-    private static readonly string[] DocExtensions = [".txt", ".md", ".rtf", ".pdf", ".doc", ".docx", ".htm", ".html"];
+
+    // Formats that are only ever documentation — never something a mod loads — so
+    // they are dropped whatever they are named.
+    private static readonly string[] AlwaysJunkExtensions =
+        [".pdf", ".doc", ".docx", ".rtf", ".htm", ".html", ".md"];
+
+    // Extensions that could be documentation or a mod's own text/data. Dropped only
+    // when the file is also named like documentation, so a real config is kept.
+    private static readonly string[] MaybeDocExtensions = [".txt", ""];
+
     private static readonly string[] DocNameHints =
-        ["readme", "read me", "read_me", "license", "licence", "changelog", "change log",
-         "credits", "instructions", "how to install", "howtoinstall", "installation"];
+        ["readme", "read me", "read_me", "read-me", "license", "licence", "licenses", "eula",
+         "copying", "changelog", "change log", "credits", "instructions", "how to install",
+         "howtoinstall", "installation", "install guide", "terms", "authors", "contributing", "notice"];
 
     /// <summary>
-    /// Documentation and shortcut cruft that should never reach a game folder.
-    /// Conservative on purpose: a plain <c>.txt</c> or <c>.ini</c> a mod actually
-    /// reads is kept — only files named like documentation are dropped.
+    /// Documentation and shortcut cruft that must never reach a game folder, so an
+    /// install is the mod and nothing else — the guide's "everything except the
+    /// License and the readme" applied to every mod automatically.
     /// </summary>
+    /// <remarks>
+    /// Two rules: a pure-documentation format (a PDF, a Word doc, Markdown) is always
+    /// dropped, and a file named like documentation (readme, license, changelog, a
+    /// bare <c>LICENSE</c> with no extension) is dropped too. A functional file — a
+    /// <c>.ini</c>, <c>.xml</c>, <c>.dll</c>, <c>.asi</c>, or a plain <c>.txt</c> a
+    /// mod actually reads — is never dropped by name, so the mod still works.
+    /// </remarks>
     private static bool IsJunk(string file)
     {
         // A version-control folder carried inside an archive (SPGR ships a whole
@@ -365,13 +383,16 @@ public sealed class LocalInstallRunner
         }
 
         var extension = Path.GetExtension(file).ToLowerInvariant();
-        if (JunkExtensions.Contains(extension))
+
+        if (JunkExtensions.Contains(extension) || AlwaysJunkExtensions.Contains(extension))
         {
             return true;
         }
 
+        // A doc-named text or extensionless file (readme.txt, LICENSE, "how to
+        // install.txt") is documentation; a functional extension never is.
         var name = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
-        return DocExtensions.Contains(extension)
+        return MaybeDocExtensions.Contains(extension)
                && DocNameHints.Any(hint => name.Contains(hint, StringComparison.Ordinal));
     }
 
@@ -411,9 +432,22 @@ public sealed class LocalInstallRunner
     }
 
     /// <summary>
-    /// Copies a mod's OpenIV-bound files into the import folder, under the mod's
-    /// name and keeping their layout, so the user can see what belongs where.
-    /// Never deletes from staging — placement simply skips them afterwards.
+    /// One folder per mod in the import area, named after the mod, so everything a
+    /// mod needs imported through OpenIV lands together under a name a person
+    /// recognises — rather than an id, or scattered fragments.
+    /// </summary>
+    private string ImportFolderFor(ModDefinition mod)
+    {
+        var folder = Path.Combine(_paths.OpenIvImportDirectory, Sanitize(mod.Name));
+        Directory.CreateDirectory(folder);
+        return folder;
+    }
+
+    /// <summary>
+    /// Copies a mod's OpenIV-bound files into its import folder, keeping their
+    /// layout so it is obvious which archive each belongs in. Named by the mod, so a
+    /// plugin that also ships textures (Grammar Police, LIAR) collects them in one
+    /// clearly-labelled place. Never deletes from staging — placement skips them.
     /// </summary>
     private void SetAsideOpenIvFiles(StagedMod staged)
     {
@@ -423,15 +457,14 @@ public sealed class LocalInstallRunner
             return;
         }
 
-        var modFolder = Path.Combine(_paths.OpenIvImportDirectory, Sanitize(staged.Mod.Id));
-        Directory.CreateDirectory(modFolder);
+        // Measure from the content root, not the staging root, so a wrapper folder
+        // the archive happens to carry does not nest everything a level deeper.
+        var root = ResolveAutoRoot(staged.StagedFolder);
+        var modFolder = ImportFolderFor(staged.Mod);
 
         foreach (var file in openIvFiles)
         {
-            var relative = Path.GetRelativePath(staged.StagedFolder, file);
-            var destination = Path.Combine(modFolder, relative);
-            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-            File.Copy(file, destination, overwrite: true);
+            CopyIntoImportFolder(file, root, staged.StagedFolder, modFolder);
         }
 
         _logger.LogInformation(
@@ -439,9 +472,10 @@ public sealed class LocalInstallRunner
     }
 
     /// <summary>
-    /// Copies an entire manual-import mod into the import folder, laid out as
-    /// shipped, so the user can apply it through OpenIV. Junk (readmes, version
-    /// control) is left behind; nothing goes to the game folder.
+    /// Copies an entire manual-import mod into its import folder, wrapper folders
+    /// stripped so the content sits directly under the mod's name — one tidy folder
+    /// to apply through OpenIV. Junk (readmes, version control) is left behind;
+    /// nothing goes to the game folder.
     /// </summary>
     private void SetAsideForManualImport(StagedMod staged)
     {
@@ -451,19 +485,32 @@ public sealed class LocalInstallRunner
             return;
         }
 
-        var modFolder = Path.Combine(_paths.OpenIvImportDirectory, Sanitize(staged.Mod.Id));
-        Directory.CreateDirectory(modFolder);
+        var root = ResolveAutoRoot(staged.StagedFolder);
+        var modFolder = ImportFolderFor(staged.Mod);
 
         foreach (var file in files)
         {
-            var relative = Path.GetRelativePath(staged.StagedFolder, file);
-            var destination = Path.Combine(modFolder, relative);
-            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-            File.Copy(file, destination, overwrite: true);
+            CopyIntoImportFolder(file, root, staged.StagedFolder, modFolder);
         }
 
         _logger.LogInformation(
             "Set aside {Count} file(s) for manual OpenIV import: {Mod}", files.Count, staged.Mod.Id);
+    }
+
+    /// <summary>
+    /// Copies one file into the mod's import folder, measured from the content root
+    /// where possible so wrapper folders are flattened away, falling back to the
+    /// staging root for anything that sits above the resolved content.
+    /// </summary>
+    private static void CopyIntoImportFolder(string file, string contentRoot, string stagedFolder, string modFolder)
+    {
+        var relative = IsUnder(contentRoot, file)
+            ? Path.GetRelativePath(contentRoot, file)
+            : Path.GetRelativePath(stagedFolder, file);
+
+        var destination = Path.Combine(modFolder, relative);
+        Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+        File.Copy(file, destination, overwrite: true);
     }
 
     private static string Sanitize(string value)

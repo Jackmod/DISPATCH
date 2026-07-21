@@ -52,6 +52,14 @@ public sealed partial class OfficerStep : WizardStep
     [ObservableProperty]
     private string _controlProfile = "Suggested";
 
+    /// <summary>
+    /// Whether to open the DISPATCH launcher the moment setup finishes. On by
+    /// default — most people want to go straight in; unticking closes DISPATCH
+    /// instead, to be reopened later from the Desktop shortcut.
+    /// </summary>
+    [ObservableProperty]
+    private bool _launchWhenDone = true;
+
     /// <summary>The four agencies, as cards with vector insignia.</summary>
     public ObservableCollection<string> Agencies { get; } = ["LSPD", "LSSD", "SAHP", "BCSO"];
 

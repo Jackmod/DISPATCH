@@ -137,15 +137,22 @@ public sealed class PlacementRoutingTests : IDisposable
             ("plugins/readme.txt", "how to install"),
             ("plugins/LICENSE.md", "license text"),
             ("plugins/Visit our site.url", "[InternetShortcut]"),
-            ("plugins/changelog.txt", "v1 v2 v3"));
+            ("plugins/changelog.txt", "v1 v2 v3"),
+            ("plugins/manual.pdf", "%PDF"),          // a pure-doc format, always junk
+            ("plugins/credits.rtf", "thanks"),       // another doc format
+            ("plugins/LICENSE", "license, no extension"));  // a bare LICENSE file
 
         await _runner.RunAsync("run", _game, "full-duty", "1.0.3725", [mod]);
 
+        // Only the mod survives; every doc, license and shortcut is dropped.
         InGame("plugins/StopThePed.dll").Should().BeTrue();
         InGame("plugins/readme.txt").Should().BeFalse();
         InGame("plugins/LICENSE.md").Should().BeFalse();
         InGame("plugins/Visit our site.url").Should().BeFalse();
         InGame("plugins/changelog.txt").Should().BeFalse();
+        InGame("plugins/manual.pdf").Should().BeFalse();
+        InGame("plugins/credits.rtf").Should().BeFalse();
+        InGame("plugins/LICENSE").Should().BeFalse();
     }
 
     [Fact]
@@ -213,12 +220,35 @@ public sealed class PlacementRoutingTests : IDisposable
         InGame("OpenCamera_x64.asi").Should().BeFalse();
         InGame("policepack.oiv").Should().BeFalse();
 
-        // They are set aside for the user, under the mod's name.
-        var importDir = Path.Combine(_paths.OpenIvImportDirectory, "stoptheped");
+        // They are set aside for the user, in one folder named after the mod (not
+        // its id).
+        var importDir = Path.Combine(_paths.OpenIvImportDirectory, "Stop The Ped");
         File.Exists(Path.Combine(importDir, "textures", "simpleMenu.ytd")).Should().BeTrue();
         File.Exists(Path.Combine(importDir, "OpenIV.asi")).Should().BeTrue();
         File.Exists(Path.Combine(importDir, "OpenCamera_x64.asi")).Should().BeTrue();
         File.Exists(Path.Combine(importDir, "policepack.oiv")).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task A_manual_import_mod_lands_in_one_folder_named_after_the_mod_wrappers_stripped()
+    {
+        // A wrapper folder around the real content, plus a readme that is dropped.
+        var mod = Stage("gtavremastered",
+            ("GTA V Remastered v6.0/dlc.rpf", "package"),
+            ("GTA V Remastered v6.0/x64/textures.rpf", "textures"),
+            ("GTA V Remastered v6.0/readme.txt", "how to install"));
+
+        await _runner.RunAsync("run", _game, "realism", "1.0.3725", [mod]);
+
+        // Nothing reaches the game folder.
+        Directory.EnumerateFiles(_game, "*", SearchOption.AllDirectories).Should().BeEmpty();
+
+        // One folder, named by the mod, wrapper stripped so the content sits directly
+        // inside rather than under "GTA V Remastered v6.0/".
+        var importDir = Path.Combine(_paths.OpenIvImportDirectory, "GTA V Remastered Enhanced");
+        File.Exists(Path.Combine(importDir, "dlc.rpf")).Should().BeTrue();
+        File.Exists(Path.Combine(importDir, "x64", "textures.rpf")).Should().BeTrue();
+        File.Exists(Path.Combine(importDir, "readme.txt")).Should().BeFalse("a readme is junk and never travels");
     }
 
     [Fact]

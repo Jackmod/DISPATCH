@@ -80,9 +80,24 @@ public partial class MainWindow : Window
 
     private async void OnWizardCompleted(object? sender, EventArgs e)
     {
-        var officer = sender is WizardViewModel wizard
+        var wizard = sender as WizardViewModel;
+        var officer = wizard is not null
             ? await wizard.BuildOfficerAsync().ConfigureAwait(true)
             : null;
+
+        // Setup is done: Dispatch is now a launcher, so drop a Desktop shortcut to
+        // it — this exe, which a configured profile sends straight to the launcher.
+        // Best-effort; done before any early return so it exists either way.
+        DesktopShortcut.TryCreate();
+
+        // Honour the "open the launcher when I finish" choice on the officer screen.
+        // Unticked, Dispatch closes here, to be reopened later from the shortcut.
+        var launchNow = wizard?.Steps.OfType<Wizard.Steps.OfficerStep>().FirstOrDefault()?.LaunchWhenDone ?? true;
+        if (!launchNow)
+        {
+            Close();
+            return;
+        }
 
         // The game path comes from the profile the wizard just saved; it feeds the
         // build watch so the launcher can flag a game update that broke Script Hook.
@@ -93,11 +108,6 @@ public partial class MainWindow : Window
         LauncherShell.DataContext = new LauncherViewModel(officer, _buildWatch, gamePath, _launcher);
         LauncherShell.IsVisible = true;
         Wizard.IsVisible = false;
-
-        // Setup is done: Dispatch is now a launcher, so drop a Desktop shortcut to
-        // it. Best-effort — a returning user still lands in the launcher via the
-        // first-run check even if the shortcut could not be written.
-        DesktopShortcut.TryCreate();
     }
 
     /// <summary>

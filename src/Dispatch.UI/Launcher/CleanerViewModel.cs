@@ -230,8 +230,18 @@ public sealed partial class CleanerViewModel : ObservableObject
         var paths = ToRemove.Select(r => r.Path).ToList();
         var batch = await _quarantine.QuarantineAsync(GamePath, paths).ConfigureAwait(true);
 
-        CleanSummary = $"Moved {batch.Entries.Count} file(s) to quarantine. Nothing was deleted — "
-                       + "you can restore this batch any time from Settings.";
+        // The files are safe in quarantine; now clear the empty plugins/scripts/
+        // lspdfr folders the mods created and left behind. Only empty folders go, so
+        // nothing that still holds a file is touched.
+        var gamePath = GamePath;
+        var foldersRemoved = await Task.Run(() =>
+            new FolderCleaner(NullLogger<FolderCleaner>.Instance).PruneEmptyDirectories(gamePath)).ConfigureAwait(true);
+
+        CleanSummary = foldersRemoved > 0
+            ? $"Moved {batch.Entries.Count} file(s) to quarantine and cleared {foldersRemoved} empty mod folder(s) "
+              + "the mods left behind. You can restore the files any time from Settings; the folders held nothing."
+            : $"Moved {batch.Entries.Count} file(s) to quarantine. Nothing was deleted — "
+              + "you can restore this batch any time from Settings.";
         CleaningInProgress = false;
     }
 
