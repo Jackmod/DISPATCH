@@ -31,6 +31,17 @@ public sealed class DashboardLaunchTests
         return root;
     }
 
+    // A folder that passes the launch pre-flight: the three core components present.
+    private static string ReadyGameFolder()
+    {
+        var root = NewGameFolder();
+        File.WriteAllText(Path.Combine(root, "RagePluginHook.exe"), "x");
+        File.WriteAllText(Path.Combine(root, "ScriptHookV.dll"), "x");
+        Directory.CreateDirectory(Path.Combine(root, "plugins"));
+        File.WriteAllText(Path.Combine(root, "plugins", "LSPD First Response.dll"), "x");
+        return root;
+    }
+
     [AvaloniaFact]
     public void No_game_folder_reports_it_rather_than_doing_nothing()
     {
@@ -45,6 +56,31 @@ public sealed class DashboardLaunchTests
     [AvaloniaFact]
     public void A_successful_launch_starts_rage_from_the_game_folder_and_says_so()
     {
+        // A ready folder clears the pre-flight, so the launch actually goes.
+        var root = ReadyGameFolder();
+        var launcher = new FakeLauncher(LaunchOutcome.Launched);
+
+        try
+        {
+            var model = new DashboardViewModel(launcher: launcher, gamePath: root);
+
+            model.GoOnDuty();
+
+            model.ShowPreLaunchWarning.Should().BeFalse("every core component is present");
+            launcher.LaunchedFrom.Should().Be(root, "RagePluginHook must be started from the game folder");
+            model.LaunchStatus.Should().Contain("RagePluginHook is starting");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [AvaloniaFact]
+    public void Pre_flight_catches_a_missing_component_before_launching()
+    {
+        // An empty folder is missing everything; the pre-flight must stop the launch
+        // and explain, rather than start the game into a black screen.
         var root = NewGameFolder();
         var launcher = new FakeLauncher(LaunchOutcome.Launched);
 
@@ -54,8 +90,33 @@ public sealed class DashboardLaunchTests
 
             model.GoOnDuty();
 
-            launcher.LaunchedFrom.Should().Be(root, "RagePluginHook must be started from the game folder");
-            model.LaunchStatus.Should().Contain("RagePluginHook is starting");
+            model.ShowPreLaunchWarning.Should().BeTrue();
+            model.PreLaunchIssues.Should().Contain(i => i.Contains("RagePluginHook"));
+            launcher.LaunchedFrom.Should().BeNull("the launch was blocked by pre-flight");
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [AvaloniaFact]
+    public void Launch_anyway_overrides_the_pre_flight_and_launches()
+    {
+        var root = NewGameFolder();
+        var launcher = new FakeLauncher(LaunchOutcome.LoaderNotFound);
+
+        try
+        {
+            var model = new DashboardViewModel(launcher: launcher, gamePath: root);
+
+            model.GoOnDuty();
+            model.ShowPreLaunchWarning.Should().BeTrue();
+
+            model.LaunchAnywayCommand.Execute(null);
+
+            model.ShowPreLaunchWarning.Should().BeFalse();
+            launcher.LaunchedFrom.Should().Be(root, "the override launches despite the warning");
         }
         finally
         {
@@ -79,7 +140,9 @@ public sealed class DashboardLaunchTests
     [AvaloniaFact]
     public void A_missing_loader_tells_the_user_to_install_lspdfr()
     {
-        var root = NewGameFolder();
+        // Pre-flight passes (a ready folder), but the loader still can't start — the
+        // outcome message must name the loader and LSPDFR.
+        var root = ReadyGameFolder();
 
         try
         {
@@ -87,6 +150,7 @@ public sealed class DashboardLaunchTests
 
             model.GoOnDuty();
 
+            model.ShowPreLaunchWarning.Should().BeFalse();
             model.LaunchStatus.Should().Contain("RagePluginHook.exe");
             model.LaunchStatus.Should().Contain("LSPDFR");
         }

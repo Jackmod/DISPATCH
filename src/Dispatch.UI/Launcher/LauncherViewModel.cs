@@ -58,9 +58,26 @@ public sealed partial class LauncherViewModel : ObservableObject
     [ObservableProperty]
     private OfficerProfile? _officer;
 
+    /// <summary>The version staged and waiting to apply on next restart, or null.</summary>
+    [ObservableProperty]
+    private string? _stagedUpdateVersion;
+
+    /// <summary>Whether the "restart to update" note is showing.</summary>
+    public bool HasStagedUpdate => !string.IsNullOrWhiteSpace(StagedUpdateVersion);
+
+    partial void OnStagedUpdateVersionChanged(string? value) => OnPropertyChanged(nameof(HasStagedUpdate));
+
+    private void OnUpdateStaged(object? sender, string version) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => StagedUpdateVersion = version);
+
+    /// <summary>Dismisses the update note; the update still applies on next restart.</summary>
+    [RelayCommand]
+    private void DismissUpdate() => StagedUpdateVersion = null;
+
     private readonly Core.Detection.IGameBuildWatch? _buildWatch;
     private readonly string? _gamePath;
     private readonly Core.Platform.IGameLauncher? _launcher;
+    private readonly Core.Platform.AppUpdateSignal? _updateSignal;
 
     // Screens are built on first visit, not up front, so opening the launcher
     // constructs only the dashboard rather than six view models — each of which
@@ -82,12 +99,22 @@ public sealed partial class LauncherViewModel : ObservableObject
         OfficerProfile? officer = null,
         Core.Detection.IGameBuildWatch? buildWatch = null,
         string? gamePath = null,
-        Core.Platform.IGameLauncher? launcher = null)
+        Core.Platform.IGameLauncher? launcher = null,
+        Core.Platform.AppUpdateSignal? updateSignal = null)
     {
         _officer = officer;
         _buildWatch = buildWatch;
         _gamePath = gamePath;
         _launcher = launcher;
+        _updateSignal = updateSignal;
+
+        // A newer version may already be staged (the check runs at startup), or it may
+        // stage while the launcher is open — handle both so the note never gets missed.
+        if (updateSignal is not null)
+        {
+            StagedUpdateVersion = updateSignal.StagedVersion;
+            updateSignal.UpdateStaged += OnUpdateStaged;
+        }
 
         Cleaner = new CleanerViewModel();
 
@@ -123,8 +150,26 @@ public sealed partial class LauncherViewModel : ObservableObject
     private ModsViewModel Mods =>
         _mods ??= new ModsViewModel(_gamePath);
 
-    private SettingsViewModel Settings =>
-        _settings ??= new SettingsViewModel(Officer, _gamePath);
+    private SettingsViewModel Settings => _settings ??= CreateSettings();
+
+    private SettingsViewModel CreateSettings()
+    {
+        var settings = new SettingsViewModel(Officer, _gamePath);
+
+        // Switching officer in Settings rewrites who is on duty everywhere: the header
+        // updates, and the screens that bake the officer in are dropped so they rebuild
+        // with the new identity on the next visit.
+        settings.ActiveOfficerChanged += (_, officer) =>
+        {
+            Officer = officer;
+            _dashboard = null;
+            _profile = null;
+            _controls = null;
+            _pluginSettings = null;
+        };
+
+        return settings;
+    }
 
     /// <summary>The rail destinations, in order.</summary>
     public IReadOnlyList<NavItem> Items { get; }

@@ -233,4 +233,16 @@ public sealed class ConflictDetectorTests
     {
         ConflictDetector.Detect([]).Should().BeEmpty();
     }
+
+    [Fact]
+    public void A_two_way_conflict_can_be_swapped_but_a_three_way_cannot()
+    {
+        // Swap exchanges one pair; with three claimants there is no single pair to
+        // exchange, so the resolver offers "move to a free key" instead.
+        var twoWay = ConflictDetector.Detect([Bound("a", "F9"), Bound("b", "F9")]);
+        var threeWay = ConflictDetector.Detect([Bound("a", "X"), Bound("b", "X"), Bound("c", "X")]);
+
+        twoWay[0].CanSwap.Should().BeTrue();
+        threeWay[0].CanSwap.Should().BeFalse();
+    }
 }

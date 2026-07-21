@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Dispatch.Core.Configuration;
+using Dispatch.Core.Detection;
 using Dispatch.Core.Infrastructure;
 using Dispatch.Core.Maintenance;
 using Dispatch.Core.Profiles;
@@ -17,6 +18,11 @@ namespace Dispatch.UI.Launcher;
 /// <param name="Key">Stable identifier.</param>
 /// <param name="Label">What the sub-nav shows.</param>
 public sealed record HubSection(string Key, string Label);
+
+/// <summary>One officer in the roster, with whether they are the one on duty.</summary>
+/// <param name="Officer">The officer.</param>
+/// <param name="IsActive">True when this is the officer currently on duty.</param>
+public sealed record OfficerProfileRow(OfficerProfile Officer, bool IsActive);
 
 /// <summary>One quarantine batch, shown in the restore list.</summary>
 public sealed partial class QuarantineRow : ObservableObject
@@ -70,7 +76,11 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly IQuarantine _quarantine;
     private readonly ISettingsWriter _settingsWriter;
     private readonly IUninstaller _uninstaller;
+    private readonly ISystemDependencyProbe _dependencies;
     private readonly string? _gamePath;
+
+    /// <summary>Raised when the user switches, adds or removes the active officer.</summary>
+    public event EventHandler<OfficerProfile>? ActiveOfficerChanged;
 
     private DispatchProfile _profile = new();
     private OfficerProfile? _officer;
@@ -120,7 +130,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         IProfileStore? profiles = null,
         IAppPaths? paths = null,
         IQuarantine? quarantine = null,
-        ISettingsWriter? settingsWriter = null)
+        ISettingsWriter? settingsWriter = null,
+        ISystemDependencyProbe? dependencies = null)
     {
         _officer = officer;
         _gamePath = gamePath;
@@ -128,6 +139,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _profiles = profiles ?? new ProfileStore(_paths, NullLogger<ProfileStore>.Instance);
         _quarantine = quarantine ?? new Quarantine(_paths.QuarantineDirectory, NullLogger<Quarantine>.Instance);
         _settingsWriter = settingsWriter ?? new SettingsWriter();
+        _dependencies = dependencies ?? new SystemDependencyProbe();
         _uninstaller = new Uninstaller(
             _paths,
             new InstallRecordStore(_paths, NullLogger<InstallRecordStore>.Instance),
@@ -165,6 +177,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         new("crash", "Crash report"),
         new("appearance", "Appearance"),
         new("officer", "Officer"),
+        new("system", "System check"),
         new("folders", "Folders"),
         new("quarantine", "Quarantine"),
         new("uninstall", "Uninstall"),
@@ -185,6 +198,9 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     /// <summary>Whether the officer section is showing.</summary>
     public bool IsOfficer => Section == "officer";
+
+    /// <summary>Whether the system-check section is showing.</summary>
+    public bool IsSystem => Section == "system";
 
     /// <summary>Whether the folders section is showing.</summary>
     public bool IsFolders => Section == "folders";
@@ -209,10 +225,129 @@ public sealed partial class SettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(IsCrash));
         OnPropertyChanged(nameof(IsAppearance));
         OnPropertyChanged(nameof(IsOfficer));
+        OnPropertyChanged(nameof(IsSystem));
         OnPropertyChanged(nameof(IsFolders));
         OnPropertyChanged(nameof(IsQuarantine));
         OnPropertyChanged(nameof(IsUninstall));
         OnPropertyChanged(nameof(IsAbout));
+    }
+
+    // ===== System check ======================================
+
+    /// <summary>The runtime dependencies and whether each was found.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<DependencyStatus> _systemDependencies = [];
+
+    /// <summary>Whether any required runtime is missing.</summary>
+    public bool HasMissingDependencies => SystemDependencies.Any(d => d.IsMissing);
+
+    /// <summary>Whether the check has run and found everything present.</summary>
+    public bool AllDependenciesPresent =>
+        SystemDependencies.Count > 0 && SystemDependencies.All(d => d.State == DependencyState.Installed);
+
+    /// <summary>Opens a URL — a dependency download, or a mod's page — in the browser.</summary>
+    [RelayCommand]
+    private void OpenUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception)
+        {
+            StatusMessage = $"Could not open {url}.";
+        }
+    }
+
+    // ===== Officers ==========================================
+
+    /// <summary>Every officer on file, for the switcher.</summary>
+    public ObservableCollection<OfficerProfileRow> AllOfficers { get; } = [];
+
+    /// <summary>Whether there is more than one officer to switch between.</summary>
+    public bool HasMultipleOfficers => AllOfficers.Count > 1;
+
+    /// <summary>Switches the active officer and re-applies their identity to the config files.</summary>
+    [RelayCommand]
+    private async Task SwitchOfficerAsync(OfficerProfile? officer)
+    {
+        if (officer is null || officer.Id == _profile.ActiveOfficerId)
+        {
+            return;
+        }
+
+        _profile = _profile with { ActiveOfficerId = officer.Id, UpdatedAt = DateTimeOffset.UtcNow };
+        await _profiles.SaveAsync(_profile).ConfigureAwait(true);
+
+        _officer = officer;
+        ApplyOfficer(officer);
+        RefreshOfficers();
+
+        StatusMessage = await ReapplyIdentityAsync(officer).ConfigureAwait(true);
+        ActiveOfficerChanged?.Invoke(this, officer);
+    }
+
+    /// <summary>Creates a new officer, makes them active, and opens the editor to fill in.</summary>
+    [RelayCommand]
+    private async Task AddOfficerAsync()
+    {
+        var officer = OfficerProfile.Create("New officer");
+        _profile = _profile.WithOfficer(officer);
+        await _profiles.SaveAsync(_profile).ConfigureAwait(true);
+
+        _officer = officer;
+        ApplyOfficer(officer);
+        RefreshOfficers();
+
+        Section = "officer";
+        StatusMessage = "New officer created — fill in the details and save.";
+        ActiveOfficerChanged?.Invoke(this, officer);
+    }
+
+    /// <summary>Removes an officer, promoting whoever is left. Never removes the last one.</summary>
+    [RelayCommand]
+    private async Task RemoveOfficerAsync(OfficerProfile? officer)
+    {
+        if (officer is null)
+        {
+            return;
+        }
+
+        if (_profile.Officers.Count <= 1)
+        {
+            StatusMessage = "You can't remove your only officer.";
+            return;
+        }
+
+        _profile = _profile.WithoutOfficer(officer.Id);
+        await _profiles.SaveAsync(_profile).ConfigureAwait(true);
+
+        var active = _profile.ActiveOfficer;
+        if (active is not null)
+        {
+            _officer = active;
+            ApplyOfficer(active);
+            ActiveOfficerChanged?.Invoke(this, active);
+        }
+
+        RefreshOfficers();
+        StatusMessage = $"Removed {officer.Name}.";
+    }
+
+    private void RefreshOfficers()
+    {
+        AllOfficers.Clear();
+        foreach (var officer in _profile.Officers)
+        {
+            AllOfficers.Add(new OfficerProfileRow(officer, officer.Id == _profile.ActiveOfficerId));
+        }
+
+        OnPropertyChanged(nameof(HasMultipleOfficers));
     }
 
     // ===== Uninstall =========================================
@@ -365,11 +500,19 @@ public sealed partial class SettingsViewModel : ObservableObject
             {
                 ApplyOfficer(_officer);
             }
+
+            RefreshOfficers();
         }
         finally
         {
             _loading = false;
         }
+
+        // The system check reads the machine, not the profile, so it runs outside the
+        // loading guard and updates its own derived flags.
+        SystemDependencies = _dependencies.Check();
+        OnPropertyChanged(nameof(HasMissingDependencies));
+        OnPropertyChanged(nameof(AllDependenciesPresent));
 
         await RefreshQuarantineAsync().ConfigureAwait(true);
     }

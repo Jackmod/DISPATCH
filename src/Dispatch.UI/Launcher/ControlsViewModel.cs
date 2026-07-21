@@ -118,6 +118,12 @@ public sealed partial class ControlsViewModel : ObservableObject
     [ObservableProperty]
     private string _keyPanelSearch = string.Empty;
 
+    [ObservableProperty]
+    private bool _showConflictsPanel;
+
+    [ObservableProperty]
+    private bool _showApplyPreview;
+
     private const string AllPlugins = "All plugins";
 
     /// <summary>
@@ -377,6 +383,84 @@ public sealed partial class ControlsViewModel : ObservableObject
         Refresh();
     }
 
+    /// <summary>Opens or closes the conflict-resolution panel.</summary>
+    [RelayCommand]
+    private void ToggleConflictsPanel() => ShowConflictsPanel = !ShowConflictsPanel;
+
+    /// <summary>Closes the conflict-resolution panel.</summary>
+    [RelayCommand]
+    private void CloseConflictsPanel() => ShowConflictsPanel = false;
+
+    /// <summary>
+    /// Suggests a free key for one action and moves it there — the single-action
+    /// answer to "get this off the key it is fighting over".
+    /// </summary>
+    [RelayCommand]
+    private void SuggestFree(BindingRow? row)
+    {
+        if (row is null)
+        {
+            return;
+        }
+
+        row.Binding = ConflictDetector.SuggestFree(AllBindings, row.Action.Device);
+        Refresh();
+    }
+
+    /// <summary>Shows the diff of what Apply will write, before it writes it.</summary>
+    [RelayCommand]
+    private void PreviewApply()
+    {
+        if (HasPending)
+        {
+            ShowApplyPreview = true;
+        }
+    }
+
+    /// <summary>Closes the apply preview without writing.</summary>
+    [RelayCommand]
+    private void CancelApplyPreview() => ShowApplyPreview = false;
+
+    /// <summary>
+    /// Restores the config files from the backups the last apply left, undoing it
+    /// even after the app was closed.
+    /// </summary>
+    [RelayCommand]
+    private async Task RestoreBackupAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_gamePath) || !Directory.Exists(_gamePath))
+        {
+            StatusMessage = "No game folder is set, so there is nothing to restore.";
+            return;
+        }
+
+        var restored = await _writer.RestoreBackupsAsync(_gamePath, _all.Select(row => row.Action).ToList())
+            .ConfigureAwait(true);
+
+        if (restored.Count == 0)
+        {
+            StatusMessage = "No backups were found — there is no earlier apply to undo.";
+            return;
+        }
+
+        // Re-read every action off the just-restored files and adopt those values
+        // as the new baseline, so the screen shows what is now on disk with nothing
+        // left staged.
+        var onDisk = await _writer.ReadAsync(_gamePath, _all.Select(row => row.Action).ToList()).ConfigureAwait(true);
+        foreach (var row in _all)
+        {
+            if (onDisk.TryGetValue(row.Action.Id, out var binding))
+            {
+                row.Binding = binding;
+            }
+
+            row.Commit();
+        }
+
+        Refresh();
+        StatusMessage = $"Restored {restored.Count} config file(s) from the backup taken before the last apply.";
+    }
+
     /// <summary>Discards every staged change.</summary>
     [RelayCommand]
     private void Discard()
@@ -402,6 +486,8 @@ public sealed partial class ControlsViewModel : ObservableObject
     [RelayCommand]
     private async Task ApplyAsync()
     {
+        ShowApplyPreview = false;
+
         if (!string.IsNullOrWhiteSpace(_gamePath) && Directory.Exists(_gamePath))
         {
             var result = await _writer.WriteAsync(_gamePath, AllBindings).ConfigureAwait(true);
@@ -659,13 +745,21 @@ public sealed partial class ControlsViewModel : ObservableObject
     /// <summary>Recomputes the visible rows and every derived count.</summary>
     private void Refresh()
     {
-        var conflicted = Conflicts
+        var conflicts = Conflicts;
+        var conflicted = conflicts
             .SelectMany(conflict => conflict.Actions.Select(action => action.Id))
             .ToHashSet(StringComparer.Ordinal);
 
         foreach (var row in _all)
         {
             row.IsConflicted = conflicted.Contains(row.Action.Id);
+        }
+
+        // Nothing to resolve means nothing to show; close the panel so it never
+        // lingers empty after the last conflict is cleared.
+        if (conflicts.Count == 0)
+        {
+            ShowConflictsPanel = false;
         }
 
         // Keyboard and controller are separate namespaces; the tab picks one.

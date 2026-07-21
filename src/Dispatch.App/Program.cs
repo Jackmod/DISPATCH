@@ -70,9 +70,17 @@ internal static class Program
                     .GetRequiredService<Dispatch.Core.Acquisition.RemotePackRefresher>()
                     .RefreshAsync();
 
-                _ = host.Services
-                    .GetRequiredService<Dispatch.Core.Platform.IAppUpdater>()
-                    .CheckDownloadAndStageAsync();
+                var updater = host.Services.GetRequiredService<Dispatch.Core.Platform.IAppUpdater>();
+                var updateSignal = host.Services.GetRequiredService<Dispatch.Core.Platform.AppUpdateSignal>();
+                _ = Task.Run(async () =>
+                {
+                    var staged = await updater.CheckDownloadAndStageAsync().ConfigureAwait(false);
+                    if (staged is not null)
+                    {
+                        // Tell the launcher so it can offer a quiet "restart to update" note.
+                        updateSignal.Publish(staged);
+                    }
+                });
             }
 
             var exitCode = BuildAvaloniaApp(host.Services)

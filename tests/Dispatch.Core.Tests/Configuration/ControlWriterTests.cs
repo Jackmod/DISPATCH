@@ -168,6 +168,36 @@ public sealed class ControlWriterTests : IDisposable
     }
 
     [Fact]
+    public async Task Restoring_backups_puts_the_pre_write_files_back()
+    {
+        var bindings = Subset();
+        CreateFilesFor(bindings);
+
+        var keysPath = Path.Combine(_root, "lspdfr", "Keys.ini");
+        var original = await File.ReadAllTextAsync(keysPath);
+
+        await _writer.WriteAsync(_root, bindings);
+        (await File.ReadAllTextAsync(keysPath)).Should().NotBe(original, "the write changed the file");
+
+        var restored = await _writer.RestoreBackupsAsync(_root, bindings.Select(b => b.Action).ToList());
+
+        restored.Should().Contain("lspdfr/Keys.ini");
+        (await File.ReadAllTextAsync(keysPath)).Should().Be(original, "restore returns the pre-write content");
+    }
+
+    [Fact]
+    public async Task Restoring_with_no_backups_present_restores_nothing()
+    {
+        var bindings = Subset();
+        CreateFilesFor(bindings);
+        // No write has happened, so there are no .bak files.
+
+        var restored = await _writer.RestoreBackupsAsync(_root, bindings.Select(b => b.Action).ToList());
+
+        restored.Should().BeEmpty("there is no earlier apply to undo");
+    }
+
+    [Fact]
     public async Task Comments_in_a_config_file_survive_a_write()
     {
         var path = Path.Combine(_root, "plugins", "StopThePed.ini");

@@ -42,6 +42,7 @@ public sealed partial class DashboardViewModel : ObservableObject
     private readonly IProfileStatsStore _stats;
     private readonly IntegrityAuditor _auditor;
     private readonly GameLogReader _logReader;
+    private readonly SessionLogParser _sessionParser = new();
     private readonly string? _gamePath;
 
     private InstallRecord? _record;
@@ -158,9 +159,67 @@ public sealed partial class DashboardViewModel : ObservableObject
     {
         _record = await _records.LoadAsync().ConfigureAwait(true);
         _career = await _stats.LoadAsync().ConfigureAwait(true);
+        await RecordFinishedSessionAsync().ConfigureAwait(true);
         Tiles = BuildTiles();
 
         ReadCrashLogs();
+    }
+
+    /// <summary>
+    /// Records the last shift from LSPDFR.log, if the game has since closed and this
+    /// log has not already been counted. The log's last-write time both dates the
+    /// shift and, compared against the newest recorded session, stops the same log
+    /// being logged twice when the dashboard is reopened.
+    /// </summary>
+    private async Task RecordFinishedSessionAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_gamePath))
+        {
+            return;
+        }
+
+        // A running game is still writing the log; only a finished shift is recorded.
+        if (_guard.IsGameRunning(out _))
+        {
+            return;
+        }
+
+        var logPath = Path.Combine(_gamePath, "LSPDFR.log");
+        if (!File.Exists(logPath))
+        {
+            return;
+        }
+
+        DateTimeOffset endedAt;
+        string text;
+        try
+        {
+            endedAt = new DateTimeOffset(File.GetLastWriteTimeUtc(logPath), TimeSpan.Zero);
+            text = await File.ReadAllTextAsync(logPath).ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return;
+        }
+
+        // Already counted this shift? Its file time has not moved since.
+        var newest = _career.Sessions.Count == 0
+            ? (DateTimeOffset?)null
+            : _career.Sessions.Max(s => s.EndedAt);
+        if (newest is { } last && endedAt <= last.AddSeconds(1))
+        {
+            return;
+        }
+
+        var session = _sessionParser.Parse(text, endedAt);
+
+        // A sub-minute "shift" is the game opened and closed, not a patrol.
+        if (session is null || session.Minutes < 1)
+        {
+            return;
+        }
+
+        _career = await _stats.RecordSessionAsync(session).ConfigureAwait(true);
     }
 
     /// <summary>
@@ -207,6 +266,18 @@ public sealed partial class DashboardViewModel : ObservableObject
     [ObservableProperty]
     private string? _launchStatus;
 
+    /// <summary>Problems a pre-flight found that would stop the game loading. Empty when ready.</summary>
+    [ObservableProperty]
+    private IReadOnlyList<string> _preLaunchIssues = [];
+
+    /// <summary>Whether the pre-flight warning is showing.</summary>
+    [ObservableProperty]
+    private bool _showPreLaunchWarning;
+
+    // Set when the user chooses "Launch anyway", so the next launch skips the check
+    // it just overrode rather than looping back to the same warning.
+    private bool _launchOverride;
+
     /// <summary>Whether there is a launch status to show.</summary>
     public bool HasLaunchStatus => !string.IsNullOrWhiteSpace(LaunchStatus);
 
@@ -214,7 +285,29 @@ public sealed partial class DashboardViewModel : ObservableObject
     /// Starts RagePluginHook, which hooks GTA V and brings the plugins up, and sets
     /// <see cref="LaunchStatus"/> to exactly what happened so a failure is never silent.
     /// </summary>
-    public void GoOnDuty()
+    public void GoOnDuty() => Launch(safeMode: false);
+
+    /// <summary>
+    /// Launches with a reminder to bring up RagePluginHook's plugin picker and run
+    /// with plugins off — the fastest way to find out whether a plugin is the problem.
+    /// </summary>
+    [RelayCommand]
+    private void LaunchSafeMode() => Launch(safeMode: true);
+
+    /// <summary>Launches despite the pre-flight warning the user just saw.</summary>
+    [RelayCommand]
+    private void LaunchAnyway()
+    {
+        _launchOverride = true;
+        ShowPreLaunchWarning = false;
+        Launch(safeMode: false);
+    }
+
+    /// <summary>Closes the pre-flight warning without launching.</summary>
+    [RelayCommand]
+    private void DismissPreLaunch() => ShowPreLaunchWarning = false;
+
+    private void Launch(bool safeMode)
     {
         if (string.IsNullOrWhiteSpace(_gamePath) || !Directory.Exists(_gamePath))
         {
@@ -235,8 +328,27 @@ public sealed partial class DashboardViewModel : ObservableObject
             return;
         }
 
+        // Pre-flight: catch a missing loader, a wiped component or a game update that
+        // broke Script Hook V here, where it can be explained, rather than at a black
+        // screen. Safe mode and an explicit override skip it.
+        if (!safeMode && !_launchOverride)
+        {
+            var issues = CheckReadyToLaunch();
+            if (issues.Count > 0)
+            {
+                PreLaunchIssues = issues;
+                ShowPreLaunchWarning = true;
+                return;
+            }
+        }
+
+        _launchOverride = false;
+
         LaunchStatus = _launcher.LaunchRagePluginHook(_gamePath) switch
         {
+            Core.Platform.LaunchOutcome.Launched when safeMode =>
+                "Safe mode: when the RagePluginHook window opens, hold Left Shift, untick every plugin, then Launch. "
+                + "If the game is stable with them off, turn them back on one at a time to find the one at fault.",
             Core.Platform.LaunchOutcome.Launched =>
                 "RagePluginHook is starting. Hold Left Shift for the plugin list, tick your plugins, then Save and Launch.",
             Core.Platform.LaunchOutcome.LoaderNotFound =>
@@ -246,6 +358,45 @@ public sealed partial class DashboardViewModel : ObservableObject
             _ =>
                 "RagePluginHook could not be started. Try launching it from the game folder by hand to see what it reports.",
         };
+    }
+
+    /// <summary>
+    /// The blocking problems a launch would hit: a missing core component, or a game
+    /// update that outdated Script Hook V. Empty means clear to launch.
+    /// </summary>
+    private IReadOnlyList<string> CheckReadyToLaunch()
+    {
+        var issues = new List<string>();
+
+        if (_gamePath is null)
+        {
+            return issues;
+        }
+
+        if (!File.Exists(Path.Combine(_gamePath, "RagePluginHook.exe"))
+            && !File.Exists(Path.Combine(_gamePath, "RAGEPluginHook.exe")))
+        {
+            issues.Add("RagePluginHook isn't in your game folder — it's the loader that starts LSPDFR. Reinstall to get it back.");
+        }
+
+        if (!File.Exists(Path.Combine(_gamePath, "ScriptHookV.dll")))
+        {
+            issues.Add("Script Hook V is missing. Nothing loads without it — this is the most common cause. "
+                + "Your antivirus may have removed it; reinstall to restore it.");
+        }
+
+        if (!File.Exists(Path.Combine(_gamePath, "plugins", "LSPD First Response.dll")))
+        {
+            issues.Add("LSPDFR itself isn't installed. Run the installer and pick a setup before going on duty.");
+        }
+
+        if (BuildStatus?.NeedsUpdate == true)
+        {
+            issues.Add("Rockstar updated GTA V, so Script Hook V no longer matches the game build. "
+                + "It won't load until Script Hook V is updated to match.");
+        }
+
+        return issues;
     }
 
     partial void OnLaunchStatusChanged(string? value) => OnPropertyChanged(nameof(HasLaunchStatus));
@@ -301,6 +452,8 @@ public sealed partial class DashboardViewModel : ObservableObject
             tiles.Add(new StatusTile("SETUP", "Not installed", "Run the installer to begin", StatusTone.Neutral));
         }
 
+        tiles.AddRange(ComponentTiles());
+
         tiles.Add(new StatusTile("KEYBINDS",
             conflicts == 0 ? "No conflicts" : $"{conflicts} conflicts",
             "Suggested scheme",
@@ -330,6 +483,37 @@ public sealed partial class DashboardViewModel : ObservableObject
             }));
 
         return tiles;
+    }
+
+    /// <summary>
+    /// The three components everything else stands on — Script Hook V,
+    /// RagePluginHook and LSPDFR — each read straight off its own file so a missing
+    /// or mismatched one shows here rather than as a black screen at launch.
+    /// </summary>
+    private IEnumerable<StatusTile> ComponentTiles()
+    {
+        if (string.IsNullOrWhiteSpace(_gamePath) || !Directory.Exists(_gamePath))
+        {
+            yield break;
+        }
+
+        yield return Component("SCRIPT HOOK V",
+            Path.Combine(_gamePath, "ScriptHookV.dll"),
+            "Hooks the game for native mods");
+        yield return Component("RAGEPLUGINHOOK",
+            Path.Combine(_gamePath, "RagePluginHook.exe"),
+            "Loads LSPDFR and its plugins");
+        yield return Component("LSPDFR",
+            Path.Combine(_gamePath, "plugins", "LSPD First Response.dll"),
+            "The police-duty mod itself");
+    }
+
+    private StatusTile Component(string name, string path, string role)
+    {
+        var version = _versions.ReadFileVersion(path);
+        return version is null
+            ? new StatusTile(name, "Missing", role, StatusTone.Bad)
+            : new StatusTile(name, "v" + version, role, StatusTone.Good);
     }
 
     private string BuildDetail() => BuildStatus?.State switch

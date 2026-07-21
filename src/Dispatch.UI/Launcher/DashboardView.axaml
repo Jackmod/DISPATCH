@@ -43,15 +43,54 @@
                 </StackPanel>
               </StackPanel>
 
-              <Button Grid.Column="1" Classes="primary" VerticalAlignment="Center" Padding="24,14"
-                      Name="GoOnDutyButton">
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                  <c:Icon Data="{StaticResource IconPlay}" Foreground="{DynamicResource Ink}" />
-                  <TextBlock Text="Go on duty" VerticalAlignment="Center" FontSize="15" />
-                </StackPanel>
-              </Button>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8" HorizontalAlignment="Right">
+                <Button Classes="primary" Padding="24,14" Name="GoOnDutyButton">
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <c:Icon Data="{StaticResource IconPlay}" Foreground="{DynamicResource Ink}" />
+                    <TextBlock Text="Go on duty" VerticalAlignment="Center" FontSize="15" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="ghost" Content="Safe mode — no plugins"
+                        HorizontalAlignment="Right"
+                        Command="{Binding LaunchSafeModeCommand}"
+                        ToolTip.Tip="Launch with a reminder to turn plugins off, to find out if one is the problem." />
+              </StackPanel>
             </Grid>
           </Panel>
+        </Border>
+
+        <!-- ===== Pre-flight warning ============================ -->
+        <!-- Catch a missing loader, a wiped Script Hook V, or a game update that
+             broke it here — with an explanation — rather than at a black screen. -->
+        <Border IsVisible="{Binding ShowPreLaunchWarning}"
+                Padding="22,18"
+                CornerRadius="{DynamicResource RadiusCard}"
+                Background="{DynamicResource GlassSurface}"
+                BorderBrush="{DynamicResource GlassBorderGold}"
+                BorderThickness="1.5">
+          <StackPanel Spacing="14">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <c:Icon Data="{StaticResource IconClean}" Foreground="{DynamicResource Gold}" VerticalAlignment="Center" />
+              <TextBlock Text="Hold up — this probably won't load" Classes="h2"
+                         Foreground="{DynamicResource Gold}" VerticalAlignment="Center" />
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding PreLaunchIssues}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Grid ColumnDefinitions="Auto,*" Margin="0,0,0,6">
+                    <TextBlock Grid.Column="0" Text="•" Classes="body" Margin="0,0,10,0"
+                               Foreground="{DynamicResource Gold}" />
+                    <TextBlock Grid.Column="1" Text="{Binding}" Classes="small" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextMuted}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+              <Button Classes="ghost" Content="Not now" Command="{Binding DismissPreLaunchCommand}" />
+              <Button Classes="secondary" Content="Launch anyway" Command="{Binding LaunchAnywayCommand}" />
+            </StackPanel>
+          </StackPanel>
         </Border>
 
         <!-- ===== Launch status ================================ -->

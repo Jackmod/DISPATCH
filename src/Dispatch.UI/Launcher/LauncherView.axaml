@@ -194,6 +194,30 @@
         </TransitioningContentControl.PageTransition>
       </TransitioningContentControl>
 
+      <!-- ===== Update ready toast ============================ -->
+      <!-- A newer version downloaded quietly in the background. It applies on the
+           next restart on its own; this is only a nudge, dismissible and never
+           blocking a session. -->
+      <Border Grid.Row="1" IsVisible="{Binding HasStagedUpdate}"
+              VerticalAlignment="Bottom" HorizontalAlignment="Right"
+              Margin="0,0,24,24" Padding="18,14"
+              CornerRadius="{DynamicResource RadiusCard}"
+              Background="{DynamicResource Navy}"
+              BorderBrush="{DynamicResource GlassBorderGold}"
+              BorderThickness="1.5"
+              BoxShadow="{DynamicResource ShadowModal}">
+        <StackPanel Orientation="Horizontal" Spacing="14">
+          <c:Icon Data="{StaticResource IconRefresh}" Foreground="{DynamicResource Gold}" VerticalAlignment="Center" />
+          <StackPanel VerticalAlignment="Center" Spacing="1">
+            <TextBlock Text="Update ready" Classes="h2" Foreground="{DynamicResource Gold}" />
+            <TextBlock Classes="small" Foreground="{DynamicResource TextMuted}"
+                       Text="{Binding StagedUpdateVersion, StringFormat='Version {0} installs the next time you restart Dispatch.'}" />
+          </StackPanel>
+          <Button Classes="ghost" Content="Dismiss" VerticalAlignment="Center"
+                  Command="{Binding DismissUpdateCommand}" />
+        </StackPanel>
+      </Border>
+
     </Grid>
 
   </Grid>

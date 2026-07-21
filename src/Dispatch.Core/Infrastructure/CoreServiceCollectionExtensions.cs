@@ -51,6 +51,10 @@ public static class CoreServiceCollectionExtensions
         services.TryAddSingleton<Platform.IGameLauncher, Platform.NoGameLauncher>();
         services.TryAddSingleton<Platform.IAppUpdater, Platform.NoAppUpdater>();
 
+        // Shared latch between the background updater and the launcher's "restart to
+        // update" note. One instance so both meet on it.
+        services.TryAddSingleton<Platform.AppUpdateSignal>();
+
         services.TryAddSingleton<Maintenance.IQuarantine>(sp =>
             new Maintenance.Quarantine(
                 sp.GetRequiredService<IAppPaths>().QuarantineDirectory,

@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:c="clr-namespace:Dispatch.UI.Controls"
              xmlns:vm="clr-namespace:Dispatch.UI.Launcher"
+             xmlns:det="clr-namespace:Dispatch.Core.Detection;assembly=Dispatch.Core"
              x:Class="Dispatch.UI.Launcher.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
@@ -76,6 +77,8 @@
                   Command="{Binding SetSectionCommand}" CommandParameter="appearance" />
           <Button Classes="nav" Classes.active="{Binding IsOfficer}" Content="Officer"
                   Command="{Binding SetSectionCommand}" CommandParameter="officer" />
+          <Button Classes="nav" Classes.active="{Binding IsSystem}" Content="System check"
+                  Command="{Binding SetSectionCommand}" CommandParameter="system" />
           <Button Classes="nav" Classes.active="{Binding IsFolders}" Content="Folders"
                   Command="{Binding SetSectionCommand}" CommandParameter="folders" />
           <Button Classes="nav" Classes.active="{Binding IsQuarantine}" Content="Quarantine"
@@ -137,7 +140,49 @@
 
           <!-- Officer -->
           <ScrollViewer IsVisible="{Binding IsOfficer}" VerticalScrollBarVisibility="Auto" Margin="0,0,32,0">
-            <Border Classes="section" MaxWidth="720" HorizontalAlignment="Left">
+            <StackPanel MaxWidth="720" HorizontalAlignment="Left" Spacing="16">
+
+              <!-- Roster: switch between officers, or add another -->
+              <Border Classes="section">
+                <StackPanel Spacing="14">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Grid.Column="0" Text="Your officers" Classes="h1" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Classes="secondary" Content="Add officer"
+                            Command="{Binding AddOfficerCommand}" />
+                  </Grid>
+                  <ItemsControl ItemsSource="{Binding AllOfficers}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:OfficerProfileRow">
+                        <Border Margin="0,0,0,8" Padding="14,10" CornerRadius="{DynamicResource RadiusInput}"
+                                Background="{DynamicResource NavyDeep}" BorderBrush="{DynamicResource Steel}" BorderThickness="1">
+                          <Grid ColumnDefinitions="*,Auto,Auto">
+                            <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                              <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TextBlock Text="{Binding Officer.Name}" Classes="body" VerticalAlignment="Center" />
+                                <c:StatusPill Text="ON DUTY" Tone="Good" IsVisible="{Binding IsActive}" />
+                              </StackPanel>
+                              <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding Officer.Callsign}" Classes="mono" FontSize="11"
+                                           Foreground="{DynamicResource Gold}" />
+                                <TextBlock Text="{Binding Officer.AgencyCode}" Classes="micro" VerticalAlignment="Center" />
+                              </StackPanel>
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="secondary" Content="Switch to" Margin="0,0,8,0"
+                                    IsVisible="{Binding !IsActive}"
+                                    Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).SwitchOfficerCommand}"
+                                    CommandParameter="{Binding Officer}" />
+                            <Button Grid.Column="2" Classes="ghost" Content="Remove"
+                                    Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).RemoveOfficerCommand}"
+                                    CommandParameter="{Binding Officer}" />
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+
+              <Border Classes="section">
               <StackPanel Spacing="16">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="Officer identity" Classes="h1" VerticalAlignment="Center" />
@@ -159,6 +204,52 @@
                 <Button Classes="primary" Content="Save officer &amp; re-apply to game" Command="{Binding SaveOfficerCommand}" HorizontalAlignment="Left" />
                 <TextBlock Classes="small" Foreground="{DynamicResource Gold}" TextWrapping="Wrap"
                            Text="{Binding StatusMessage}" IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+              </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+
+          <!-- System check -->
+          <ScrollViewer IsVisible="{Binding IsSystem}" VerticalScrollBarVisibility="Auto" Margin="0,0,32,0">
+            <Border Classes="section" MaxWidth="720" HorizontalAlignment="Left">
+              <StackPanel Spacing="14">
+                <TextBlock Text="System check" Classes="h1" />
+                <TextBlock Classes="small" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap"
+                           Text="The runtimes the mod stack needs. A missing one is usually why Script Hook V or a plugin silently fails to load — install it, then restart the game." />
+
+                <Border Padding="14,12" CornerRadius="{DynamicResource RadiusInput}"
+                        Background="{DynamicResource NavyDeep}"
+                        BorderBrush="{DynamicResource Green}" BorderThickness="1"
+                        IsVisible="{Binding AllDependenciesPresent}">
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <c:Icon Data="{StaticResource IconCheck}" Foreground="{DynamicResource Green}" />
+                    <TextBlock Text="Everything the mods need is installed." Classes="body" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding SystemDependencies}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="det:DependencyStatus">
+                      <Border Margin="0,0,0,8" Padding="14,12" CornerRadius="{DynamicResource RadiusInput}"
+                              Background="{DynamicResource NavyDeep}" BorderBrush="{DynamicResource Steel}" BorderThickness="1">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                          <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Name}" Classes="body" />
+                            <TextBlock Text="{Binding Why}" Classes="small" Foreground="{DynamicResource TextMuted}" TextWrapping="Wrap" />
+                          </StackPanel>
+                          <c:StatusPill Grid.Column="1" Text="INSTALLED" Tone="Good" VerticalAlignment="Center"
+                                        Margin="0,0,8,0" IsVisible="{Binding !IsMissing}" />
+                          <c:StatusPill Grid.Column="1" Text="MISSING" Tone="Bad" VerticalAlignment="Center"
+                                        Margin="0,0,8,0" IsVisible="{Binding IsMissing}" />
+                          <Button Grid.Column="2" Classes="secondary" Content="Get it" VerticalAlignment="Center"
+                                  IsVisible="{Binding IsMissing}"
+                                  Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).OpenUrlCommand}"
+                                  CommandParameter="{Binding DownloadUrl}" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
               </StackPanel>
             </Border>
           </ScrollViewer>

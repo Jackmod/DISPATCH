@@ -25,6 +25,12 @@ public sealed record StatCard(string Label, string Value, string Sub, string Ico
             : null;
 }
 
+/// <summary>One worked shift on the timeline.</summary>
+/// <param name="When">When it ended, formatted for the reader.</param>
+/// <param name="Duration">How long it ran.</param>
+/// <param name="Detail">Callouts, arrests, pursuits and citations in one line.</param>
+public sealed record ShiftRow(string When, string Duration, string Detail);
+
 /// <summary>
 /// The officer's profile: who they are, a portrait, and a career's worth of
 /// numbers pulled from every session they have worked.
@@ -55,6 +61,12 @@ public sealed partial class ProfileViewModel : ObservableObject
 
     [ObservableProperty]
     private IReadOnlyList<StatCard> _cards = [];
+
+    [ObservableProperty]
+    private IReadOnlyList<ShiftRow> _shifts = [];
+
+    /// <summary>Whether any shifts have been recorded yet.</summary>
+    public bool HasShifts => Shifts.Count > 0;
 
     /// <summary>Constructs the profile screen. Services default for design-time and tests.</summary>
     public ProfileViewModel(
@@ -150,6 +162,17 @@ public sealed partial class ProfileViewModel : ObservableObject
             new StatCard("AVG SHIFT", $"{(int)stats.AverageSessionMinutes}m",
                 stats.SessionCount == 0 ? "No shifts yet" : "Typical time on duty", "IconDashboard"),
         ];
+
+        // Most recent shifts first; a long career is capped so the screen stays quick.
+        Shifts = stats.Sessions
+            .OrderByDescending(s => s.EndedAt)
+            .Take(30)
+            .Select(s => new ShiftRow(
+                s.EndedAt.ToLocalTime().ToString("ddd d MMM · HH:mm", CultureInfo.InvariantCulture),
+                $"{(int)s.Minutes}m",
+                $"{s.Callouts} callouts · {s.Arrests} arrests · {s.Pursuits} pursuits · {s.Citations} citations"))
+            .ToList();
+        OnPropertyChanged(nameof(HasShifts));
     }
 
     /// <summary>

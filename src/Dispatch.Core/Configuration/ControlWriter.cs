@@ -33,6 +33,16 @@ public interface IControlWriter
         string gamePath,
         IReadOnlyList<GameAction> actions,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Restores each config file that owns one of these actions from the <c>.bak</c>
+    /// sibling the last write left, undoing an apply even after the app was closed.
+    /// Returns the files put back, relative to the game folder.
+    /// </summary>
+    Task<IReadOnlyList<string>> RestoreBackupsAsync(
+        string gamePath,
+        IReadOnlyList<GameAction> actions,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>One value a write changed: where it is, and what it moved from and to.</summary>
@@ -216,6 +226,39 @@ public sealed class ControlWriter : IControlWriter
         }
 
         return scheme;
+    }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<string>> RestoreBackupsAsync(
+        string gamePath,
+        IReadOnlyList<GameAction> actions,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(gamePath);
+        ArgumentNullException.ThrowIfNull(actions);
+
+        var restored = new List<string>();
+
+        foreach (var relative in actions.Select(a => a.ConfigFile).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var path = Path.Combine(gamePath, relative.Replace('/', Path.DirectorySeparatorChar));
+            var backup = path + BackupSuffix;
+
+            // Only files with a backup from a prior apply can be put back; a file
+            // never written has no .bak, and is left exactly as it is.
+            if (!File.Exists(backup))
+            {
+                continue;
+            }
+
+            File.Copy(backup, path, overwrite: true);
+            restored.Add(relative);
+        }
+
+        return Task.FromResult<IReadOnlyList<string>>(
+            restored.OrderBy(f => f, StringComparer.Ordinal).ToList());
     }
 
     private static IReadOnlyList<ControlChange> ApplyToDocument(IniDocument document, string file, BoundAction bound)

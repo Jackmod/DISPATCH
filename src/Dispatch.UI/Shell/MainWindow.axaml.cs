@@ -16,6 +16,7 @@ public partial class MainWindow : Window
     private readonly IGameBuildWatch? _buildWatch;
     private readonly IProfileStore? _profiles;
     private readonly Dispatch.Core.Platform.IGameLauncher? _launcher;
+    private readonly Dispatch.Core.Platform.AppUpdateSignal? _updateSignal;
 
     /// <summary>Constructs the window.</summary>
     public MainWindow()
@@ -28,13 +29,15 @@ public partial class MainWindow : Window
         WizardViewModel wizard,
         IGameBuildWatch? buildWatch = null,
         IProfileStore? profiles = null,
-        Dispatch.Core.Platform.IGameLauncher? launcher = null)
+        Dispatch.Core.Platform.IGameLauncher? launcher = null,
+        Dispatch.Core.Platform.AppUpdateSignal? updateSignal = null)
     {
         ArgumentNullException.ThrowIfNull(wizard);
 
         _buildWatch = buildWatch;
         _profiles = profiles;
         _launcher = launcher;
+        _updateSignal = updateSignal;
 
         InitializeComponent();
         ApplyDarkTitleBar();
@@ -73,7 +76,7 @@ public partial class MainWindow : Window
         }
 
         LauncherShell.DataContext = new LauncherViewModel(
-            profile.ActiveOfficer, _buildWatch, profile.GamePath, _launcher);
+            profile.ActiveOfficer, _buildWatch, profile.GamePath, _launcher, _updateSignal);
         LauncherShell.IsVisible = true;
         Wizard.IsVisible = false;
     }
@@ -105,7 +108,7 @@ public partial class MainWindow : Window
             ? (await _profiles.LoadAsync().ConfigureAwait(true)).GamePath
             : null;
 
-        LauncherShell.DataContext = new LauncherViewModel(officer, _buildWatch, gamePath, _launcher);
+        LauncherShell.DataContext = new LauncherViewModel(officer, _buildWatch, gamePath, _launcher, _updateSignal);
         LauncherShell.IsVisible = true;
         Wizard.IsVisible = false;
     }

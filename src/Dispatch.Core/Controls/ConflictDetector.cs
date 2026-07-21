@@ -58,6 +58,12 @@ public sealed record Conflict(KeyBinding Binding, IReadOnlyList<GameAction> Acti
     /// <summary>How many actions are competing.</summary>
     public int Count => Actions.Count;
 
+    /// <summary>
+    /// True when a straight swap resolves it — only meaningful between exactly two
+    /// actions. With three or more on one key there is no single pair to exchange.
+    /// </summary>
+    public bool CanSwap => Actions.Count == 2;
+
     /// <summary>A one-line summary, for the conflict chip and the report.</summary>
     public string Summary =>
         $"{Binding.Display} is bound to {string.Join(", ", Actions.Select(a => a.Name))}";
