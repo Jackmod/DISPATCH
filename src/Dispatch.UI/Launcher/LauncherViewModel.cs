@@ -302,10 +302,18 @@ public sealed partial class LauncherViewModel : ObservableObject
     public string HeaderTitle => Current?.Label ?? "Dashboard";
 
     /// <summary>Navigates to a section.</summary>
+    /// <remarks>
+    /// The rail binds <c>SelectedItem</c> to <see cref="Current"/> two-way, so a click
+    /// updates <see cref="Current"/> before this command runs. Guarding on
+    /// <c>item.Key == Current.Key</c> therefore always short-circuited — the header
+    /// changed but the page never did. So the target content is resolved from the
+    /// clicked item directly and always assigned; setting it to the same cached view
+    /// instance is a no-op, so there is no needless rebuild.
+    /// </remarks>
     [RelayCommand]
     private void Navigate(NavItem? item)
     {
-        if (item is null || item.Key == Current.Key)
+        if (item is null)
         {
             return;
         }

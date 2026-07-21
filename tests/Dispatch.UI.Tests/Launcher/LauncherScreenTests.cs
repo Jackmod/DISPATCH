@@ -115,6 +115,37 @@ public sealed class LauncherScreenTests : IDisposable
         (await profiles.LoadAsync()).Appearance.ReducedMotion.Should().BeTrue();
     }
 
+    // ===== Navigation =========================================
+
+    [AvaloniaFact]
+    public void Navigating_switches_the_page_content_not_only_the_header()
+    {
+        var vm = new LauncherViewModel(Officer());
+        vm.CurrentContent.Should().BeOfType<DashboardViewModel>("the launcher opens on the dashboard");
+
+        // The rail binds SelectedItem to Current two-way, so a click sets Current
+        // before NavigateCommand runs. Reproduce that order — this is what used to
+        // make Navigate short-circuit, changing the header but never the page.
+        var mods = vm.Items.First(i => i.Key == "mods");
+        vm.Current = mods;
+        vm.NavigateCommand.Execute(mods);
+
+        vm.CurrentContent.Should().BeOfType<ModsViewModel>(
+            "clicking a rail item must switch the page content, not just the title");
+
+        var settings = vm.Items.First(i => i.Key == "settings");
+        vm.Current = settings;
+        vm.NavigateCommand.Execute(settings);
+
+        vm.CurrentContent.Should().BeOfType<SettingsViewModel>();
+
+        var dashboard = vm.Items.First(i => i.Key == "dashboard");
+        vm.Current = dashboard;
+        vm.NavigateCommand.Execute(dashboard);
+
+        vm.CurrentContent.Should().BeOfType<DashboardViewModel>();
+    }
+
     // ===== Mods ===============================================
 
     [AvaloniaFact]
